@@ -178,7 +178,7 @@ class Forster:
         mats   = system.get_mats()
         local  = ex.location()
         
-        Rf       = np.array([self.Rf.get((mats[local],mats[i])) for i in mats])
+        Rf       = np.array([self.Rf.get((mats[local],i)) for i in mats])
         lifetime = self.lifetime.get(mats[local])
         mu       = self.mu.get(mats[local])
         
@@ -207,7 +207,7 @@ class ForsterT:
         mats   = system.get_mats()
         local  = ex.location()
         
-        Rf       = np.array([self.Rf.get((mats[local],mats[i])) for i in mats])
+        Rf       = np.array([self.Rf.get((mats[local],i)) for i in mats])
         lifetime = self.lifetime.get(mats[local])
         mu       = self.mu.get(mats[local])
         
@@ -238,7 +238,7 @@ class Dexter:
         mats   = system.get_mats()
         local  = ex.location()
         
-        Rd       = np.array([self.Rd.get((mats[local],mats[i])) for i in mats])
+        Rd       = np.array([self.Rd.get((mats[local],i)) for i in mats])
         lifetime = self.lifetime.get(mats[local])
         L        = self.L.get(mats[local])
         taxa = (1/lifetime)*np.exp((2*Rd/L)*(1-r/Rd))
@@ -372,8 +372,8 @@ class MillerAbrahams:
         local = particle.location()
         mats = system.get_mats()
         
-        H      = np.array([self.H.get((mats[local],mats[i])) for i in mats])
-        in_loc_rad  = np.array([self.inv.get(mats[local]) for i in mats])
+        H      = np.array([self.H.get((mats[local],i)) for i in mats])
+        in_loc_rad  = np.array([self.inv.get(i) for i in mats])
         
                 
         r[r == np.inf] = 0 
