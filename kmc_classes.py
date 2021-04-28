@@ -373,7 +373,7 @@ class MillerAbrahams:
         mats = system.get_mats()
         
         H      = np.array([self.H.get((mats[local],i)) for i in mats])
-        in_loc_rad  = np.array([self.inv.get(i) for i in mats])
+        in_loc_rad  = self.inv.get(mats[local])
         
                 
         r[r == np.inf] = 0 
