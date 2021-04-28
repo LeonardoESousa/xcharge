@@ -185,30 +185,31 @@ def decision(s,system):
     
     final_rate = []
     labels     = []
+    chosen     = []
     hop = processes.get(kind)
     for transfer in hop:    
         jump_rate  = transfer.rate(r=r,system=system,particle=s)
         probs = np.cumsum(jump_rate)/np.sum(jump_rate)
         sorte = random.uniform(0,1)
         try:
-            chosen = np.where(sorte < probs)[0][0]
+            chosen.append(np.where(sorte < probs)[0][0])
         except:
-            chosen = local
-        final_rate.append(jump_rate[chosen])
+            chosen.append(local)
+        final_rate.append(jump_rate[chosen[-1]])
         labels.append(transfer)
  
     mono = monomolecular.get(kind)   
     for m in mono:
         final_rate.append(m.rate(material=Mat))
         labels.append(m)
-
+        chosen.append(local)
     
     probs = np.cumsum(final_rate)/np.sum(final_rate)
     sorte = random.uniform(0,1)
     jump = np.where(sorte < probs)[0][0]
     dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
     #print(kind,Mats[local],Mats[chosen],probs,labels[jump],dt)
-    return labels[jump], chosen, dt
+    return labels[jump], chosen[jump], dt
  
   
 def step(system): 
