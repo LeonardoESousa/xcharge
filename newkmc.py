@@ -159,9 +159,9 @@ def anni_singlet(system,Ss):
                     Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.get_s1())
                     Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.get_s1())
                     if random.uniform(0,1) <= 0.75:
-                        system.add_particle(Exciton('triplet',locs2[indices[0][0]]))
+                        system.add_particle(Exciton('triplet',locs[indices[0][0]]))
                     else:
-                        system.add_particle(Exciton('singlet',locs2[indices[0][0]]))
+                        system.add_particle(Exciton('singlet',locs[indices[0][0]]))
 
     
     #for s in Ss:
