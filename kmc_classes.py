@@ -43,8 +43,8 @@ class System:
         return len(self.X)
     
     def set_orbital(self,h,l):
-        self.HOMO = h
-        self.LUMO = l
+        self.HOMO = np.array(h)
+        self.LUMO = np.array(l)
     
     def set_s1(self, energy):
         self.s1 = energy
@@ -365,53 +365,63 @@ class MillerAbrahams:
         self.T        = kwargs['T']
 
     def rate(self,**kwargs):
-        
         system = kwargs['system']
         r      = kwargs['r']
         particle = kwargs['particle']
         local = particle.location()
         mats = system.get_mats()
         
+        charge = 1*particle.get_charge()
         H      = np.array([self.H.get((mats[local],i)) for i in mats])
         in_loc_rad  = self.inv.get(mats[local])
         
-                
+        np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
         r[r == np.inf] = 0 
         potential = 1*system.electrostatic()
-        potential -= particle.get_charge()*abs(e)/(4*np.pi*epsilon*r)
+        potential -= charge*abs(e)/(4*np.pi*epsilon*r)
         potential = np.nan_to_num(potential,posinf=np.inf,neginf=-np.inf)  
       
         if particle.kind() == 'electron':
-            engs  = system.get_LUMO()
-            homos = system.get_HOMO()
-            indices = np.where(potential == -np.inf)
+            engs  = 1*system.get_LUMO()
+            homos = 1*system.get_HOMO()
+            indices = np.where(potential == np.inf)
             for m in indices[0]:
                 potential[m] = 0
                 engs[m] = homos[m]
             engs += -1*potential
-            DE = engs - engs[local]
-
+            DE = (engs - engs[local]) + abs(engs - engs[local])
+            #print('elec',DE)
+            #print('pot',potential)
+            #print('englocal',engs[local],local,potential[local])
         elif particle.kind() == 'hole':
-            engs  = system.get_HOMO()
+            engs  = 1*system.get_HOMO()
+            lumos = 1*system.get_LUMO()
+            indices = np.where(potential == -np.inf)
+            for m in indices[0]:
+                potential[m] = 0
+                engs[m] = lumos[m]
             engs += 1*potential
-            DE = (engs[local] - engs)
-    
+            DE = (engs - engs[local]) + abs(engs - engs[local])
+            DE *= -1
+            #print('hole',DE)
+            #print('pot',potential)
+            #print('englocal',engs[local],local,potential[local])
             
         
 
         #taxa = (10**-12)*(2*np.pi/hbar)*(H**2)*(1/np.sqrt(4*np.pi*reorg*kb*self.T))*np.exp(
         #                       -2*in_loc_rad*r)*np.exp(-((DE + reorg)**2)/(4*reorg*kb*self.T))
         #
-        taxa = (10**-12)*(2*np.pi/hbar)*(H**2)*np.exp(
-                               -2*in_loc_rad*r)*np.exp(particle.get_charge()*(DE +abs(DE))/(2*kb*self.T))
+        taxa = (10E-12)*(H**2)*np.exp(
+                               -2*in_loc_rad*r)*np.exp(charge*DE/(2*kb*self.T))
         taxa[r == 0] = 0
 
         taxa = np.nan_to_num(taxa)
         #print(particle.kind())
-        #print(taxa)
+        #print('taxa',taxa)
         #print(DE)
         #input()
-        print(particle.kind(),DE[np.where(taxa == max(taxa))[0][0]])
+        #print(particle.kind(),max(taxa),engs[list(taxa).index(max(taxa))])
         return taxa
 
     def label(self):
