@@ -164,6 +164,15 @@ class Hole(Particles):
         return self.charge
 
 ###TAXAS#################################################################################    
+def raios(num,Rf,mat,lifetime,mats):
+    Raios = np.zeros(num) + Rf[(mat,mat)]
+    materiais = [i for i in lifetime.keys() if i != mat]
+    for m in materiais:
+        R2 = np.zeros(num) + Rf[(mat,m)]
+        Raios[mats == m] = R2[mats == m]
+    return Raios
+
+
 class Forster:
     def __init__(self,**kwargs):
         self.kind = 'jump'
@@ -177,10 +186,13 @@ class Forster:
         ex     = kwargs['particle']
         mats   = system.get_mats()
         local  = ex.location()
+        mat = mats[local]
+        num = len(mats)
         
-        Rf       = np.array([self.Rf.get((mats[local],i)) for i in mats])
-        lifetime = self.lifetime.get(mats[local])
-        mu       = self.mu.get(mats[local])
+        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
+        
+        lifetime = self.lifetime[mat]
+        mu       = self.mu[mat]
         
         alpha = 1.15*0.53
         taxa = (1/lifetime)*((Rf/(alpha*mu + r))**6)
@@ -206,10 +218,12 @@ class ForsterT:
         ex     = kwargs['particle']
         mats   = system.get_mats()
         local  = ex.location()
+        mat = mats[local]
+        num = len(mats)
         
-        Rf       = np.array([self.Rf.get((mats[local],i)) for i in mats])
-        lifetime = self.lifetime.get(mats[local])
-        mu       = self.mu.get(mats[local])
+        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
+        lifetime = self.lifetime[mat]
+        mu       = self.mu[mat]
         
         alpha = 1.15*0.53
         taxa = (1/lifetime)*((Rf/(alpha*mu + r))**6)
@@ -237,10 +251,13 @@ class Dexter:
         ex     = kwargs['particle']
         mats   = system.get_mats()
         local  = ex.location()
+        mat = mats[local]
+        num = len(mats)
         
-        Rd       = np.array([self.Rd.get((mats[local],i)) for i in mats])
-        lifetime = self.lifetime.get(mats[local])
-        L        = self.L.get(mats[local])
+        Rd = raios(num,self.Rd,mat,self.lifetime,mats)
+        
+        lifetime = self.lifetime[mat]
+        L        = self.L[mat]
         taxa = (1/lifetime)*np.exp((2*Rd/L)*(1-r/Rd))
         return taxa
 
@@ -331,24 +348,32 @@ class ForsterDye:
         self.t   = kwargs['t']   #Hopping integral in graphene in eV
         self.mu  = kwargs['mu']
         self.eps = kwargs['eps']
+        self.switch = kwargs['switch']
     
     def rate(self,**kwargs):
-        r = kwargs['r']
+        r      = kwargs['r']
         system = kwargs['system']
-        local  = kwargs['location']
-        hw   =  system.get_s1()[local]
-        e    = -1.60217662*(10**(-19)) #Electron charge
-        hbar = 6.582*(10**(-16)) #Reduced Planck's constant
+        ex     = kwargs['particle']
+        mats   = system.get_mats()
+        local  = ex.location()
+        hw     =  system.get_s1()[local]
+        mat = mats[local]
+        num = len(mats)
+        
         lcc  = self.lcc #C-C distances in Angstrom
-        t    = self.t #Hopping integral in graphene in eV
-        mu   = self.mu
+        t    = self.t   #Hopping integral in graphene in eV
+        mu   = self.mu[mat]
         eps  = self.eps
+        
+        switch = raios(num,self.switch,mat,self.mu,mats)
+        
         epsilon = eps*8.85*10**(-22) #Permitivity in C/VAngstrom    
         vf = t*(3/2)*lcc
         q  = np.linspace(0,hw/vf,1000)
         q  = q[:-1]
-        funcao = np.exp(-2*q*r)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2))
-        taxa = 10**(-12)*((mu*0.53)**2)*(1/48)*(e**2)/((2*np.pi*hbar)*(epsilon**2))*np.trapz(funcao,q)
+        funcao =  np.array([np.trapz(np.exp(-2*q*R)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2))) for R in r])  
+        taxa = switch*10**(-12)*((mu*0.53)**2)*(1/48)*(e**2)/((2*np.pi*hbar)*(epsilon**2))*funcao
+        taxa = np.nan_to_num(taxa)
         return taxa
 
     def label(self):
@@ -370,10 +395,13 @@ class MillerAbrahams:
         particle = kwargs['particle']
         local = particle.location()
         mats = system.get_mats()
+        mat = mats[local]
+        num = len(mats)
         
         charge = 1*particle.get_charge()
-        H      = np.array([self.H.get((mats[local],i)) for i in mats])
-        in_loc_rad  = self.inv.get(mats[local])
+        
+        H      = raios(num,self.H,mat,self.inv,mats)
+        in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
         r[r == np.inf] = 0 
