@@ -1,0 +1,17 @@
+working on a branch:
+
+main_user   = LeonardoESousa
+repo_name   = KMC
+branch_name = dev
+
+git clone git@github.com:main_user/repo_name
+cd repo_name/
+git remote -v
+git remote add main_user  git://github.com/main_user/repo_name
+git fetch origin
+git checkout -b dev origin/branch_name
+
+to add changes:
+git add . (or git add -A)
+git commit -m "some text"
+git push origin branch_name
