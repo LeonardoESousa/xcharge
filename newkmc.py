@@ -11,38 +11,32 @@ plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'
    
 identifier = 'New'
 
-animation_mode = True
+animation_mode = False
 anni = True
 time_limit = np.inf
 rounds = 1 #number of rounds
 
 ##Energies
 s1s = {0:(1.9,0.0), 1:(1.4,0.00)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
-t1s = {0:(1.2,0.0), 1:(1.0,0.00)}
-
-##Morphology
-dim = 400
-vector = [10,10,0]
-distribution = [1,0]
+t1s = {0:(1.2,0.0), 1:(1.0,0.00)} # triplet energy, disperison (eV)
 
 num_ex = 2 #number of excitons
 
-###TAXAS EM PS^-1, TEMPOS DE VIDA EM PS
-##Material 0: NPB, Material 1: DCJTB
 
 ###SINGLET RATES
-r00 = 40.8        
-r01 = 62.2        
+r00 = 40.8   #Forster radius material 0 --> material 0 (Angstrom)    
+r01 = 62.2   #material 0 --> material 1      
 r10 = 21.2        
 r11 = 56.5     
 
-f0 = 2940.0
-f1 = 747.27
+f0 = 2940.0 #lifetime of material 0
+f1 = 747.27 #lifetime of material 1
 
+#dipoles (a.u.)
 mu0 = 2.136
 mu1 = 5.543
 
-raios     = {(0,0):r01, (0,1):r01, (1,0):r10, (1,1):r11}
+raios     = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 lifetimes = {0:f0,1:f1}
 mus       = {0:mu0,1:mu1}
 
@@ -50,11 +44,13 @@ forster = Forster(Rf=raios,life=lifetimes,mu=mus)
 fluor   = Fluor(life=lifetimes)
 
 isc_rates     = {0:2.4E10*1E-12,1:0}
-
 isc = ISC(rate=isc_rates)
 
-nonrad  = {0:0,1:0}
 
+#rate_quantum   = 0.32 # 32%
+#quantum_yields = 1/( (1/rate_quantum)*(1/f0)  -(1/f0)   )
+
+nonrad  = {0:0,1:0}
 nonradiative = Nonrad(rate=nonrad)
 
 
@@ -77,41 +73,26 @@ miller = MillerAbrahams(H=H,invrad=invrad,T=300)
 processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
 monomolecular = {'singlet':[fluor,isc,nonradiative],'triplet':[phosph],'electron':[],'hole':[]}
 
-
-#num_molecs: number of molecules
-#vector: 3 component lattice vector. For lower dimension, make distance 0 
-#ps: vector with the relative probability of each material
-def lattice(num_molecs, vector, ps):
-    X, Y, Z, Mats = [], [], [],[]
-    ps = [i/np.sum(ps) for i in ps]
-    ps = np.cumsum(ps)
-    dx = vector[0]
-    dy = vector[1]
-    dz = vector[2]
-    dim = []
-    for elem in vector:
-        if elem != 0:
-            dim.append(1)
-        else:
-            dim.append(0)
-    numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
-    numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
-    numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
-    for nx in range(numx):
-        for ny in range(numy):
-            for nz in range(numz):
-                X.append(nx*dx)
-                Y.append(ny*dy)
-                Z.append(nz*dz)
-                sorte = random.uniform(0,1)
-                chosen = np.where(sorte < ps)[0][0]
-                Mats.append(chosen)
-    X = np.array(X)
-    Y = np.array(Y)
-    Z = np.array(Z)
-    Mats = np.array(Mats)    
-    return X,Y,Z,Mats
-
+def read_lattice(file_name):
+	X,Y,Z,Mats = [], [], [], []
+	
+	with open(file_name, 'r') as f:
+		for line in f:
+			line = line.split()
+			mat  = int(float(line[0]))
+			x    = float(line[1])
+			y    = float(line[2])
+			z    = float(line[3])
+			
+			X.append(x)
+			Y.append(y)
+			Z.append(z)
+			Mats.append(mat)
+	X = np.array(X)
+	Y = np.array(Y)	
+	Z = np.array(Z)	
+	Mats = np.array(Mats)
+	return X,Y,Z,Mats
 def homo_lumo(s1s, t1s, mats):
     s1 = []
     t1 = []
@@ -289,7 +270,7 @@ def animate(num,system,line):
     return line,
 
 
-X,Y,Z,Mats = lattice(dim,vector,distribution)
+X,Y,Z,Mats = read_lattice("lattice.txt")
 
 s1, t1 = homo_lumo(s1s, t1s, Mats)
 
