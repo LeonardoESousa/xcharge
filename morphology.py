@@ -56,11 +56,11 @@ def lattice(param):
 
 def load_cif(mol_file):
 
-	#This program reads .cif files through a .cube.cc1 file
+	#This program reads .cif files through a .mol2 files
 
-	print("----------------------------------------------------------------------------------------------------")
+	print("------------------------------------------------------------------------------------------------------------")
 	print("༼つಠ益ಠ༽つ                          LOAD .CIF PROGRAM (via .mol extension)                       ༼つಠ益ಠ༽つ")
-	print("author: Tiago Cassiano, version: 1.1v (hoping that will sufice)")
+	print("author: Tiago Cassiano, version: 1.2v (hoping that will sufice)")
 	print("STEPS TO USE THE PROGRAM:")
 	print("1) Pick a .cif geometry somewhere with your desired unit cell")
 	print("2) Install Mercury software (https://www.ccdc.cam.ac.uk/support-and-resources/Downloads/)")
@@ -70,7 +70,17 @@ def load_cif(mol_file):
 	print("		3.3) File --> Save as")
 	print("		3.4) Choose Mol2 files (*.mol2 *.mol) ")
 	print("4) Insert the file name for this program")
-	print("----------------------------------------------------------------------------------------------------")
+	print("(BEWARE) If your structure has disordered atoms, you must remove them. To do so, follow: ")
+	print("		A) Install ChimeraX (https://www.rbvi.ucsf.edu/chimerax/) or Avogadro ")
+	print("		B) Upload .mol2 file ")
+	print("		C) Remove the residues (in chimerax go: Select -> Residues -> choose  then Actions -> bonds -> delete)")
+	print()
+	print("Not so confident? It is possible to obtain the centers of mass via avogadro. For that, do:")
+	print("		A) Load .mol2 ")
+	print("		B) Selection Mode: Molecule ")
+	print("		C) Select a molecule, then click add center of mass ")
+	print("		D) Delete de molecule ")
+	print("------------------------------------------------------------------------------------------------------------")
 	print()
 	print()
 	#input_file= input("Assuming that you already finished all these steps, give to me the .mol file name:  ")
@@ -481,44 +491,93 @@ def load_cif(mol_file):
 	molecular_types     = bond_signature(agragates_array)
 	molecular_types_int = signature_string_to_int(molecular_types)
 
-	print(molecular_types_int)
 
-	def print_onemat(indx,bond_sign,file_var):
 
-		format_mat = "Material type: %i \n"
-		file_var.write(format_mat % (indx)) 
-		file_var.write("Bond structure: \n")
-		for line in bond_sign:
-			file_var.write('\t'.join([ i for i in line]) + '\n')		
-		file_var.write('\n')
+	reduced_moltype_list = list(set(molecular_types_int.tolist()))
+
+	#AQUI
+	samples_arr = []
+	for mol_type in reduced_moltype_list: #getting samples of each molecule type
+
+		molecule_samples_indx = [i for i in range(len(molecular_types_int)) if molecular_types_int[i] == mol_type][0]
+		mol_sample            = np.copy(agragates_array[molecule_samples_indx])
+		samples_arr.append([mol_type-1,mol_sample]) #adjust Leo convention
+
+
+	def get_stoichiometry(array_atoms):
+		histogram = collections.Counter(array_atoms)
+		soich = ''
+		for element in histogram:
 		
-		
-	def print_matinfo(molecular_types,molecular_types_int):
-		mat_unique_indexes = []
-		mat_unique         = []
-		molecular_types_int_list = molecular_types_int.tolist()
-		
-		
-		mat_unique_indexes.append(0)
-		mat_unique.append(molecular_types_int[0])
-		
-		for ele in molecular_types_int_list:
-			if ele not in mat_unique:
-				indx = molecular_types_int_list.index(ele)
-				mat_unique_indexes.append(indx)
-				mat_unique.append(ele)
+			ele_count = str(histogram.get(element))
+			ele_name  = element
+			soich = soich +"| "+ele_count+ele_name+" "
+			
+		soich = soich + "|"
+		return soich
+
+
+
 
 		
-		mat_len = len(mat_unique_indexes)
-		with open(matinfo_file, 'w') as file_var:
-			for i in range(mat_len):
-				mat_indx  = mat_unique[i]
-				bond_sign = molecular_types[mat_unique_indexes[i]]
-				print_onemat(mat_indx,bond_sign,file_var)
+	#getting the elements of the neighbors of each atom within a molecule
+	def get_bondelements(samples_arr,atoms_array):
+		bond_samples = []
 		
+		for sample in samples_arr: #for every molecule type sample
+			mol_type = sample[0]
+			mol_arr  = sample[1]
+			neigh_ele_arr     = []
+			origin_atom       = []
+			
+			
+			for atom in mol_arr: #for every atom inside this sample
+				neigh     = atom.neighbors #can break if the atoms has no neighbors
+				len_neigh = len(neigh)
+				neigh_ele = np.zeros([len_neigh],dtype=object)
+				origin_atom.append(atom.element)
+				for i in range(len_neigh):
+					indx = neigh[i]
+					for atom2 in atoms_array:
+						indx2 = atom2.index
+						
+						if(indx == indx2):
+							neigh_ele[i] = atom2.element
+							break
+				neigh_ele = neigh_ele.tolist()
+				neigh_ele_arr.append(neigh_ele)		
+			
+			bond_samples.append([mol_type,origin_atom,neigh_ele_arr])
+			
+		return 	bond_samples
 		
+	bond_samples = get_bondelements(samples_arr,atoms_array)	
+	def print_bondsamples(bond_samples):
+
+		matfile          = "matinfo.txt"
+		format_mat       = "Material type: %i \n"
+		format_info      = "Number of atoms = %i, Stoichiometry : %s \nBond structure: \n"
+		format_origin_at = "%4s -->\t"
 		
-	print_matinfo(molecular_types,molecular_types_int)
+		with open(matfile,'w') as file_mat:
+			for moltype in bond_samples:
+			
+				type_m          = moltype[0]
+				origin_atom_arr = moltype[1]
+				neigh_ele_arr   = moltype[2]
+				n_at            = len(origin_atom_arr)
+				
+				soich = get_stoichiometry(origin_atom_arr)
+				
+				file_mat.write(format_mat  % (type_m)) 
+				file_mat.write(format_info % (n_at,soich)) 
+				
+				for i in range(n_at):
+					origin_atom_i   = origin_atom_arr[i]
+					neigh_ele_arr_i = neigh_ele_arr[i]
+					file_mat.write(format_origin_at % (origin_atom_i)+ '\t'.join([ k for k in neigh_ele_arr_i]) + '\n')		
+				file_mat.write('\n')		
+	print_bondsamples(bond_samples)
 
 
 	N = len(agragates_array)
