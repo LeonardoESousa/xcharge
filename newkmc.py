@@ -11,10 +11,10 @@ plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'
    
 identifier = 'New'
 
-animation_mode = True
+animation_mode = False
 anni = True
 time_limit = np.inf
-rounds = 1 #number of rounds
+rounds = 2 #number of rounds
 
 ##Energies
 s1s = {0:(1.9,0.0), 1:(1.4,0.00)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
@@ -25,7 +25,7 @@ dim = 400
 vector = [10,10,0]
 distribution = [1,0]
 
-num_ex = 2 #number of excitons
+num_ex = 4 #number of excitons
 
 ###TAXAS EM PS^-1, TEMPOS DE VIDA EM PS
 ##Material 0: NPB, Material 1: DCJTB
@@ -42,7 +42,7 @@ f1 = 747.27
 mu0 = 2.136
 mu1 = 5.543
 
-raios     = {(0,0):r01, (0,1):r01, (1,0):r10, (1,1):r11}
+raios     = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 lifetimes = {0:f0,1:f1}
 mus       = {0:mu0,1:mu1}
 
@@ -129,6 +129,7 @@ def gen_singlets(num, X):
     while len(Ss) < num:
         number = random.choice(selection)
         Ss.append(Electron(number))
+        #Ss.append(Exciton('singlet', number))
         number = random.choice(selection)
         Ss.append(Hole(number))
     #while len(Ss) < num:
@@ -148,16 +149,16 @@ def gen_singlets(num, X):
 def anni_singlet(system,Ss):  
     mapa_singlet = []
     mapa = []
-    locs = np.array([s.location() for s in Ss])
+    locs = np.array([s.position for s in Ss])
     if len(locs) > len(set(locs)):
         locs2 = np.array(list(set(locs)))
         for i in range(len(locs2)):
             indices = np.where(locs == locs2[i])
             if len(indices[0]) > 1:
-                tipos = [Ss[j].kind() for j in indices[0]]
+                tipos = [Ss[j].species for j in indices[0]]
                 if 'electron' in tipos and 'hole' in tipos:        
-                    Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.get_s1())
-                    Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.get_s1())
+                    Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.s1)
+                    Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.s1)
                     if random.uniform(0,1) <= 0.75:
                         system.add_particle(Exciton('triplet',locs[indices[0][0]]))
                     else:
@@ -173,10 +174,10 @@ def anni_singlet(system,Ss):
     #            mapa_singlet.append(s.location())
 
 def decision(s,system):
-    kind = s.kind()
-    local = s.location()
-    X,Y,Z = system.get_XYZ()
-    Mat   = system.get_mats()[local]
+    kind = s.species      
+    local = s.position    
+    X,Y,Z = system.X, system.Y, system.Z 
+    Mat   = system.mats[local]   
     dx = np.nan_to_num(X - X[local]) 
     dy = np.nan_to_num(Y - Y[local])
     dz = np.nan_to_num(Z - Z[local])
@@ -213,10 +214,9 @@ def decision(s,system):
  
   
 def step(system): 
-    while system.count_particles() > 0 and system.clock() < time_limit:
-        Xx = system.get_particles()
-        Ss = list(Xx)
-        print([m.kind() for m in Ss])
+    while system.count_particles() > 0 and system.time < time_limit:
+        Ss = system.particles.copy()     
+        print([m.species for m in Ss])
         J, W, DT = [],[],[]
         for s in Ss:
             jump, where, dt = decision(s,system)
@@ -225,8 +225,8 @@ def step(system):
             DT.append(dt)    
         #print(W)
         time_step = min(DT)
-        realtime = system.clock() + time_step
-        system.set_clock(realtime)
+        system.time += time_step
+        #print(system.time) 
         fator = random.uniform(0,1)
         for i in range(len(Ss)):
             if fator <= time_step/DT[i]:
@@ -235,10 +235,9 @@ def step(system):
             anni_singlet(system,Ss)
         if animation_mode:
             return Ss       
-    Xx = system.get_particles()
-    Ss = list(Xx)
+    Ss = system.particles.copy()
     for s in Ss:
-        Ss[i].kill('alive',system,system.get_s1())
+        Ss[i].kill('alive',system,system.s1)
   
             
                 
@@ -249,15 +248,15 @@ def spectra(system):
             texto = "{0:^10}    {1:^6} {2:^6} {3:^6} {4:^4} {5:^4} {6:^9} {7:^6} {8:^6} {9:^6} {10:^4}".format("Time", "DeltaX", "DeltaY", "DeltaZ", "Type", "Energy", "Location" ,"FinalX", "FinalY", "FinalZ", "Causa Mortis")
             f.write(texto+"\n") 
     with open("Simulation_"+identifier+".txt", "a") as f:   
-        for s in system.get_dead():
+        for s in system.dead:
             texto = s.write()
             f.write(texto)
         f.write("Fim\n")
         
 def animate(num,system,line): 
     Ss = step(system)
-    X, Y, Z = system.get_XYZ()
-    mats = system.get_mats()
+    X, Y, Z = system.X, system.Y, system.Z        
+    mats = system.mats                            
     nx,ny = [],[]
     plt.cla()
     line.axis('off')
@@ -273,15 +272,15 @@ def animate(num,system,line):
     line.plot(X1,Y1,'s',color='blue' ,markersize=2)
     try:
         for s in Ss:
-            line.plot(X[s.location()],Y[s.location()],marker="s",color='white', markersize=12)
+            line.plot(X[s.position],Y[s.position],marker="s",color='white', markersize=12)
             if s.kind() == 'electron':
-                line.plot(X[s.location()],Y[s.location()],marker="$e^-$",color='red', markersize=12)
+                line.plot(X[s.position],Y[s.position],marker="$e^-$",color='red', markersize=12)
             elif s.kind() == 'hole':
-                line.plot(X[s.location()],Y[s.location()],marker="$h^+$",color='blue', markersize=12)
+                line.plot(X[s.position],Y[s.position],marker="$h^+$",color='blue', markersize=12)
             elif s.kind() == 'triplet':
-                line.plot(X[s.location()],Y[s.location()],marker='$T_1$',color='green', markersize=12)
+                line.plot(X[s.position],Y[s.position],marker='$T_1$',color='green', markersize=12)
             elif s.kind() == 'singlet':
-                line.plot(X[s.location()],Y[s.location()],marker='$S_1$',color='orange', markersize=12)
+                line.plot(X[s.position],Y[s.position],marker='$S_1$',color='orange', markersize=12)
             #nx.append(X[s.location()])
             #ny.append(Y[s.location()])
     except:
@@ -304,10 +303,10 @@ if animation_mode:
     fig, line = plt.subplots()
     line.axis('off')
     ani = animation.FuncAnimation(fig, animate, fargs=[system,line],
-                                interval=200, blit=False,repeat=False)#,save_count=1000) 
-    ani.save('charges.avi', fps=20, dpi=300)
-    os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
-    #plt.show()
+                                interval=20, blit=False,repeat=False)#,save_count=1000) 
+    #ani.save('charges.avi', fps=20, dpi=300)
+    #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
+    plt.show()
 else:
     for i in range(rounds):
         system = System(X,Y,Z,Mats)
