@@ -6,72 +6,27 @@ import os
 from kmc_classes import *
 import sys
 import warnings
+import PARAM
+import morphology
+
 warnings.filterwarnings("ignore")   
 plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
-   
 identifier = 'New'
 
-animation_mode = False
-anni = True
+animation_mode = True
 time_limit = np.inf
-rounds = 1 #number of rounds
-
-##Energies
-s1s = {0:(1.9,0.0), 1:(1.4,0.00)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
-t1s = {0:(1.2,0.0), 1:(1.0,0.00)} # triplet energy, disperison (eV)
-
-num_ex = 2 #number of excitons
 
 
-###SINGLET RATES
-r00 = 40.8   #Forster radius material 0 --> material 0 (Angstrom)    
-r01 = 62.2   #material 0 --> material 1      
-r10 = 21.2        
-r11 = 56.5     
+rounds        = PARAM.rounds
+processes     = PARAM.processes
+monomolecular = PARAM.monomolecular
+s1s           = PARAM.s1s
+t1s           = PARAM.t1s
+num_ex        = PARAM.num_ex
+anni          = PARAM.anni
 
-f0 = 2940.0 #lifetime of material 0
-f1 = 747.27 #lifetime of material 1
-
-#dipoles (a.u.)
-mu0 = 2.136
-mu1 = 5.543
-
-raios     = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
-lifetimes = {0:f0,1:f1}
-mus       = {0:mu0,1:mu1}
-
-forster = Forster(Rf=raios,life=lifetimes,mu=mus)
-fluor   = Fluor(life=lifetimes)
-
-isc_rates     = {0:2.4E10*1E-12,1:0}
-isc = ISC(rate=isc_rates)
-
-
-#rate_quantum   = 0.32 # 32%
-#quantum_yields = 1/( (1/rate_quantum)*(1/f0)  -(1/f0)   )
-
-nonrad  = {0:0,1:0}
-nonradiative = Nonrad(rate=nonrad)
-
-
-#------------------------------------------------------------
-###TRIPLET RATES
-Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
-phlife = {0:5.291E11,1:np.inf}
-Ls = {0:5.0,1:5.0}
-
-dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
-phosph = Phosph(life=phlife)
-
-
-#-------------------------------------------------------------
-
-H = {(0,0):0.1,(0,1):0.1,(1,0):0.1,(1,1):0.1}
-invrad = {0:10.5,1:10.5}
-miller = MillerAbrahams(H=H,invrad=invrad,T=300)
-
-processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
-monomolecular = {'singlet':[fluor,isc,nonradiative],'triplet':[phosph],'electron':[],'hole':[]}
+gen_singlets   = morphology.generate_function
+homo_lumo      = morphology.energy_function
 
 def read_lattice(file_name):
 	X,Y,Z,Mats = [], [], [], []
@@ -79,10 +34,12 @@ def read_lattice(file_name):
 	with open(file_name, 'r') as f:
 		for line in f:
 			line = line.split()
-			mat  = int(float(line[0]))
-			x    = float(line[1])
-			y    = float(line[2])
-			z    = float(line[3])
+			
+			x    = float(line[0])
+			y    = float(line[1])
+			z    = float(line[2])
+			mat  = int(float(line[3]))
+			
 			
 			X.append(x)
 			Y.append(y)
@@ -93,38 +50,10 @@ def read_lattice(file_name):
 	Z = np.array(Z)	
 	Mats = np.array(Mats)
 	return X,Y,Z,Mats
-def homo_lumo(s1s, t1s, mats):
-    s1 = []
-    t1 = []
-    for i in mats:
-        s1.append(np.random.normal(s1s.get(i)[0],s1s.get(i)[1]))
-        t1.append(np.random.normal(t1s.get(i)[0],t1s.get(i)[1]))
-    return s1, t1
+	
+	
 
-#num: number of excitons
-#X: one of the position vectors    
-def gen_singlets(num, X):
-    Ss, species = [], []
-    selection = range(X)
-    chosen = []
-    while len(Ss) < num:
-        number = random.choice(selection)
-        Ss.append(Electron(number))
-        number = random.choice(selection)
-        Ss.append(Hole(number))
-    #while len(Ss) < num:
-        #number = random.choice(selection)
-        #Ss.append(Hole(number))
-        #number = random.choice(selection)
-        #if number not in chosen:
-        #    if random.uniform(0,1) < 0.5:
-        #        Ss.append(Electron(number))
-        #    else:
-        #        Ss.append(Hole(number))
-        #    #Ss.append(Exciton('singlet',number))
-        #else:
-        #    pass
-    return Ss
+
 
 def anni_singlet(system,Ss):  
     mapa_singlet = []
@@ -197,7 +126,7 @@ def step(system):
     while system.count_particles() > 0 and system.clock() < time_limit:
         Xx = system.get_particles()
         Ss = list(Xx)
-        print([m.kind() for m in Ss])
+        #print([m.kind() for m in Ss])
         J, W, DT = [],[],[]
         for s in Ss:
             jump, where, dt = decision(s,system)
@@ -286,9 +215,9 @@ if animation_mode:
     line.axis('off')
     ani = animation.FuncAnimation(fig, animate, fargs=[system,line],
                                 interval=200, blit=False,repeat=False)#,save_count=1000) 
-    ani.save('charges.avi', fps=20, dpi=300)
-    os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
-    #plt.show()
+    #ani.save('charges.avi', fps=20, dpi=300)
+    #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
+    plt.show()
 else:
     for i in range(rounds):
         system = System(X,Y,Z,Mats)
