@@ -7,7 +7,7 @@ from kmc_classes import *
 import sys
 import warnings
 import PARAM
-import morphology
+
 
 warnings.filterwarnings("ignore")   
 plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
@@ -16,7 +16,7 @@ identifier = 'New'
 animation_mode = True
 time_limit = np.inf
 
-
+#getting parameters from
 rounds        = PARAM.rounds
 processes     = PARAM.processes
 monomolecular = PARAM.monomolecular
@@ -25,34 +25,19 @@ t1s           = PARAM.t1s
 num_ex        = PARAM.num_ex
 anni          = PARAM.anni
 
-gen_singlets   = morphology.generate_function
-homo_lumo      = morphology.energy_function
+#reading the lattice
+X	      = PARAM.X
+Y             = PARAM.Y
+Z             = PARAM.Z
+Mats          = PARAM.Mats
 
-def read_lattice(file_name):
-	X,Y,Z,Mats = [], [], [], []
-	
-	with open(file_name, 'r') as f:
-		for line in f:
-			line = line.split()
-			
-			x    = float(line[0])
-			y    = float(line[1])
-			z    = float(line[2])
-			mat  = int(float(line[3]))
-			
-			
-			X.append(x)
-			Y.append(y)
-			Z.append(z)
-			Mats.append(mat)
-	X = np.array(X)
-	Y = np.array(Y)	
-	Z = np.array(Z)	
-	Mats = np.array(Mats)
-	return X,Y,Z,Mats
-	
-	
+#functions from morphology ( generate particles and distribuition of energies)
+gen_particles   = PARAM.gen_function
+energy_fun      = PARAM.ener_function
 
+# the respective parameters of the functions above
+param_genfunc  = PARAM.parameters_genfunc
+param_energy   = PARAM.parameters_enefunc
 
 
 def anni_singlet(system,Ss):  
@@ -164,44 +149,63 @@ def spectra(system):
             f.write(texto)
         f.write("Fim\n")
         
-def animate(num,system,line): 
+def animate(num,system,ax): 
     Ss = step(system)
     X, Y, Z = system.get_XYZ()
     mats = system.get_mats()
     nx,ny = [],[]
-    plt.cla()
-    line.axis('off')
+    #plt.cla()
+    ax.clear()
+    
     X0 = X[mats == 0]
     Y0 = Y[mats == 0]
-    
+    Z0 = Z[mats == 0]
     
     X1 = X[mats == 1]
     Y1 = Y[mats == 1]
+    Z1 = Z[mats == 1]
     
-    
-    line.plot(X0,Y0,'s',color='black',markersize=2)
-    line.plot(X1,Y1,'s',color='blue' ,markersize=2)
-    try:
+    ax.scatter(X0,Y0,Z0,alpha=0.2,color='black')
+    ax.scatter(X1,Y1,Z1,alpha=0.2,color='blue')
+    try:  
         for s in Ss:
-            line.plot(X[s.location()],Y[s.location()],marker="s",color='white', markersize=12)
+            xs = X[s.location()]        	
+            ys = Y[s.location()]
+            zs = Z[s.location()]
+              
+            #opcao 1 (com os markers)
+            '''        
             if s.kind() == 'electron':
-                line.plot(X[s.location()],Y[s.location()],marker="$e^-$",color='red', markersize=12)
+                ax.scatter(xs,ys,zs,marker="$e^-$",color='red',s=200,alpha=1,label=s.kind())
             elif s.kind() == 'hole':
-                line.plot(X[s.location()],Y[s.location()],marker="$h^+$",color='blue', markersize=12)
+                ax.scatter(xs,ys,zs,marker="$h^+$",color='blue',s=200,alpha=1,label=s.kind())
             elif s.kind() == 'triplet':
-                line.plot(X[s.location()],Y[s.location()],marker='$T_1$',color='green', markersize=12)
+                ax.scatter(xs,ys,zs,marker='$T_1$',color='green',s=200,alpha=1,label=s.kind())
             elif s.kind() == 'singlet':
-                line.plot(X[s.location()],Y[s.location()],marker='$S_1$',color='orange', markersize=12)
-            #nx.append(X[s.location()])
-            #ny.append(Y[s.location()])
+                ax.scatter(xs,ys,zs,marker='$S_1$',color='orange',s=200,alpha=1,label=s.kind())
+            ''' 
+            #opcao 2(sem marker)                
+            if s.kind() == 'electron':
+                ax.scatter(xs,ys,zs,color='red',s=100,alpha=1,label=s.kind())
+            elif s.kind() == 'hole':
+                ax.scatter(xs,ys,zs,color='blue',s=100,alpha=1,label=s.kind())
+            elif s.kind() == 'triplet':
+                ax.scatter(xs,ys,zs,color='green',s=100,alpha=1,label=s.kind())
+            elif s.kind() == 'singlet':
+                ax.scatter(xs,ys,zs,color='orange',s=100,alpha=1,label=s.kind())
     except:
         pass
-    return line,
+    
+    #remove duplicates on legend    
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))
+    plt.legend(by_label.values(), by_label.keys())
+    
+    return ax,
 
 
-X,Y,Z,Mats = read_lattice("lattice.txt")
 
-s1, t1 = homo_lumo(s1s, t1s, Mats)
+s1, t1 = energy_fun(param_energy)
 
 
 if animation_mode:
@@ -209,14 +213,19 @@ if animation_mode:
     system.set_s1(s1)
     system.set_t1(t1)
     system.set_orbital(t1,s1)
-    excitons = gen_singlets(num_ex,len(X))
+    excitons = gen_particles(param_genfunc)
     system.set_particles(excitons)
-    fig, line = plt.subplots()
-    line.axis('off')
-    ani = animation.FuncAnimation(fig, animate, fargs=[system,line],
-                                interval=200, blit=False,repeat=False)#,save_count=1000) 
+    
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+
+    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
+                                interval=200, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
     #ani.save('charges.avi', fps=20, dpi=300)
     #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
+    
     plt.show()
 else:
     for i in range(rounds):
@@ -224,7 +233,7 @@ else:
         system.set_s1(s1)
         system.set_t1(t1)
         system.set_orbital(t1,s1)
-        excitons = gen_singlets(num_ex,len(X))
+        excitons = gen_particles(param_genfunc)
         system.set_particles(excitons)
         step(system)
         spectra(system)

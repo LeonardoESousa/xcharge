@@ -15,3 +15,8 @@ to add changes:
 git add . (or git add -A)
 git commit -m "some text"
 git push origin branch_name
+
+
+Someonelse did changes:
+git pull main_user master
+git push

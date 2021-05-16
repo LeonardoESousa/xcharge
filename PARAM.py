@@ -1,13 +1,13 @@
 from kmc_classes import *
+import morphology
 
 # KMC PARAMETERS 
 
 #BASIC PARAMETERS
 anni = True
-
+lattice_filename = "lattice.txt"
 rounds = 1 #number of rounds
-num_ex = 2 #number of excitons
-
+num_ex = 10 #number of excitons
 
 ###SINGLET RATES
 r00 = 40.8   #Forster radius material 0 --> material 0 (Angstrom)    
@@ -55,12 +55,22 @@ H = {(0,0):0.1,(0,1):0.1,(1,0):0.1,(1,1):0.1}
 invrad = {0:10.5,1:10.5}
 miller = MillerAbrahams(H=H,invrad=invrad,T=300)
 
-##############################################
-#PROCESSES
 
+#PROCESSES
 
 processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
 monomolecular = {'singlet':[fluor,isc,nonradiative],'triplet':[phosph],'electron':[],'hole':[]}
+
+
+#Morphology functions
+X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
+
+gen_function       = morphology.gen_pair_elechole
+parameters_genfunc = [num_ex,len(X)]
+
+ener_function      = morphology.homo_lumo
+parameters_enefunc = [s1s, t1s, Mats]
+
 
 
 

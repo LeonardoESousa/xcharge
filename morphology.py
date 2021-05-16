@@ -3,18 +3,48 @@ import random
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import collections
-from shutil import copyfile
 from kmc_classes import *
-################################
-# SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 
+# SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
+# note: always define the function by list (param) that contains the things needed
+
+
+# reads the morphology
+def read_lattice(file_name):
+	X,Y,Z,Mats = [], [], [], []
+	
+	with open(file_name, 'r') as f:
+		for line in f:
+			line = line.split()
+			
+			x    = float(line[0])
+			y    = float(line[1])
+			z    = float(line[2])
+			mat  = int(float(line[3]))
+			
+			
+			X.append(x)
+			Y.append(y)
+			Z.append(z)
+			Mats.append(mat)
+	X = np.array(X)
+	Y = np.array(Y)	
+	Z = np.array(Z)	
+	Mats = np.array(Mats)
+	return X,Y,Z,Mats
 
 
 #### CHOOSE A FUNC TO GENERATE EXCITONS
 
-#num: number of excitons
-#X: one of the position vectors    
-def gen_pair_elechole(num, X):
+   
+def gen_pair_elechole(param):
+    #num: number of excitons
+    #X: one of the position vectors 
+    
+    num    = param[0] #relabeling the input parameters 
+    X      = param[1]
+    
+    
     Ss, species = [], []
     selection = range(X)
     chosen = []
@@ -37,33 +67,32 @@ def gen_pair_elechole(num, X):
         #    pass
     return Ss
     
-def gen_excitons(num, X):
+def gen_excitons(param):
+    num    = param[0] #relabeling the input parameters 
+    X      = param[1]
+    
     Ss, species = [], []
     selection = range(X)
     chosen = []
     while len(Ss) < num:
         number = random.choice(selection)
-	Ss.append(Electron(number))
+        Ss.append(Exciton('singlet',number))
     return Ss
-
-generate_function = gen_pair_elechole
-
-
-
 
 
 # FUNC TO GIVE S1 AND TRIPLET ENERGIES	
-def homo_lumo(s1s, t1s, mats):
+def homo_lumo(param):
+
+    s1s    = param[0] #relabeling the input parameters 
+    t1s    = param[1]
+    mats   = param[2]
+    
     s1 = []
     t1 = []
     for i in mats:
         s1.append(np.random.normal(s1s.get(i)[0],s1s.get(i)[1]))
         t1.append(np.random.normal(t1s.get(i)[0],t1s.get(i)[1]))
     return s1, t1
-
-
-energy_function = homo_lumo
-
 
 
 
