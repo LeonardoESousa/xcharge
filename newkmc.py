@@ -8,12 +8,11 @@ import sys
 import warnings
 import PARAM
 
-
 warnings.filterwarnings("ignore")   
 plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
 identifier = 'New'
 
-animation_mode = True
+animation_mode = PARAM.animation_mode
 time_limit = np.inf
 
 #getting parameters from
@@ -39,33 +38,26 @@ energy_fun      = PARAM.ener_function
 param_genfunc  = PARAM.parameters_genfunc
 param_energy   = PARAM.parameters_enefunc
 
+anni_funcs_array = PARAM.annihi_funcs_array
 
-def anni_singlet(system,Ss):  
+           
+# runs the annihilations defined in anni_funcs_array                 
+def anni_general(system,Ss,anni_funcs_array):  
     mapa_singlet = []
     mapa = []
     locs = np.array([s.location() for s in Ss])
+    
     if len(locs) > len(set(locs)):
         locs2 = np.array(list(set(locs)))
         for i in range(len(locs2)):
             indices = np.where(locs == locs2[i])
             if len(indices[0]) > 1:
                 tipos = [Ss[j].kind() for j in indices[0]]
-                if 'electron' in tipos and 'hole' in tipos:        
-                    Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.get_s1())
-                    Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.get_s1())
-                    if random.uniform(0,1) <= 0.75:
-                        system.add_particle(Exciton('triplet',locs[indices[0][0]]))
-                    else:
-                        system.add_particle(Exciton('singlet',locs[indices[0][0]]))
-
-    
-    #for s in Ss:
-    #    if s.kind() != 'singlet':
-    #        loc = s.location()
-    #        if loc in mapa_singlet:
-    #            s.kill('anni',system,system.get_s1())
-    #        else:
-    #            mapa_singlet.append(s.location())
+                
+                #running all the choosen annifuncs from morphology.py
+                for anni_func in anni_funcs_array:
+                    anni_func(system,tipos,Ss,indices)
+              	
 
 def decision(s,system):
     kind = s.kind()
@@ -127,7 +119,8 @@ def step(system):
             if fator <= time_step/DT[i]:
                 J[i].action(Ss[i],system,W[i])
         if anni:
-            anni_singlet(system,Ss)
+            #anni_singlet(system,Ss)
+            anni_general(system,Ss,anni_funcs_array)
         if animation_mode:
             return Ss       
     Xx = system.get_particles()

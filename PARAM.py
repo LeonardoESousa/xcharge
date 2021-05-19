@@ -4,6 +4,7 @@ import morphology
 # KMC PARAMETERS 
 
 #BASIC PARAMETERS
+animation_mode = True
 anni = True
 lattice_filename = "lattice.txt"
 rounds = 1 #number of rounds
@@ -66,13 +67,14 @@ monomolecular = {'singlet':[fluor,isc,nonradiative],'triplet':[phosph],'electron
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
 gen_function       = morphology.gen_pair_elechole
+#gen_function       = morphology.gen_excitons
 parameters_genfunc = [num_ex,len(X)]
 
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]
 
-
-
+annihi_funcs_array = [morphology.anni_ele_hol] #list of all annihi funcs that will be used
+#annihi_funcs_array = [morphology.anni_sing]
 
 
 
