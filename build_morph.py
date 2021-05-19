@@ -8,9 +8,31 @@ from math import sqrt
 ################################
 #AUXILIARY CODE TO GENERATE LATTICE FOR KMC
 
+def read_lattice(file_name):
+	X,Y,Z,Mats = [], [], [], []
+	
+	with open(file_name, 'r') as f:
+		for line in f:
+			line = line.split()
+			
+			x    = float(line[0])
+			y    = float(line[1])
+			z    = float(line[2])
+			mat  = int(float(line[3]))
+			
+			
+			X.append(x)
+			Y.append(y)
+			Z.append(z)
+			Mats.append(mat)
+	X = np.array(X)
+	Y = np.array(Y)	
+	Z = np.array(Z)	
+	Mats = np.array(Mats)
+	return X,Y,Z,Mats
 
 
-#MORPHOLOGY FUNCS 
+#MORPHOLOGY FUNCS (option 2)
 
 #num_molecs: number of molecules
 #vector: 3 component lattice vector. For lower dimension, make distance 0 
@@ -665,18 +687,19 @@ def load_cif(mol_file):
 	#print(new_lattice)
 
 	#if you want to see both unit and multiplied cells
+	'''
 	fig = plt.figure()
 	ax = plt.axes(projection='3d')
 	ax.scatter3D(X_cm_mult, Y_cm_mult, Z_cm_mult,c='b',marker='^');
 	ax.scatter3D(X_cm, Y_cm, Z_cm, c='r',s=50);
 	plt.show()	
-
+	'''
 
 		
 	X_cm_mult = new_lattice[:,1]
 	Y_cm_mult = new_lattice[:,2]
 	Z_cm_mult = new_lattice[:,3]		
-	Mats      = new_lattice[:,0]		
+	Mats      = new_lattice[:,0] #careful, others funcs have mats in the last position		
 	Mats = Mats -1 #adjusting to Leo's mat. convention
 		
 	return X_cm_mult,Y_cm_mult,Z_cm_mult,Mats
@@ -684,6 +707,259 @@ def load_cif(mol_file):
 			
 			
 ####################### END FUNCTIONS ###################
+
+#####################################################################
+############# FUNCS TO MESS AROUND WITH UNIT CELLs (option 3) #########
+
+def multiply_lattice(lattice,n_times,delta):
+		
+	X_lenght = delta[0] #Increments
+	Y_lenght = delta[1]
+	Z_lenght = delta[2]
+		
+	new_lattice = np.copy(lattice)
+	n_sites = len(lattice)
+		
+	for dx in range(n_times):
+		for dy in range(n_times):
+			for dz in range(n_times):
+					
+				new_cell = np.copy(lattice)
+				for i in range(n_sites):
+					#multipling the X position in the unit cell dx times	
+					#beware of the convention X,Y,Z,Mats in the lattice			
+					new_cell[i][0] = new_cell[i][0] +dx*X_lenght 
+					new_cell[i][1] = new_cell[i][1] +dy*Y_lenght
+					new_cell[i][2] = new_cell[i][2] +dz*Z_lenght
+					
+				new_lattice = np.vstack((new_lattice,new_cell))
+		
+	return new_lattice
+	
+def func_parametrize(t):
+	#return [t,t,0]
+	return [np.cos(t),np.sin(t),t]
+	#return [np.cos(t),np.sin(t),0]
+	#return [(np.cos(t))**2,np.sin(t),-t]
+	#return [((t+1)/(t-1)),((t-1)/(t+1)),0]
+	#return  [np.exp(t)*np.sin(t),np.exp(-t)*np.cos(t),0]
+	#return  [np.sin(t),np.sin(2*t),0]
+	
+#incomplete	
+def parametrize_mat(par):
+	cell_file_1 = par[0][0] 
+		
+	
+	N_points = 500
+	t_min    = 0
+	t_max    = 20
+	
+	t_array  = np.linspace(t_min,t_max,N_points)
+
+	func = [ func_parametrize(t) for t in t_array ] 
+
+	func = np.array(func)	
+	xfun = func[:,0] #points of the curve
+	yfun = func[:,1]
+	zfun = func[:,2]
+
+	r0 = [xfun[0],yfun[0],zfun[0]]
+
+	'''
+	#plot of the function parametrized
+	fig = plt.figure()
+	ax = plt.axes(projection='3d')
+	ax.scatter3D(xfun, yfun, zfun,c='r',marker='^');
+	'''
+
+	#getting the lowest values in each direction to produce a normalized lattice
+	try:
+		x_min = min( i for i in np.abs(xfun) if i != 0)
+	except:
+		x_min = 1
+	try:	
+		y_min = abs(min( j for j in np.abs(yfun) if j != 0))
+	except:
+		y_min = 1
+	try:
+		z_min = abs(min( k for k in np.abs(zfun) if k != 0))
+	except:
+		z_min = 1
+
+
+	#normalizing curve
+	xfun_norm = np.array([ int(x/x_min) for x in xfun ])
+	yfun_norm = np.array([ int(y/y_min) for y in yfun ])
+	zfun_norm = np.array([ int(z/z_min) for z in zfun ])
+
+
+
+	trajectory  = []
+
+	for i in range(N_points-1):
+
+		x0 = xfun_norm[i]
+		y0 = yfun_norm[i]
+		z0 = zfun_norm[i]
+		
+		dx_next = xfun_norm[i+1] -x0
+		dy_next = yfun_norm[i+1] -y0
+		dz_next = zfun_norm[i+1] -z0
+		
+		#getting the displacement vector in each step
+		displ_vec = np.array([dx_next,dy_next,dz_next])
+
+				
+		trajectory.append(displ_vec)
+
+	#this function recieves the displacement vectors and returns the normalized lattice
+	def vect_to_points(r0,trajectory):
+		
+		traj = []
+		traj.append(r0)
+		
+		for i in range(1,len(trajectory)):
+		
+			x0 = traj[i-1][0]
+			y0 = traj[i-1][1]
+			z0 = traj[i-1][2]	
+		
+			x_new = x0 + trajectory[i][0]
+			y_new = y0 + trajectory[i][1]
+			z_new = z0 + trajectory[i][2]
+			
+			r   = [x_new,y_new,z_new]
+			traj.append(r)
+		return traj
+		
+	traj = vect_to_points(r0,trajectory)
+	traj = np.array(traj)
+		
+	print("this draw will host %s unit cells" % (len(trajectory)))	
+	x = traj[:,0]
+	y = traj[:,1]
+	z = traj[:,2]
+
+
+	X_unit,Y_unit,Z_unit,Mats_unit = read_lattice(cell_file_1)
+	dX = np.amax(X_unit) - np.amin(X_unit)
+	dY = np.amax(Y_unit) - np.amin(Y_unit)
+	dZ = np.amax(Z_unit) - np.amin(Z_unit)
+
+	unit_cell = [[X_unit[i],Y_unit[i],Z_unit[i],Mats_unit[i]] for i in range(len(X_unit)) ]
+	unit_cell = np.array(unit_cell)
+
+	mult_cell = unit_cell.copy()
+	new_cell = unit_cell.copy()
+
+
+	draw = traj
+	for unit_vec in draw:
+
+		new_cell = unit_cell.copy()
+		
+		for site in new_cell:
+			
+			site[0] = site[0] + dX*unit_vec[0]
+			site[1] = site[1] + dY*unit_vec[1]
+			site[2] = site[2] + dZ*unit_vec[2]
+			
+		mult_cell = np.vstack((mult_cell,new_cell))
+		
+		
+	X    = mult_cell[:,0]	
+	Y    = mult_cell[:,1]
+	Z    = mult_cell[:,2]
+	Mats = mult_cell[:,3]	
+	
+	fig = plt.figure()
+	ax = plt.axes(projection='3d')
+	ax.scatter3D(X, Y, Z,c='b',marker='^');
+	plt.show()	
+	
+	return X,Y,Z,Mats
+	
+	
+def heterojunction(par):
+	cell_left  = par[0][0]
+	cell_right = par[1][0]
+	n_times    = int(float(par[2][0]))
+	
+	X_left ,Y_left ,Z_left ,Mats_left  = read_lattice(cell_left)
+	X_right,Y_right,Z_right,Mats_right = read_lattice(cell_right)
+	
+	
+	non_duplicate_mat = set(Mats_right.tolist())
+	shift_mat = input("The cell on the right has %s types of molecules. Do you wish to relabel its indexes?(y/n)" %(len(non_duplicate_mat)))
+	
+	
+	
+	#case if you want to change the labeling of right mats
+	if(shift_mat == "y"):
+		print("Currenly, the right input has the following mat indexes:")
+		old_index = '\t'.join([str(int(mat)) for mat in non_duplicate_mat ])
+		print(old_index)
+		print("Now, write the list that will substitute the indexing:")
+		
+		new_index = [str(int(item)) for item in input("Enter the index (separated by space): ").split()]
+		print(new_index)
+		print(Mats_right)
+		new_Mats_right = Mats_right.copy()
+		
+		n_mats = len(Mats_right)
+		for i in range(n_mats):
+			mats = Mats_right[i]
+			indx = old_index.index(str(int(mats)))
+			new_Mats_right[i] = new_index[indx]
+	
+		Mats_right = new_Mats_right.copy()
+		print(Mats_right)
+		
+	dX_left = np.amax(X_left) - np.amin(X_left)
+	dY_left = np.amax(Y_left) - np.amin(Y_left)
+	dZ_left = np.amax(Z_left) - np.amin(Z_left)
+	
+	dX_right = np.amax(X_right) - np.amin(X_right)
+	dY_right = np.amax(Y_right) - np.amin(Y_right)
+	dZ_right = np.amax(Z_right) - np.amin(Z_right)
+	
+	unit_cell_left  = [[X_left[i],Y_left[i],Z_left[i],Mats_left[i]] for i in range(len(X_left)) ]
+	unit_cell_right = [[X_right[i],Y_right[i],Z_right[i],Mats_right[i]] for i in range(len(X_right)) ]
+	
+	unit_cell_left  = np.array(unit_cell_left)
+	unit_cell_right = np.array(unit_cell_right)
+	
+	multiplied_left  = multiply_lattice(unit_cell_left,n_times,[dX_left,dY_left,dZ_left])
+	multiplied_right = multiply_lattice(unit_cell_right,n_times,[dX_right,dY_right,dZ_right])
+	
+	mult_x_left = multiplied_left[:,0]
+	mult_y_left = multiplied_left[:,1]
+	mult_z_left = multiplied_left[:,2]
+	
+	X_tot_left = np.amax(mult_x_left)-np.amin(mult_x_left)
+	Y_tot_left = np.amax(mult_y_left)-np.amin(mult_y_left)
+	Z_tot_left = np.amax(mult_z_left)-np.amin(mult_z_left)
+	
+	shift_vec = [X_tot_left,Y_tot_left,Z_tot_left]
+	
+	#shifting the entire right lattice 
+	for site in multiplied_right:
+		site[0] = site[0] + shift_vec[0]
+		#site[1] = site[1] + shift_vec[1] 
+		#site[2] = site[2] + shift_vec[2]
+		
+	hetero_lattice = np.vstack((multiplied_left,multiplied_right))
+	
+	X    = hetero_lattice[:,0]
+	Y    = hetero_lattice[:,1]
+	Z    = hetero_lattice[:,2]
+	Mats = hetero_lattice[:,3]
+	
+	return 	X,Y,Z,Mats
+###########################################################
+
+
+
 class morphology_function:
     def __init__(self,name,func,param_list):
     	self.name = name
@@ -693,18 +969,28 @@ class morphology_function:
     	return self.func(param)	
     
 
-
+#funcs option 2
 lattice_dir = ["dim","displacement_vec","distribuition_vec"] #should have the same order of the function
 loadcif_dir = ["mol_filename"]
 
 latt_func      = morphology_function("lattice",lattice,lattice_dir)
 loadcif_func   = morphology_function("loadcif",load_cif,loadcif_dir)
-func_list      = [latt_func,loadcif_func]
+func_list      = [latt_func,loadcif_func] #list of functions to be included in option 2
 
-#####################################################################
+#funcs option 3
+parametrize_dir    = ["filename for the first unit cell"]
+heterojunction_dir = ["name_left_cell","name_right_cell","number_of_reps"]
 
+paramet_func           = morphology_function("parametrized",parametrize_mat,parametrize_dir)
+heterojunction_func    = morphology_function("heterojunction",heterojunction,heterojunction_dir)
 
-print("AUX PROGRAM TO GENERATE LATTICE OF KMC")
+func_opt3_list  = [paramet_func,heterojunction_func] #list of functions to be included in option 3
+
+##########################################################
+
+colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+
+print("AUX PROGRAM TO GENERATE LATTICE FOR KMC SIMULATIONS")
 print("version: 1.0v, date 4/4/21 Author: Leo and Tiago")
 print()
 print("Select one of the options:")
@@ -722,7 +1008,7 @@ if ( choice1 == "1"):
     	copyfile(morph_file, lattice_output)
     else:
     	pass
-     
+#if you want to create a lattice     
 if ( choice1 == "2"):
     list_name_func = [ func.name for func in func_list ]
     n = len(list_name_func) 
@@ -748,6 +1034,13 @@ if ( choice1 == "2"):
 
 
     X,Y,Z,Mats = func(par)
+    
+    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(X, Y, Z,c=colors,marker='^');
+    plt.show()    
+    
     N = len(X)
     #writing the lattice.txt file
     with open(lattice_output,'w') as f:
@@ -755,188 +1048,46 @@ if ( choice1 == "2"):
             line = [X[l],Y[l],Z[l],Mats[l]]
             f.write('\t'.join(["{:<10f} ".format(i) for i in line]) + '\n')	
 
+#if you want to mess with the lattice
+if ( choice1 == "3"):
+    list_name_func = [ func.name for func in func_opt3_list ]
+    n = len(list_name_func) 
+    list_name_func = '\t'.join([str(i)+"  "+str(list_name_func[i]) for i in range(n) ]) #list with the names of the functions
+    print("This version has %s pre-written morphology functions. Choose one:" %(len(func_opt3_list)))
+    print(list_name_func) #printing the available functions	
+    choice2 = int(input())	
+    func = func_opt3_list[choice2] #choosing a function	
 
-############# FUNCS TO MESS AROUND WITH UNIT CELLs #########
+    par_list_name = func.param_list
+    
+    list_name_pars = '\t'.join([str(par) for par in par_list_name ])    #list of parameters for a given func		
+    print("This function has %s parameters. Namely," %(len(par_list_name)))
+    print(list_name_pars)
+    par = []
+    
+    for par_set in par_list_name: #looping through each parameter
+        print()
+        print(par_set) 	
+        par_loc = [item for item in input("Enter the parameter's entries (separated by space): ").split()] #needed if a parameter is an array
+        print(par_loc)
+        par.append(par_loc)
+        
+    X,Y,Z,Mats = func(par)
 
-
-def read_lattice(file_name):
-	X,Y,Z,Mats = [], [], [], []
-	
-	with open(file_name, 'r') as f:
-		for line in f:
-			line = line.split()
-			
-			x    = float(line[0])
-			y    = float(line[1])
-			z    = float(line[2])
-			mat  = int(float(line[3]))
-			
-			
-			X.append(x)
-			Y.append(y)
-			Z.append(z)
-			Mats.append(mat)
-	X = np.array(X)
-	Y = np.array(Y)	
-	Z = np.array(Z)	
-	Mats = np.array(Mats)
-	return X,Y,Z,Mats
-	
-def test_func(A,t):
-	z0 = 20
-	w  = 4
-	#return [A*t,t,0]
-	return [A*np.cos(t),A*np.sin(t),A*t]
-	#return [A*np.cos(t),A*np.sin(t),0]
-	#return [A*(np.cos(t))**2,A*np.sin(t),-t]
-	#return [A*((t+1)/(t-1)),A*((t-1)/(t+1)),0]
-	#return  [np.exp(t)*np.sin(t),np.exp(-t)*np.cos(t),0]
-	#return  [np.sin(t),np.sin(2*t),0]
-	
-N_points = 500
-t_min    = 0
-t_max    = 20
-A = 1
-t_array  = np.linspace(t_min,t_max,N_points)
-
-tst = [ test_func(A,t) for t in t_array ] 
-
-tst = np.array(tst)	
-xfun = tst[:,0] #points of the curve
-yfun = tst[:,1]
-zfun = tst[:,2]
-
-r0 = [xfun[0],yfun[0],zfun[0]]
-
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(xfun, yfun, zfun,c='r',marker='^');
-
-
-#getting the lowest values in each direction to produce a normalized lattice
-try:
-	x_min = min( i for i in np.abs(xfun) if i != 0)
-except:
-	x_min = 1
-try:	
-	y_min = abs(min( j for j in np.abs(yfun) if j != 0))
-except:
-	y_min = 1
-try:
-	z_min = abs(min( k for k in np.abs(zfun) if k != 0))
-except:
-	z_min = 1
-
-
-#normalizing curve
-xfun_norm = np.array([ int(x/x_min) for x in xfun ])
-yfun_norm = np.array([ int(y/y_min) for y in yfun ])
-zfun_norm = np.array([ int(z/z_min) for z in zfun ])
-
-
-
-trajectory  = []
-
-for i in range(N_points-1):
-
-	x0 = xfun_norm[i]
-	y0 = yfun_norm[i]
-	z0 = zfun_norm[i]
-	
-	dx_next = xfun_norm[i+1] -x0
-	dy_next = yfun_norm[i+1] -y0
-	dz_next = zfun_norm[i+1] -z0
-	
-	#getting the displacement vector in each step
-	displ_vec = np.array([dx_next,dy_next,dz_next])
-
-			
-	trajectory.append(displ_vec)
-
-#this function recieves the displacement vectors and returns the normalized lattice
-def vect_to_points(r0,trajectory):
-	
-	traj = []
-	traj.append(r0)
-	
-	for i in range(1,len(trajectory)):
-	
-		x0 = traj[i-1][0]
-		y0 = traj[i-1][1]
-		z0 = traj[i-1][2]	
-	
-		x_new = x0 + trajectory[i][0]
-		y_new = y0 + trajectory[i][1]
-		z_new = z0 + trajectory[i][2]
-		
-		r   = [x_new,y_new,z_new]
-		traj.append(r)
-	return traj
-	
-traj = vect_to_points(r0,trajectory)
-traj = np.array(traj)
-	
-print("this draw will host %s unit cells" % (len(trajectory)))	
-x = traj[:,0]
-y = traj[:,1]
-z = traj[:,2]
-
-'''
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(x, y, z,c='b',marker='^');
-plt.show()	
-'''
-
-
-
-
-X_unit,Y_unit,Z_unit,Mats_unit = read_lattice("lattice.txt")
-dX = np.amax(X_unit) - np.amin(X_unit)
-dY = np.amax(Y_unit) - np.amin(Y_unit)
-dZ = np.amax(Z_unit) - np.amin(Z_unit)
-
-unit_cell = [[X_unit[i],Y_unit[i],Z_unit[i],Mats_unit[i]] for i in range(len(X_unit)) ]
-unit_cell = np.array(unit_cell)
-
-mult_cell = unit_cell.copy()
-new_cell = unit_cell.copy()
-
-'''
-dX = 1
-dY = 1 
-dZ = 1
-'''
-
-#draw = [[1,0,0],[1,0,0],[1,0,0],[1,0,0],[1,0,0]]
-
-draw = traj
-for unit_vec in draw:
-
-	new_cell = unit_cell.copy()
-	
-	for site in new_cell:
-		
-		site[0] = site[0] + dX*unit_vec[0]
-		site[1] = site[1] + dY*unit_vec[1]
-		site[2] = site[2] + dZ*unit_vec[2]
-		
-	mult_cell = np.vstack((mult_cell,new_cell))
-	
-	
-X = mult_cell[:,0]	
-Y = mult_cell[:,1]
-Z = mult_cell[:,2]
-	
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(X, Y, Z,c='b',marker='^');
-plt.show()	
-
-
-
-
-
+    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(X, Y, Z,c=colors,marker='^');
+    plt.show()    
+   
+   
+    N = len(X)
+    #writing the lattice.txt file
+    with open(lattice_output,'w') as f:
+        for l in range(N):
+            line = [X[l],Y[l],Z[l],Mats[l]]
+            f.write('\t'.join(["{:<10f} ".format(i) for i in line]) + '\n')
+   
 
 
 
