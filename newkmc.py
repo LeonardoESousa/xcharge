@@ -25,7 +25,7 @@ num_ex        = PARAM.num_ex
 anni          = PARAM.anni
 
 #reading the lattice
-X	      = PARAM.X
+X	   = PARAM.X
 Y             = PARAM.Y
 Z             = PARAM.Z
 Mats          = PARAM.Mats
@@ -45,7 +45,7 @@ anni_funcs_array = PARAM.annihi_funcs_array
 def anni_general(system,Ss,anni_funcs_array):  
     mapa_singlet = []
     mapa = []
-    locs = np.array([s.location() for s in Ss])
+    locs = np.array([s.position for s in Ss])
     
     if len(locs) > len(set(locs)):
         locs2 = np.array(list(set(locs)))
@@ -53,7 +53,7 @@ def anni_general(system,Ss,anni_funcs_array):
             indices = np.where(locs == locs2[i])
             if len(indices[0]) > 1:
 
-                tipos = [Ss[j].kind() for j in indices[0]]
+                tipos = [Ss[j].species for j in indices[0]]
                 
                 #running all the choosen annifuncs from morphology.py
                 for anni_func in anni_funcs_array:
