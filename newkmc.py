@@ -52,6 +52,7 @@ def anni_general(system,Ss,anni_funcs_array):
         for i in range(len(locs2)):
             indices = np.where(locs == locs2[i])
             if len(indices[0]) > 1:
+
                 tipos = [Ss[j].kind() for j in indices[0]]
                 
                 #running all the choosen annifuncs from morphology.py
@@ -60,10 +61,10 @@ def anni_general(system,Ss,anni_funcs_array):
               	
 
 def decision(s,system):
-    kind = s.kind()
-    local = s.location()
-    X,Y,Z = system.get_XYZ()
-    Mat   = system.get_mats()[local]
+    kind = s.species      
+    local = s.position    
+    X,Y,Z = system.X, system.Y, system.Z 
+    Mat   = system.mats[local]   
     dx = np.nan_to_num(X - X[local]) 
     dy = np.nan_to_num(Y - Y[local])
     dz = np.nan_to_num(Z - Z[local])
@@ -100,10 +101,9 @@ def decision(s,system):
  
   
 def step(system): 
-    while system.count_particles() > 0 and system.clock() < time_limit:
-        Xx = system.get_particles()
-        Ss = list(Xx)
-        #print([m.kind() for m in Ss])
+    while system.count_particles() > 0 and system.time < time_limit:
+        Ss = system.particles.copy()     
+        print([m.species for m in Ss])
         J, W, DT = [],[],[]
         for s in Ss:
             jump, where, dt = decision(s,system)
@@ -112,8 +112,8 @@ def step(system):
             DT.append(dt)    
         #print(W)
         time_step = min(DT)
-        realtime = system.clock() + time_step
-        system.set_clock(realtime)
+        system.time += time_step
+        #print(system.time) 
         fator = random.uniform(0,1)
         for i in range(len(Ss)):
             if fator <= time_step/DT[i]:
@@ -123,10 +123,9 @@ def step(system):
             anni_general(system,Ss,anni_funcs_array)
         if animation_mode:
             return Ss       
-    Xx = system.get_particles()
-    Ss = list(Xx)
+    Ss = system.particles.copy()
     for s in Ss:
-        Ss[i].kill('alive',system,system.get_s1())
+        Ss[i].kill('alive',system,system.s1)
   
             
                 
@@ -137,15 +136,15 @@ def spectra(system):
             texto = "{0:^10}    {1:^6} {2:^6} {3:^6} {4:^4} {5:^4} {6:^9} {7:^6} {8:^6} {9:^6} {10:^4}".format("Time", "DeltaX", "DeltaY", "DeltaZ", "Type", "Energy", "Location" ,"FinalX", "FinalY", "FinalZ", "Causa Mortis")
             f.write(texto+"\n") 
     with open("Simulation_"+identifier+".txt", "a") as f:   
-        for s in system.get_dead():
+        for s in system.dead:
             texto = s.write()
             f.write(texto)
         f.write("Fim\n")
         
 def animate(num,system,ax): 
     Ss = step(system)
-    X, Y, Z = system.get_XYZ()
-    mats = system.get_mats()
+    X, Y, Z = system.X, system.Y, system.Z        
+    mats = system.mats                            
     nx,ny = [],[]
     #plt.cla()
     ax.clear()
@@ -162,9 +161,9 @@ def animate(num,system,ax):
     ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
     try:  
         for s in Ss:
-            xs = X[s.location()]        	
-            ys = Y[s.location()]
-            zs = Z[s.location()]
+            xs = X[s.position]        	
+            ys = Y[s.position]
+            zs = Z[s.position]
               
             #opcao 1 (com os markers)
             '''        
@@ -178,14 +177,14 @@ def animate(num,system,ax):
                 ax.scatter(xs,ys,zs,marker='$S_1$',color='orange',s=200,alpha=1,label=s.kind())
             ''' 
             #opcao 2(sem marker)                
-            if s.kind() == 'electron':
-                ax.scatter(xs,ys,zs,color='red',s=100,alpha=1,label=s.kind())
-            elif s.kind() == 'hole':
-                ax.scatter(xs,ys,zs,color='blue',s=100,alpha=1,label=s.kind())
-            elif s.kind() == 'triplet':
-                ax.scatter(xs,ys,zs,color='green',s=100,alpha=1,label=s.kind())
-            elif s.kind() == 'singlet':
-                ax.scatter(xs,ys,zs,color='orange',s=100,alpha=1,label=s.kind())
+            if s.species == 'electron':
+                ax.scatter(xs,ys,zs,color='red',s=100,alpha=1,label=s.species)
+            elif s.species == 'hole':
+                ax.scatter(xs,ys,zs,color='blue',s=100,alpha=1,label=s.species)
+            elif s.species == 'triplet':
+                ax.scatter(xs,ys,zs,color='green',s=100,alpha=1,label=s.species)
+            elif s.species == 'singlet':
+                ax.scatter(xs,ys,zs,color='orange',s=100,alpha=1,label=s.species)
     except:
         pass
     
@@ -208,8 +207,6 @@ if animation_mode:
     system.set_orbital(t1,s1)
     excitons = gen_particles(param_genfunc)
     system.set_particles(excitons)
-    
-    
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -218,7 +215,6 @@ if animation_mode:
                                 interval=200, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
     #ani.save('charges.avi', fps=20, dpi=300)
     #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
-    
     plt.show()
 else:
     for i in range(rounds):
