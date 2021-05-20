@@ -56,7 +56,7 @@ def anni_general(system,Ss,anni_funcs_array):
                 
                 #running all the choosen annifuncs from morphology.py
                 for anni_func in anni_funcs_array:
-                    anni_func(system,tipos,Ss,indices)
+                    anni_func(system,tipos,Ss,indices,locs)
               	
 
 def decision(s,system):
@@ -158,8 +158,8 @@ def animate(num,system,ax):
     Y1 = Y[mats == 1]
     Z1 = Z[mats == 1]
     
-    ax.scatter(X0,Y0,Z0,alpha=0.2,color='black')
-    ax.scatter(X1,Y1,Z1,alpha=0.2,color='blue')
+    ax.scatter(X0,Y0,Z0,alpha=0.1,color='black')
+    ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
     try:  
         for s in Ss:
             xs = X[s.location()]        	

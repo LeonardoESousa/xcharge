@@ -711,18 +711,22 @@ def load_cif(mol_file):
 #####################################################################
 ############# FUNCS TO MESS AROUND WITH UNIT CELLs (option 3) #########
 
-def multiply_lattice(lattice,n_times,delta):
+def multiply_lattice(lattice,n_times_ar,delta):
 		
 	X_lenght = delta[0] #Increments
 	Y_lenght = delta[1]
 	Z_lenght = delta[2]
 		
+	n_times_x = n_times_ar[0]
+	n_times_y = n_times_ar[1]
+	n_times_z = n_times_ar[2]	
+		
 	new_lattice = np.copy(lattice)
 	n_sites = len(lattice)
 		
-	for dx in range(n_times):
-		for dy in range(n_times):
-			for dz in range(n_times):
+	for dx in range(n_times_x):
+		for dy in range(n_times_y):
+			for dz in range(n_times_z):
 					
 				new_cell = np.copy(lattice)
 				for i in range(n_sites):
@@ -929,8 +933,8 @@ def heterojunction(par):
 	unit_cell_left  = np.array(unit_cell_left)
 	unit_cell_right = np.array(unit_cell_right)
 	
-	multiplied_left  = multiply_lattice(unit_cell_left,n_times,[dX_left,dY_left,dZ_left])
-	multiplied_right = multiply_lattice(unit_cell_right,n_times,[dX_right,dY_right,dZ_right])
+	n_times_left = [n_times,n_times,n_times]
+	multiplied_left  = multiply_lattice(unit_cell_left,n_times_left,[dX_left,dY_left,dZ_left])
 	
 	mult_x_left = multiplied_left[:,0]
 	mult_y_left = multiplied_left[:,1]
@@ -938,7 +942,16 @@ def heterojunction(par):
 	
 	X_tot_left = np.amax(mult_x_left)-np.amin(mult_x_left)
 	Y_tot_left = np.amax(mult_y_left)-np.amin(mult_y_left)
-	Z_tot_left = np.amax(mult_z_left)-np.amin(mult_z_left)
+	Z_tot_left = np.amax(mult_z_left)-np.amin(mult_z_left)	
+	
+	n_times_x_right = int(X_tot_left/dX_right)
+	n_times_y_right = int(Y_tot_left/dY_right)
+	n_times_z_right = int(Z_tot_left/dZ_right)
+	
+	n_times_right = [n_times_x_right,n_times_y_right,n_times_z_right]
+	multiplied_right = multiply_lattice(unit_cell_right,n_times_right,[dX_right,dY_right,dZ_right])
+	
+
 	
 	shift_vec = [X_tot_left,Y_tot_left,Z_tot_left]
 	

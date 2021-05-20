@@ -8,7 +8,7 @@ animation_mode = True
 anni = True
 lattice_filename = "lattice.txt"
 rounds = 1 #number of rounds
-num_ex = 10 #number of excitons
+num_ex = 20 #number of excitons
 
 ###SINGLET RATES
 r00 = 40.8   #Forster radius material 0 --> material 0 (Angstrom)    
@@ -73,9 +73,9 @@ parameters_genfunc = [num_ex,len(X)]
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]
 
-annihi_funcs_array = [morphology.anni_ele_hol] #list of all annihi funcs that will be used
+#annihi_funcs_array = [morphology.anni_ele_hol] 
 #annihi_funcs_array = [morphology.anni_sing]
-
+annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
 
 
 
