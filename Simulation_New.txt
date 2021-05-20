@@ -1,0 +1,6 @@
+   Time       DeltaX DeltaY DeltaZ Type Energy Location  FinalX FinalY FinalZ Causa Mortis
+    33.396      1.48 -16.36  -3.55 singlet  1.9000         0   1.82  16.36   3.55 isc 
+81691654912.390      1.48 -16.36  -3.55 triplet  1.2000         0   1.82  16.36   3.55 phosph
+    12.998      0.00   0.00   0.00 singlet  1.9000         0   0.34   0.00   7.11 isc 
+381587719908.291      2.95   0.00  -7.11 triplet  1.2000         0   3.29   0.00  -0.00 phosph
+Fim
