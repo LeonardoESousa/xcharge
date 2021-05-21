@@ -42,9 +42,7 @@ anni_funcs_array = PARAM.annihi_funcs_array
 
            
 # runs the annihilations defined in anni_funcs_array                 
-def anni_general(system,Ss,anni_funcs_array):  
-    mapa_singlet = []
-    mapa = []
+def anni_general(system,Ss,anni_funcs_array):   
     locs = np.array([s.position for s in Ss])
     
     if len(locs) > len(set(locs)):
