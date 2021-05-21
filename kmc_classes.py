@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 epsilon = (3.5)*8.85*10**(-22) #Permitivity in C/VAngstrom
 e       = -1.60217662*(10**(-19)) #Electron charge    
@@ -71,6 +72,7 @@ class Particles:
         self.initial = initial
         self.position = initial
         self.status = 'alive'
+        self.identity = random.uniform(0,5)
         self.report = ''
     
     def move(self,local):
@@ -392,3 +394,70 @@ class MillerAbrahams:
      
     def action(self,particle,system,local):
         particle.move(local)    
+
+class Dissociation:
+    def __init__(self,**kwargs):
+        self.kind = 'dissociation'
+        self.H = kwargs['H']
+        self.inv      = kwargs['invrad']
+        self.T        = kwargs['T']
+        self.Map      = {}
+
+    def rate(self,**kwargs):
+        system = kwargs['system']
+        r      = kwargs['r']
+        particle = kwargs['particle']
+        local = particle.position 
+        mats = system.mats        
+        mat = mats[local]
+        num = len(mats)
+
+        lumos = np.copy(system.LUMO)
+        homos = np.copy(system.HOMO)
+        s1s   = np.copy(system.s1) 
+
+        H      = raios(num,self.H,mat,self.inv,mats)
+        in_loc_rad  = self.inv[mat]
+        
+        np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
+        r[r == np.inf] = 0 
+        
+        DEe = lumos - (homos[local] + s1s[local])
+        DEh = (lumos[local] - s1s[local]) - homos  
+        
+
+        taxae = (10E-12)*(H**2)*np.exp(-2*in_loc_rad*r)*np.exp((DEe+abs(DEe))/(2*kb*self.T))
+        taxah = (10E-12)*(H**2)*np.exp(-2*in_loc_rad*r)*np.exp((DEh+abs(DEh))/(2*kb*self.T))
+        taxae[r == 0] = 0
+        taxah[r == 0] = 0
+        taxae = np.nan_to_num(taxae)
+        taxah = np.nan_to_num(taxah)
+        
+        TE = np.sum(taxae)
+        TH = np.sum(taxah)
+        if random.uniform(0,1) <= TE/(TE+TH):
+            self.Map[particle.identity] = 'electron'
+            return taxae
+        else:
+            self.Map[particle.identity] = 'hole'
+            return taxah    
+            
+
+    def label(self):
+        return self.kind
+     
+    def action(self,particle,system,local):
+        if self.Map[particle.identity] == 'electron':
+            e = Electron(local)
+            h = Hole(particle.position)
+        else:
+           e = Electron(particle.position)
+           h = Hole(local) 
+
+        h.identity = -1*e.identity   
+        system.add_particle(e)
+        system.add_particle(h)
+        del self.Map[particle.identity]
+        particle.kill('dissociation',system,system.s1)
+
+

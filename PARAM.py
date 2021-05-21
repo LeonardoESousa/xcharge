@@ -11,10 +11,10 @@ rounds = 1 #number of rounds
 num_ex = 20 #number of excitons
 
 ###SINGLET RATES
-r00 = 40.8   #Forster radius material 0 --> material 0 (Angstrom)    
-r01 = 62.2   #material 0 --> material 1      
+r00 = 20.8   #Forster radius material 0 --> material 0 (Angstrom)    
+r01 = 22.2   #material 0 --> material 1      
 r10 = 21.2        
-r11 = 56.5     
+r11 = 26.5     
 
 f0 = 2940.0 #lifetime of material 0
 f1 = 747.27 #lifetime of material 1
@@ -40,8 +40,8 @@ nonrad  = {0:0,1:0}
 nonradiative = Nonrad(rate=nonrad)
 
 #ENERGIES
-s1s = {0:(1.9,0.0), 1:(1.4,0.00)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
-t1s = {0:(1.2,0.0), 1:(1.0,0.00)} # triplet energy, disperison (eV)
+s1s = {0:(1.9,0.0), 1:(1.9,0.00)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
+t1s = {0:(1.2,0.0), 1:(1.2,0.00)} # triplet energy, disperison (eV)
 
 #TRIPLET RATES
 Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
@@ -56,26 +56,31 @@ H = {(0,0):0.1,(0,1):0.1,(1,0):0.1,(1,1):0.1}
 invrad = {0:10.5,1:10.5}
 miller = MillerAbrahams(H=H,invrad=invrad,T=300)
 
+###Dissociation
+H = {(0,0):10000.0,(0,1):10000.0,(1,0):100.0,(1,1):100.0}
+invrad = {0:0,1:0}
+dissociation = Dissociation(H=H,invrad=invrad,T=300)
+
 
 #PROCESSES
 
-processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
-monomolecular = {'singlet':[fluor,isc,nonradiative],'triplet':[phosph],'electron':[],'hole':[]}
-
+processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
+monomolecular = {'singlet':[],'triplet':[phosph],'electron':[],'hole':[]}
+#fluor,isc,nonradiative
 
 #Morphology functions
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
-gen_function       = morphology.gen_pair_elechole
-#gen_function       = morphology.gen_excitons
+#gen_function       = morphology.gen_pair_elechole
+gen_function       = morphology.gen_excitons
 parameters_genfunc = [num_ex,len(X)]
 
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]
 
 #annihi_funcs_array = [morphology.anni_ele_hol] 
-#annihi_funcs_array = [morphology.anni_sing]
-annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
+annihi_funcs_array = [morphology.anni_sing]
+#annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
 
 
 

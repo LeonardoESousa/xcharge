@@ -25,7 +25,7 @@ num_ex        = PARAM.num_ex
 anni          = PARAM.anni
 
 #reading the lattice
-X	   = PARAM.X
+X	          = PARAM.X
 Y             = PARAM.Y
 Z             = PARAM.Z
 Mats          = PARAM.Mats
@@ -103,7 +103,7 @@ def decision(s,system):
 def step(system): 
     while system.count_particles() > 0 and system.time < time_limit:
         Ss = system.particles.copy()     
-        print([m.species for m in Ss])
+        #print([m.species for m in Ss])
         J, W, DT = [],[],[]
         for s in Ss:
             jump, where, dt = decision(s,system)

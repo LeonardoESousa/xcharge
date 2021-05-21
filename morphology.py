@@ -97,8 +97,8 @@ def homo_lumo(param):
 #annihilation electron-hole pair
 def anni_ele_hol(system,tipos,Ss,indices,locs):
     if 'electron' in tipos and 'hole' in tipos:        
-        Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.get_s1())
-        Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.get_s1())
+        Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.s1)
+        Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.s1)
         if random.uniform(0,1) <= 0.75:
             system.add_particle(Exciton('triplet',locs[indices[0][0]]))
         else:
@@ -107,7 +107,7 @@ def anni_ele_hol(system,tipos,Ss,indices,locs):
 def anni_sing(system,tipos,Ss,indices,locs): # e se tiver 4 excitons no mesmo sitio?
     duplicates = set([x for x in tipos if tipos.count(x) > 1]) # checking if there is 2 occurrences of the types
     if 'singlet' in duplicates:        
-        Ss[indices[0][tipos.index('singlet')]].kill('anni',system,system.get_s1())
+        Ss[indices[0][tipos.index('singlet')]].kill('anni',system,system.s1)
 ############################################           
                 
 
