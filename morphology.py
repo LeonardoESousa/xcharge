@@ -97,9 +97,11 @@ def homo_lumo(param):
 #annihilation electron-hole pair
 def anni_ele_hol(system,tipos,Ss,indices,locs):
     if 'electron' in tipos and 'hole' in tipos:        
+        id1 = Ss[indices[0][tipos.index('electron')]].identity
+        id2 = Ss[indices[0][tipos.index('hole')]].identity
         Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.s1)
         Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.s1)
-        if random.uniform(0,1) <= 0.75:
+        if random.uniform(0,1) <= 0.75 and abs(id1) != abs(id2):
             system.add_particle(Exciton('triplet',locs[indices[0][0]]))
         else:
             system.add_particle(Exciton('singlet',locs[indices[0][0]]))
