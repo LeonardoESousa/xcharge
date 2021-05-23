@@ -10,33 +10,16 @@ import PARAM
 
 warnings.filterwarnings("ignore")   
 plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
-identifier = 'New'
+identifier = PARAM.identifier 
 
 animation_mode = PARAM.animation_mode
-time_limit = np.inf
+time_limit = PARAM.time_limit 
 
 #getting parameters from
 rounds        = PARAM.rounds
 processes     = PARAM.processes
 monomolecular = PARAM.monomolecular
-s1s           = PARAM.s1s
-t1s           = PARAM.t1s
-num_ex        = PARAM.num_ex
 anni          = PARAM.anni
-
-#reading the lattice
-X	          = PARAM.X
-Y             = PARAM.Y
-Z             = PARAM.Z
-Mats          = PARAM.Mats
-
-#functions from morphology ( generate particles and distribuition of energies)
-gen_particles   = PARAM.gen_function
-energy_fun      = PARAM.ener_function
-
-# the respective parameters of the functions above
-param_genfunc  = PARAM.parameters_genfunc
-param_energy   = PARAM.parameters_enefunc
 
 anni_funcs_array = PARAM.annihi_funcs_array
 
@@ -194,21 +177,10 @@ def animate(num,system,ax):
     return ax,
 
 
-
-s1, t1 = energy_fun(param_energy)
-
-
 if animation_mode:
-    system = System(X,Y,Z,Mats)
-    system.set_s1(s1)
-    system.set_t1(t1)
-    system.set_orbital(t1,s1)
-    excitons = gen_particles(param_genfunc)
-    system.set_particles(excitons)
+    system = PARAM.make_system()
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-
-
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
                                 interval=200, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
     #ani.save('charges.avi', fps=20, dpi=300)
@@ -216,12 +188,7 @@ if animation_mode:
     plt.show()
 else:
     for i in range(rounds):
-        system = System(X,Y,Z,Mats)
-        system.set_s1(s1)
-        system.set_t1(t1)
-        system.set_orbital(t1,s1)
-        excitons = gen_particles(param_genfunc)
-        system.set_particles(excitons)
+        system = PARAM.make_system()
         step(system)
         spectra(system)
     

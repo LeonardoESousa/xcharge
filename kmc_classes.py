@@ -13,6 +13,7 @@ class System:
         self.X = X
         self.Y = Y
         self.Z = Z
+        self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
         self.mats = Mats
         self.dead = []
         self.time = 0
@@ -21,6 +22,11 @@ class System:
     def set_particles(self,Ss):
         self.particles = Ss            
     
+    def set_dipoles(self,mus):
+        self.mu = mus
+        self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
+        self.mu /= self.norma_mu[:,np.newaxis]
+
     def add_particle(self,s):
         self.particles.append(s)
     
@@ -139,7 +145,9 @@ class Forster:
         self.Rf = kwargs['Rf']
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
-       
+        self.alpha = 1.15*0.53
+
+
     def rate(self,**kwargs):
         r      = kwargs['r']
         system = kwargs['system']
@@ -154,8 +162,7 @@ class Forster:
         lifetime = self.lifetime[mat]
         mu       = self.mu[mat]
         
-        alpha = 1.15*0.53
-        taxa = (1/lifetime)*((Rf/(alpha*mu + r))**6)
+        taxa = (1/lifetime)*((Rf/(self.alpha*mu + r))**6)
         taxa = np.nan_to_num(taxa)
         return taxa
 
@@ -169,7 +176,8 @@ class ForsterT:
         self.Rf = kwargs['Rf']
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
-       
+        self.alpha = 1.15*0.53
+
     def rate(self,**kwargs):
         r      = kwargs['r']
         system = kwargs['system']
@@ -183,8 +191,7 @@ class ForsterT:
         lifetime = self.lifetime[mat]
         mu       = self.mu[mat]
         
-        alpha = 1.15*0.53
-        taxa = (1/lifetime)*((Rf/(alpha*mu + r))**6)
+        taxa = (1/lifetime)*((Rf/(self.alpha*mu + r))**6)
         taxa = np.nan_to_num(taxa)
         return taxa
 
@@ -192,6 +199,43 @@ class ForsterT:
         particle.move(local)
         energies = system.t1 
         particle.convert(system,energies,self.kind,'singlet')
+
+class ForsterKappa:
+    def __init__(self,**kwargs):
+        self.kind = 'jump'
+        self.Rf = kwargs['Rf']
+        self.lifetime = kwargs['life']
+        self.mu = kwargs['mu']
+        self.alpha = 1.15*0.53
+
+    def rate(self,**kwargs):
+        r      = kwargs['r']
+        system = kwargs['system']
+        ex     = kwargs['particle']
+        mats   = system.mats    
+        local  = ex.position    
+        mat = mats[local]
+        num = len(mats)
+        mus = np.copy(system.mu)
+
+        R = np.copy(system.R) 
+        dR = R - R[local,:]
+        modulo = np.sqrt(np.sum(dR**2,axis=1))[:,np.newaxis]
+        dR /= modulo
+
+        kappa = np.inner(mus[local,:],mus) -  3*(np.inner(mus[local,:],dR)*(np.sum(mus*dR,axis=1)))  
+        #print(np.nanmean(kappa**2),max(kappa**2),min(kappa**2))
+        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
+        
+        lifetime = self.lifetime[mat]
+        mu       = system.norma_mu[local]
+
+        taxa = (1/lifetime)*(kappa**2)*((Rf/(self.alpha*mu + r))**6)
+        taxa = np.nan_to_num(taxa)
+        return taxa
+
+    def action(self,particle,system,local):
+        particle.move(local)
 
 class Dexter:
     def __init__(self,**kwargs):

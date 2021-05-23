@@ -41,7 +41,7 @@ def lattice(param):
 	
     num_molecs =  int(param[0][0]) #adjusting to users input     
     vector     =  [ float(x) for x in param[1] ]
-    ps         =  [ int(x)   for x in param[2] ]
+    ps         =  [ float(x)   for x in param[2] ]
     
     
     X, Y, Z, Mats = [], [], [],[]
@@ -59,9 +59,9 @@ def lattice(param):
     numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
     numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
     numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
-    for nx in range(numx):
-        for ny in range(numy):
-            for nz in range(numz):
+    for nx in range(numx+1):
+        for ny in range(numy+1):
+            for nz in range(numz+1):
                 X.append(nx*dx)
                 Y.append(ny*dy)
                 Z.append(nz*dz)

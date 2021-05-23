@@ -4,6 +4,8 @@ import morphology
 # KMC PARAMETERS 
 
 #BASIC PARAMETERS
+identifier = 'New'
+time_limit = np.inf
 animation_mode = True
 anni = True
 lattice_filename = "lattice.txt"
@@ -57,15 +59,17 @@ invrad = {0:10.5,1:10.5}
 miller = MillerAbrahams(H=H,invrad=invrad,T=300)
 
 ###Dissociation
-H = {(0,0):10000.0,(0,1):10000.0,(1,0):100.0,(1,1):100.0}
-invrad = {0:0,1:0}
+H = {(0,0):50000.0,(0,1):50000.0,(1,0):100.0,(1,1):100.0}
+invrad = {0:0.1,1:0.1}
 dissociation = Dissociation(H=H,invrad=invrad,T=300)
 
 
-#PROCESSES
+###ForsterKappa
+forster   = ForsterKappa(Rf=raios,life=lifetimes,mu=mus)
 
+#PROCESSES
 processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
-monomolecular = {'singlet':[],'triplet':[phosph],'electron':[],'hole':[]}
+monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 #fluor,isc,nonradiative
 
 #Morphology functions
@@ -83,7 +87,19 @@ annihi_funcs_array = [morphology.anni_sing]
 #annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
 
 
+#### GENERATE THE SYSTEM
+
+s1, t1 = ener_function(parameters_enefunc)
+dipoles = np.loadtxt('dipoles.txt')
 
 
-
+def make_system():
+    system = System(X,Y,Z,Mats)
+    system.set_s1(s1)
+    system.set_t1(t1)
+    system.set_orbital(t1,s1)
+    system.set_dipoles(dipoles)
+    excitons = gen_function(parameters_genfunc)
+    system.set_particles(excitons)
+    return system
 
