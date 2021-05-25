@@ -92,12 +92,13 @@ annihi_funcs_array = [morphology.anni_sing]
 s1, t1 = ener_function(parameters_enefunc)
 dipoles = np.loadtxt('dipoles.txt')
 
+ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choosed dissociation, you also must give HOMO and LUMO
+#ene_dic = {'s1':s1, 't1':t1}
 
 def make_system():
-    system = System(X,Y,Z,Mats)
-    system.set_s1(s1)
-    system.set_t1(t1)
-    system.set_orbital(t1,s1)
+
+    system = System(X,Y,Z,Mats)    
+    system.set_energies(ene_dic)
     system.set_dipoles(dipoles)
     excitons = gen_function(parameters_genfunc)
     system.set_particles(excitons)

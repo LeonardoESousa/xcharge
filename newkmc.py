@@ -10,10 +10,10 @@ import PARAM
 
 warnings.filterwarnings("ignore")   
 plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
-identifier = PARAM.identifier 
 
+identifier     = PARAM.identifier 
 animation_mode = PARAM.animation_mode
-time_limit = PARAM.time_limit 
+time_limit     = PARAM.time_limit 
 
 #getting parameters from
 rounds        = PARAM.rounds

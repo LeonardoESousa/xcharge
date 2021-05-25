@@ -36,17 +36,19 @@ class System:
     
     def get_num(self):
         return len(self.X)
-    
-    def set_orbital(self,h,l):
-        self.HOMO = np.array(h)
-        self.LUMO = np.array(l)
-    
-    def set_s1(self, energy):
-        self.s1 = energy
-    
-    def set_t1(self,energy):
-        self.t1 = energy
+           
+    def set_energies(self,energy_dic):
+    	
+        s1 = energy_dic.get("s1")
+        t1 = energy_dic.get("t1")
+        HOMO = energy_dic.get("HOMO")
+        LUMO = energy_dic.get("LUMO")      	
         
+        
+        self.s1   = s1 
+        self.t1   = t1
+        self.HOMO = HOMO
+        self.LUMO = LUMO
         
     def remove(self,particle):
         self.particles.remove(particle)
