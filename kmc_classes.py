@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 epsilon = (3.5)*8.85*10**(-22) #Permitivity in C/VAngstrom
 e       = -1.60217662*(10**(-19)) #Electron charge    
@@ -12,32 +13,26 @@ class System:
         self.X = X
         self.Y = Y
         self.Z = Z
+        self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
         self.mats = Mats
         self.dead = []
         self.time = 0
         self.potential_time = -1
-        
-    def set_clock(self,time):
-        self.time = time
-    
-    def clock(self):
-        return self.time
     
     def set_particles(self,Ss):
         self.particles = Ss            
     
+    def set_dipoles(self,mus):
+        self.mu = mus
+        self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
+        self.mu /= self.norma_mu[:,np.newaxis]
+
     def add_particle(self,s):
         self.particles.append(s)
     
     def count_particles(self):
         return len(self.particles)
     
-    def get_particles(self):
-        lista = self.particles
-        return lista
-    
-    def get_XYZ(self):
-        return self.X, self.Y, self.Z
     
     def get_num(self):
         return len(self.X)
@@ -52,39 +47,22 @@ class System:
     def set_t1(self,energy):
         self.t1 = energy
         
-    def get_HOMO(self):
-        return self.HOMO
-
-    def get_LUMO(self):
-        return self.LUMO
-    
-    def get_s1(self):
-        return self.s1
-    
-    def get_t1(self):
-        return self.t1
-    
-    def get_mats(self):
-        return self.mats
         
     def remove(self,particle):
         self.particles.remove(particle)
         self.dead.append(particle) 
 
-    def get_dead(self):
-        return self.dead
-
     def electrostatic(self):
         if self.time > self.potential_time:
             potential = np.zeros(len(self.X))
             for s in self.particles:
-                if s.get_charge() != 0:
-                    dx = np.nan_to_num(self.X - self.X[s.location()])
-                    dy = np.nan_to_num(self.Y - self.Y[s.location()])
-                    dz = np.nan_to_num(self.Z - self.Z[s.location()])
+                if s.charge != 0:
+                    dx = np.nan_to_num(self.X - self.X[s.position])
+                    dy = np.nan_to_num(self.Y - self.Y[s.position])
+                    dz = np.nan_to_num(self.Z - self.Z[s.position])
                     r  = np.sqrt(dx**2+dy**2+dz**2)
                     #r[r == 0] = np.inf
-                    potential += s.get_charge()*abs(e)/(4*np.pi*epsilon*r)
+                    potential += s.charge*abs(e)/(4*np.pi*epsilon*r)
             self.potential = potential
             self.potential_time = self.time
         else:
@@ -100,18 +78,17 @@ class Particles:
         self.initial = initial
         self.position = initial
         self.status = 'alive'
+        self.identity = random.uniform(0,5)
         self.report = ''
     
     def move(self,local):
         self.position = local
 
-    def kind(self):
-        return self.species
     
     def make_text(self,system,energies,causamortis):
-        time = system.clock()
-        X,Y,Z = system.get_XYZ()
-        Mats  = system.get_mats()
+        time = system.time   #clock()
+        X,Y,Z = system.X, system.Y, system.Z   #get_XYZ()
+        Mats  = system.mats    #get_mats()
         x0,y0,z0 = X[self.initial],Y[self.initial],Z[self.initial]
         x, y, z  = X[self.position],Y[self.position],Z[self.position]
         dx = np.nan_to_num(x-x0)
@@ -119,7 +96,7 @@ class Particles:
         dz = np.nan_to_num(z-z0)
         mat = Mats[self.position]
         energy = energies[self.position]
-        texto = '{0:10.3f}    {1: 6.2f} {2: 6.2f} {3: 6.2f} {4:4} {5: 4.4f} {6:9} {7: 6.2f} {8: 6.2f} {9: 6.2f} {10:4}'.format(
+        texto = '{0:5.6e}    {1: 6.2f} {2: 6.2f} {3: 6.2f} {4:4} {5: 4.4f} {6:9} {7: 6.2f} {8: 6.2f} {9: 6.2f} {10:4}'.format(
                        time,dx,dy,dz,self.species,energy,mat,x,y,z,causamortis)
         self.report += texto+'\n'
     
@@ -136,59 +113,59 @@ class Particles:
     def write(self):
         return self.report
         
-    def location(self):
-        return self.position
  
 class Electron(Particles):
     def __init__(self,initial):
         Particles.__init__(self,'electron',initial) 
         self.charge = -1
 
-    def get_charge(self):
-        return self.charge
-
 class Exciton(Particles):
     def __init__(self,kind,initial):
         Particles.__init__(self,kind,initial) 
         self.charge = 0
-
-    def get_charge(self):
-        return self.charge
 
 class Hole(Particles):
     def __init__(self,initial):
         Particles.__init__(self,'hole',initial) 
         self.charge = 1
 
-    def get_charge(self):
-        return self.charge
-
 ###TAXAS#################################################################################    
+def raios(num,Rf,mat,lifetime,mats):
+    Raios = np.zeros(num) + Rf[(mat,mat)]
+    materiais = [i for i in lifetime.keys() if i != mat]
+    for m in materiais:
+        R2 = np.zeros(num) + Rf[(mat,m)]
+        Raios[mats == m] = R2[mats == m]
+    return Raios
+
+
 class Forster:
     def __init__(self,**kwargs):
         self.kind = 'jump'
         self.Rf = kwargs['Rf']
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
-       
+        self.alpha = 1.15*0.53
+
+
     def rate(self,**kwargs):
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.get_mats()
-        local  = ex.location()
+        mats   = system.mats    
+        local  = ex.position    
+        mat = mats[local]
+        num = len(mats)
         
-        Rf       = np.array([self.Rf.get((mats[local],i)) for i in mats])
-        lifetime = self.lifetime.get(mats[local])
-        mu       = self.mu.get(mats[local])
+        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
         
-        alpha = 1.15*0.53
-        taxa = (1/lifetime)*((Rf/(alpha*mu + r))**6)
+        lifetime = self.lifetime[mat]
+        mu       = self.mu[mat]
+        
+        taxa = (1/lifetime)*((Rf/(self.alpha*mu + r))**6)
         taxa = np.nan_to_num(taxa)
         return taxa
 
-    def label(self):
-        return self.kind
 
     def action(self,particle,system,local):
         particle.move(local)
@@ -199,30 +176,66 @@ class ForsterT:
         self.Rf = kwargs['Rf']
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
-       
+        self.alpha = 1.15*0.53
+
     def rate(self,**kwargs):
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.get_mats()
-        local  = ex.location()
+        mats   = system.mats 
+        local  = ex.position 
+        mat = mats[local]
+        num = len(mats)
         
-        Rf       = np.array([self.Rf.get((mats[local],i)) for i in mats])
-        lifetime = self.lifetime.get(mats[local])
-        mu       = self.mu.get(mats[local])
+        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
+        lifetime = self.lifetime[mat]
+        mu       = self.mu[mat]
         
-        alpha = 1.15*0.53
-        taxa = (1/lifetime)*((Rf/(alpha*mu + r))**6)
+        taxa = (1/lifetime)*((Rf/(self.alpha*mu + r))**6)
         taxa = np.nan_to_num(taxa)
         return taxa
 
-    def label(self):
-        return self.kind
+    def action(self,particle,system,local):
+        particle.move(local)
+        energies = system.t1 
+        particle.convert(system,energies,self.kind,'singlet')
+
+class ForsterKappa:
+    def __init__(self,**kwargs):
+        self.kind = 'jump'
+        self.Rf = kwargs['Rf']
+        self.lifetime = kwargs['life']
+        self.mu = kwargs['mu']
+        self.alpha = 1.15*0.53
+
+    def rate(self,**kwargs):
+        r      = kwargs['r']
+        system = kwargs['system']
+        ex     = kwargs['particle']
+        mats   = system.mats    
+        local  = ex.position    
+        mat = mats[local]
+        num = len(mats)
+        mus = np.copy(system.mu)
+
+        R = np.copy(system.R) 
+        dR = R - R[local,:]
+        modulo = np.sqrt(np.sum(dR**2,axis=1))[:,np.newaxis]
+        dR /= modulo
+
+        kappa = np.inner(mus[local,:],mus) -  3*(np.inner(mus[local,:],dR)*(np.sum(mus*dR,axis=1)))  
+        #print(np.nanmean(kappa**2),max(kappa**2),min(kappa**2))
+        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
+        
+        lifetime = self.lifetime[mat]
+        mu       = system.norma_mu[local]
+
+        taxa = (1/lifetime)*(kappa**2)*((Rf/(self.alpha*mu + r))**6)
+        taxa = np.nan_to_num(taxa)
+        return taxa
 
     def action(self,particle,system,local):
         particle.move(local)
-        energies = system.get_t1()
-        particle.convert(system,energies,self.kind,'singlet')
 
 class Dexter:
     def __init__(self,**kwargs):
@@ -235,17 +248,17 @@ class Dexter:
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.get_mats()
-        local  = ex.location()
+        mats   = system.mats  
+        local  = ex.position  
+        mat = mats[local]
+        num = len(mats)
         
-        Rd       = np.array([self.Rd.get((mats[local],i)) for i in mats])
-        lifetime = self.lifetime.get(mats[local])
-        L        = self.L.get(mats[local])
+        Rd = raios(num,self.Rd,mat,self.lifetime,mats)
+        
+        lifetime = self.lifetime[mat]
+        L        = self.L[mat]
         taxa = (1/lifetime)*np.exp((2*Rd/L)*(1-r/Rd))
         return taxa
-
-    def label(self):
-        return self.kind
 
     def action(self,particle,system,local):
         particle.move(local)
@@ -261,12 +274,9 @@ class Fluor:
         lifetime = self.lifetime.get(material)
         taxa = 1/lifetime
         return taxa
-
-    def label(self):
-        return self.kind
      
     def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.get_s1()) 
+        particle.kill(self.kind,system,system.s1) 
 
 class Phosph:
     def __init__(self,**kwargs):
@@ -278,12 +288,9 @@ class Phosph:
         lifetime = self.lifetime.get(material)
         taxa = 1/lifetime
         return taxa
-
-    def label(self):
-        return self.kind
      
     def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.get_t1())
+        particle.kill(self.kind,system,system.t1)
         
 class Nonrad:
     def __init__(self,**kwargs):
@@ -294,12 +301,9 @@ class Nonrad:
         material = kwargs['material']
         taxa = self.taxa.get(material)
         return taxa
-
-    def label(self):
-        return self.kind
      
     def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.get_s1())        
+        particle.kill(self.kind,system,system.s1)        
 
 class ISC:
     def __init__(self,**kwargs):
@@ -310,16 +314,13 @@ class ISC:
         material = kwargs['material']
         taxa = self.taxa.get(material)
         return taxa
-
-    def label(self):
-        return self.kind
      
     def action(self,particle,system,local):
-        if particle.kind() == 'singlet':
-            energies = system.get_s1()
+        if particle.species == 'singlet':
+            energies = system.s1 
             newkind  = 'triplet'
-        elif particle.kind() == 'triplet': 
-            energies = system.get_t1()
+        elif particle.species == 'triplet': 
+            energies = system.t1  
             newkind  = 'singlet'   
         particle.convert(system,energies,self.kind,newkind)
 
@@ -331,28 +332,33 @@ class ForsterDye:
         self.t   = kwargs['t']   #Hopping integral in graphene in eV
         self.mu  = kwargs['mu']
         self.eps = kwargs['eps']
+        self.switch = kwargs['switch']
     
     def rate(self,**kwargs):
-        r = kwargs['r']
+        r      = kwargs['r']
         system = kwargs['system']
-        local  = kwargs['location']
-        hw   =  system.get_s1()[local]
-        e    = -1.60217662*(10**(-19)) #Electron charge
-        hbar = 6.582*(10**(-16)) #Reduced Planck's constant
+        ex     = kwargs['particle']
+        mats   = system.mats  
+        local  = ex.position  
+        hw     =  system.s1[local] 
+        mat = mats[local]
+        num = len(mats)
+        
         lcc  = self.lcc #C-C distances in Angstrom
-        t    = self.t #Hopping integral in graphene in eV
-        mu   = self.mu
+        t    = self.t   #Hopping integral in graphene in eV
+        mu   = self.mu[mat]
         eps  = self.eps
+        
+        switch = raios(num,self.switch,mat,self.mu,mats)
+        
         epsilon = eps*8.85*10**(-22) #Permitivity in C/VAngstrom    
         vf = t*(3/2)*lcc
         q  = np.linspace(0,hw/vf,1000)
         q  = q[:-1]
-        funcao = np.exp(-2*q*r)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2))
-        taxa = 10**(-12)*((mu*0.53)**2)*(1/48)*(e**2)/((2*np.pi*hbar)*(epsilon**2))*np.trapz(funcao,q)
+        funcao =  np.array([np.trapz(np.exp(-2*q*R)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2))) for R in r])  
+        taxa = switch*10**(-12)*((mu*0.53)**2)*(1/48)*(e**2)/((2*np.pi*hbar)*(epsilon**2))*funcao
+        taxa = np.nan_to_num(taxa)
         return taxa
-
-    def label(self):
-        return self.kind
 
     def action(self,particle,system,local):
         particle.move(local)        
@@ -368,12 +374,15 @@ class MillerAbrahams:
         system = kwargs['system']
         r      = kwargs['r']
         particle = kwargs['particle']
-        local = particle.location()
-        mats = system.get_mats()
+        local = particle.position 
+        mats = system.mats        
+        mat = mats[local]
+        num = len(mats)
         
-        charge = 1*particle.get_charge()
-        H      = np.array([self.H.get((mats[local],i)) for i in mats])
-        in_loc_rad  = self.inv.get(mats[local])
+        charge = particle.charge 
+
+        H      = raios(num,self.H,mat,self.inv,mats)
+        in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
         r[r == np.inf] = 0 
@@ -381,9 +390,9 @@ class MillerAbrahams:
         potential -= charge*abs(e)/(4*np.pi*epsilon*r)
         potential = np.nan_to_num(potential,posinf=np.inf,neginf=-np.inf)  
       
-        if particle.kind() == 'electron':
-            engs  = 1*system.get_LUMO()
-            homos = 1*system.get_HOMO()
+        if particle.species == 'electron':
+            engs  = np.copy(system.LUMO)
+            homos = np.copy(system.HOMO)
             indices = np.where(potential == np.inf)
             for m in indices[0]:
                 potential[m] = 0
@@ -393,9 +402,9 @@ class MillerAbrahams:
             #print('elec',DE)
             #print('pot',potential)
             #print('englocal',engs[local],local,potential[local])
-        elif particle.kind() == 'hole':
-            engs  = 1*system.get_HOMO()
-            lumos = 1*system.get_LUMO()
+        elif particle.species == 'hole':
+            engs  = np.copy(system.HOMO)
+            lumos = np.copy(system.LUMO)
             indices = np.where(potential == -np.inf)
             for m in indices[0]:
                 potential[m] = 0
@@ -429,3 +438,70 @@ class MillerAbrahams:
      
     def action(self,particle,system,local):
         particle.move(local)    
+
+class Dissociation:
+    def __init__(self,**kwargs):
+        self.kind = 'dissociation'
+        self.H = kwargs['H']
+        self.inv      = kwargs['invrad']
+        self.T        = kwargs['T']
+        self.Map      = {}
+
+    def rate(self,**kwargs):
+        system = kwargs['system']
+        r      = kwargs['r']
+        particle = kwargs['particle']
+        local = particle.position 
+        mats = system.mats        
+        mat = mats[local]
+        num = len(mats)
+
+        lumos = np.copy(system.LUMO)
+        homos = np.copy(system.HOMO)
+        s1s   = np.copy(system.s1) 
+
+        H      = raios(num,self.H,mat,self.inv,mats)
+        in_loc_rad  = self.inv[mat]
+        
+        np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
+        r[r == np.inf] = 0 
+        
+        DEe = lumos - (homos[local] + s1s[local])
+        DEh = (lumos[local] - s1s[local]) - homos  
+        
+
+        taxae = (10E-12)*(H**2)*np.exp(-2*in_loc_rad*r)*np.exp((DEe+abs(DEe))/(2*kb*self.T))
+        taxah = (10E-12)*(H**2)*np.exp(-2*in_loc_rad*r)*np.exp((DEh+abs(DEh))/(2*kb*self.T))
+        taxae[r == 0] = 0
+        taxah[r == 0] = 0
+        taxae = np.nan_to_num(taxae)
+        taxah = np.nan_to_num(taxah)
+        
+        TE = np.sum(taxae)
+        TH = np.sum(taxah)
+        if random.uniform(0,1) <= TE/(TE+TH):
+            self.Map[particle.identity] = 'electron'
+            return taxae
+        else:
+            self.Map[particle.identity] = 'hole'
+            return taxah    
+            
+
+    def label(self):
+        return self.kind
+     
+    def action(self,particle,system,local):
+        if self.Map[particle.identity] == 'electron':
+            e = Electron(local)
+            h = Hole(particle.position)
+        else:
+           e = Electron(particle.position)
+           h = Hole(local) 
+
+        h.identity = -1*e.identity   
+        system.add_particle(e)
+        system.add_particle(h)
+        del self.Map[particle.identity]
+        particle.kill('dissociation',system,system.s1)
+
+
