@@ -7,9 +7,10 @@ from kmc_classes import *
 import sys
 import warnings
 import PARAM
-
 warnings.filterwarnings("ignore")   
-plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
+
+#usuario de ruindows
+#plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
 
 identifier     = PARAM.identifier 
 animation_mode = PARAM.animation_mode
@@ -140,6 +141,9 @@ def animate(num,system,ax):
     
     ax.scatter(X0,Y0,Z0,alpha=0.1,color='black')
     ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
+    
+   
+    
     try:  
         for s in Ss:
             xs = X[s.position]        	
@@ -174,20 +178,42 @@ def animate(num,system,ax):
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys())
     
+    
+    #debug infos
+    ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
+    ax.text2D(0.03, 0.94, "eps  = %.2f" % (PARAM.relative_eps), transform=ax.transAxes) #eps
+    
+    
     return ax,
 
 
 if animation_mode:
+
+    #path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.gif"
+    path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.mp4"
+        
+
     system = PARAM.make_system()
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
+    
+    
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
-                                interval=200, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
+                                interval=200, blit=False,repeat=False,cache_frame_data=True,save_count=500) 
     #ani.save('charges.avi', fps=20, dpi=300)
     #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
+    
+    #salvar .gif
+    #ani.save(path, writer='imagemagick', fps=30)
+    
+    #salvar .mp4
+    #writervideo = animation.FFMpegWriter(fps=30) 
+    #ani.save(path, writer=writervideo)
+    
     plt.show()
 else:
     for i in range(rounds):
+    
         system = PARAM.make_system()
         step(system)
-        spectra(system)
+        spectra(system)     

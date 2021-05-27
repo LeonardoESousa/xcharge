@@ -35,6 +35,36 @@ def read_lattice(file_name):
 
 
 #### CHOOSE A FUNC TO GENERATE EXCITONS
+def gen_electron(param):
+    #num: number of excitons
+    #X: one of the position vectors 
+    
+    num    = param[0] #relabeling the input parameters 
+    X      = param[1]
+       
+    Ss, species = [], []
+    selection = range(X)
+    chosen = []
+    while len(Ss) < num:
+        number = random.choice(selection)
+        Ss.append(Electron(number))
+    return Ss
+    
+def gen_hole(param):
+    #num: number of excitons
+    #X: one of the position vectors 
+    
+    num    = param[0] #relabeling the input parameters 
+    X      = param[1]
+       
+    Ss, species = [], []
+    selection = range(X)
+    chosen = []
+    while len(Ss) < num:
+        number = random.choice(selection)
+        Ss.append(Hole(number))
+    return Ss
+    
 def gen_pair_elechole(param):
     #num: number of excitons
     #X: one of the position vectors 
@@ -68,7 +98,7 @@ def gen_pair_elechole(param):
 def gen_excitons(param):
     num    = param[0] #relabeling the input parameters 
     X      = param[1]
-    
+       
     Ss, species = [], []
     selection = range(X)
     chosen = []

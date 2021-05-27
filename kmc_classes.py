@@ -1,10 +1,10 @@
 import numpy as np
 import random
 
-epsilon = (3.5)*8.85*10**(-22) #Permitivity in C/VAngstrom
-e       = -1.60217662*(10**(-19)) #Electron charge    
-kb      = 8.617*(10**(-5))    # Boltzmann constant
-hbar    = 6.582*(10**(-16)) #Reduced Planck's constant
+epsilon_vaccum = (1)*8.85*10**(-22) #Permitivity in C/VAngstrom
+e              = -1.60217662*(10**(-19)) #Electron charge    
+kb             = 8.617*(10**(-5))    # Boltzmann constant
+hbar           = 6.582*(10**(-16)) #Reduced Planck's constant
         
 
 
@@ -33,7 +33,9 @@ class System:
     def count_particles(self):
         return len(self.particles)
     
-    
+    def set_medium(self,eps_rel):
+        self.epsilon = eps_rel*epsilon_vaccum
+        
     def get_num(self):
         return len(self.X)
            
@@ -64,7 +66,7 @@ class System:
                     dz = np.nan_to_num(self.Z - self.Z[s.position])
                     r  = np.sqrt(dx**2+dy**2+dz**2)
                     #r[r == 0] = np.inf
-                    potential += s.charge*abs(e)/(4*np.pi*epsilon*r)
+                    potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential
             self.potential_time = self.time
         else:
@@ -353,7 +355,7 @@ class ForsterDye:
         
         switch = raios(num,self.switch,mat,self.mu,mats)
         
-        epsilon = eps*8.85*10**(-22) #Permitivity in C/VAngstrom    
+        epsilon = system.epsilon #Permitivity in C/VAngstrom    
         vf = t*(3/2)*lcc
         q  = np.linspace(0,hw/vf,1000)
         q  = q[:-1]
@@ -389,7 +391,7 @@ class MillerAbrahams:
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
         r[r == np.inf] = 0 
         potential = 1*system.electrostatic()
-        potential -= charge*abs(e)/(4*np.pi*epsilon*r)
+        potential -= charge*abs(e)/(4*np.pi*system.epsilon*r)
         potential = np.nan_to_num(potential,posinf=np.inf,neginf=-np.inf)  
       
         if particle.species == 'electron':

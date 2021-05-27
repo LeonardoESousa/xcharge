@@ -11,7 +11,8 @@ anni = True
 lattice_filename = "lattice.txt"
 rounds = 1 #number of rounds
 num_ex = 20 #number of excitons
-
+relative_eps = 3.5 #relative permitivity
+ 
 ###SINGLET RATES
 r00 = 20.8   #Forster radius material 0 --> material 0 (Angstrom)    
 r01 = 22.2   #material 0 --> material 1      
@@ -77,14 +78,15 @@ X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
 #gen_function       = morphology.gen_pair_elechole
 gen_function       = morphology.gen_excitons
+#gen_function       = morphology.gen_electron
 parameters_genfunc = [num_ex,len(X)]
 
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]
 
 #annihi_funcs_array = [morphology.anni_ele_hol] 
-annihi_funcs_array = [morphology.anni_sing]
-#annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
+#annihi_funcs_array = [morphology.anni_sing]
+annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
 
 
 #### GENERATE THE SYSTEM
@@ -100,7 +102,7 @@ def make_system():
     system = System(X,Y,Z,Mats)    
     system.set_energies(ene_dic)
     system.set_dipoles(dipoles)
+    system.set_medium(relative_eps)
     excitons = gen_function(parameters_genfunc)
     system.set_particles(excitons)
     return system
-
