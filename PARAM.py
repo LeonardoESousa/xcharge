@@ -1,6 +1,5 @@
 from kmc_classes import *
 import morphology
-
 # KMC PARAMETERS 
 
 #BASIC PARAMETERS
@@ -8,9 +7,10 @@ identifier = 'New'
 time_limit = np.inf
 animation_mode = True
 anni = True
+pause =True # if you want to annimation stops in the first frame (debug purposes)
 lattice_filename = "lattice.txt"
 rounds = 1 #number of rounds
-num_ex = 20 #number of excitons
+num_ex = 200 #number of excitons
 relative_eps = 3.5 #relative permitivity
  
 ###SINGLET RATES
@@ -66,7 +66,8 @@ dissociation = Dissociation(H=H,invrad=invrad,T=300)
 
 
 ###ForsterKappa
-forster   = ForsterKappa(Rf=raios,life=lifetimes,mu=mus)
+forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
+#forster   = ForsterKappa(Rf=raios,life=lifetimes,mu=mus)
 
 #PROCESSES
 processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
@@ -76,10 +77,24 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 #Morphology functions
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
+#Type of particle
 #gen_function       = morphology.gen_pair_elechole
 gen_function       = morphology.gen_excitons
 #gen_function       = morphology.gen_electron
-parameters_genfunc = [num_ex,len(X)]
+
+
+#Shape of the particle's generation
+#Getting filter funcs from morphology		
+shape_dic = {'sphere': morphology.sphere_conditional, 'plane':morphology.plane_conditional,'cone':morphology.cone_conditional,'cilinder':morphology.cilinder_conditional,'free':morphology.no_conditional}
+
+#selection = range(len(X)) #if you dont want to mess with the formation
+selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[0],shape="free",origin=None,argum=None)
+#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="sphere",origin=[10,10,10],argum=10)
+#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="plane",origin=[10,10,10],argum=[1,0,0])
+
+parameters_genfunc = [num_ex,selection]
+
+
 
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]

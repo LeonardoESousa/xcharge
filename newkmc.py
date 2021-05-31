@@ -15,6 +15,7 @@ warnings.filterwarnings("ignore")
 identifier     = PARAM.identifier 
 animation_mode = PARAM.animation_mode
 time_limit     = PARAM.time_limit 
+pause          = PARAM.pause # to freeze on the first frame
 
 #getting parameters from
 rounds        = PARAM.rounds
@@ -24,7 +25,9 @@ anni          = PARAM.anni
 
 anni_funcs_array = PARAM.annihi_funcs_array
 
-           
+  
+
+         
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
     locs = np.array([s.position for s in Ss])
@@ -131,6 +134,7 @@ def animate(num,system,ax):
     #plt.cla()
     ax.clear()
     
+
     X0 = X[mats == 0]
     Y0 = Y[mats == 0]
     Z0 = Z[mats == 0]
@@ -183,10 +187,19 @@ def animate(num,system,ax):
     ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
     ax.text2D(0.03, 0.94, "eps  = %.2f" % (PARAM.relative_eps), transform=ax.transAxes) #eps
     
-    
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')     
+
+   
+    if pause:
+        ani.event_source.stop()
+        
+        
     return ax,
 
 
+      
 if animation_mode:
 
     #path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.gif"
@@ -196,8 +209,8 @@ if animation_mode:
     system = PARAM.make_system()
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    
-    
+       
+   
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
                                 interval=200, blit=False,repeat=False,cache_frame_data=True,save_count=500) 
     #ani.save('charges.avi', fps=20, dpi=300)
@@ -211,6 +224,7 @@ if animation_mode:
     #ani.save(path, writer=writervideo)
     
     plt.show()
+    
 else:
     for i in range(rounds):
     

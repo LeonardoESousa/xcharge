@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import collections
 from kmc_classes import *
-
+from math import sqrt
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
 
@@ -39,11 +39,10 @@ def gen_electron(param):
     #num: number of excitons
     #X: one of the position vectors 
     
-    num    = param[0] #relabeling the input parameters 
-    X      = param[1]
+    num       = param[0] #relabeling the input parameters 
+    selection = param[1]
        
     Ss, species = [], []
-    selection = range(X)
     chosen = []
     while len(Ss) < num:
         number = random.choice(selection)
@@ -54,11 +53,11 @@ def gen_hole(param):
     #num: number of excitons
     #X: one of the position vectors 
     
-    num    = param[0] #relabeling the input parameters 
-    X      = param[1]
+    num       = param[0] #relabeling the input parameters 
+    selection = param[1]
        
     Ss, species = [], []
-    selection = range(X)
+
     chosen = []
     while len(Ss) < num:
         number = random.choice(selection)
@@ -69,12 +68,12 @@ def gen_pair_elechole(param):
     #num: number of excitons
     #X: one of the position vectors 
     
-    num    = param[0] #relabeling the input parameters 
-    X      = param[1]
+    num       = param[0] #relabeling the input parameters 
+    selection = param[1]
     
     
     Ss, species = [], []
-    selection = range(X)
+    
     chosen = []
     while len(Ss) < num:
         number = random.choice(selection)
@@ -96,16 +95,29 @@ def gen_pair_elechole(param):
     return Ss
     
 def gen_excitons(param):
-    num    = param[0] #relabeling the input parameters 
-    X      = param[1]
+    num       = param[0] #relabeling the input parameters 
+    selection = param[1]
        
     Ss, species = [], []
-    selection = range(X)
+    
     chosen = []
     while len(Ss) < num:
         number = random.choice(selection)
         Ss.append(Exciton('singlet',number))
     return Ss
+
+def gen_excitonsv2(param):
+    num       = param[0] #relabeling the input parameters 
+    selection = param[1]
+       
+    Ss, species = [], []
+    chosen = []
+    while len(Ss) < num:
+        number = random.choice(selection)
+        Ss.append(Exciton('singlet',number))
+    return Ss
+
+
 
 ##########################################
 # FUNC TO GIVE S1 AND TRIPLET ENERGIES	
@@ -141,13 +153,100 @@ def anni_sing(system,tipos,Ss,indices,locs): # e se tiver 4 excitons no mesmo si
     if 'singlet' in duplicates:        
         Ss[indices[0][tipos.index('singlet')]].kill('anni',system,system.s1)
 ############################################           
-                
+# FUNCS TO SHAPE THE GENERATION OF PARTICLES
+
+#main function, regardless of the conditional, filters the sites according to it	
+def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
+
+	X_cop     = X.copy()
+	Y_cop     = Y.copy()
+	Z_cop     = Z.copy()
+	Mats_cop  = Mats.copy()
+	selection = []
+	
+	
+	mat_restriction     = kwargs['mat']   #list of materials that will generate part
+	shape_type          = kwargs['shape'] #the shape that the particles will be aranged
+	argument_shape_func = kwargs['argum'] #arguments of the shape func
+	origin              = kwargs['origin'] #origin of the shape
+	conditional = shape_dic.get(shape_type)
+	
+	for index_mol in range(len(X)):
+
+		x   = X_cop[index_mol]
+		y   = Y_cop[index_mol]
+		z   = Z_cop[index_mol]
+		mat = Mats_cop[index_mol]
+		
+		if conditional([x,y,z],origin,argument_shape_func):
+			if (mat in mat_restriction) or (mat_restriction[0] == None):
+				selection.append(index_mol)
+	return selection                
 
 
+#funcs that define the filtering, like inside a sphere, plane etc
 
+def sphere_conditional(pos,r0,r_min):
+	x  = pos[0] - r0[0]
+	y  = pos[1] - r0[1]
+	z  = pos[2] - r0[2]
+	
+	r_pos = sqrt(x**2 + y**2 + z**2)
+	
+	return r_pos <= r_min #condition to be inside the sphere
+	
+def plane_conditional(pos,r0,COEF):
 
+	#Equation of plane is defined as 
+	# A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
+	x  = pos[0] - r0[0]
+	y  = pos[1] - r0[1]
+	z  = pos[2] - r0[2]
+	
+	A = COEF[0]
+	B = COEF[1]
+	C = COEF[2]
+	
+	cond = A*x + B*y + C*z == 0 #condition to be in the plane
+	
+	return cond
+	
+def cone_conditional(pos,r0,COEF): #hallow cone
 
+	#Equation of plane is defined as 
+	# A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
+	x  = pos[0] - r0[0]
+	y  = pos[1] - r0[1]
+	z  = pos[2] - r0[2]
+	
+	A = COEF[0]
+	B = COEF[1]
+	C = COEF[2]
+	
+	cond = (x**2)/(A**2) + (y**2)/(B**2) -(z**2)/(C**2) == 0 #condition to be in the plane
+	
+	return cond	
+	
+def cilinder_conditional(pos,r0,COEF):
 
+	#Equation of plane is defined as 
+	# A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
+	x  = pos[0] - r0[0]
+	y  = pos[1] - r0[1]
+	z  = pos[2] - r0[2]
+	
+	RHO_min   = COEF
+	
+	cond = sqrt( x**2 + y**2) <= RHO_min
+	
+	#print(sqrt( x**2 + y**2))
+	
+	return cond	
+		
+def no_conditional(pos,r0,COEF):
+	return True			
+	
+######################################################
 
 
 
