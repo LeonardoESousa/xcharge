@@ -54,14 +54,14 @@ dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
 phosph = Phosph(life=phlife)
 
 ###MillerAbrahams RATES
-H = {(0,0):0.1,(0,1):0.1,(1,0):0.1,(1,1):0.1}
-invrad = {0:10.5,1:10.5}
-miller = MillerAbrahams(H=H,invrad=invrad,T=300)
+H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
+invrad = {0:1.5,1:1.5}
+miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
 
 ###Dissociation
-H = {(0,0):50000.0,(0,1):50000.0,(1,0):100.0,(1,1):100.0}
+H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
 invrad = {0:0.1,1:0.1}
-dissociation = Dissociation(H=H,invrad=invrad,T=300)
+dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
 
 
 ###ForsterKappa
@@ -75,16 +75,16 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 #Morphology functions
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
-#gen_function       = morphology.gen_pair_elechole
-gen_function       = morphology.gen_excitons
+gen_function       = morphology.gen_pair_elechole
+#gen_function       = morphology.gen_excitons
 parameters_genfunc = [num_ex,len(X)]
 
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]
 
 #annihi_funcs_array = [morphology.anni_ele_hol] 
-annihi_funcs_array = [morphology.anni_sing]
-#annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
+#annihi_funcs_array = [morphology.anni_sing]
+annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
 
 
 #### GENERATE THE SYSTEM

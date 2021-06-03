@@ -366,7 +366,7 @@ class ForsterDye:
 class MillerAbrahams:
     def __init__(self,**kwargs):
         self.kind = 'miller-abrahams'
-        self.H = kwargs['H']
+        self.AtH = kwargs['AtH']
         self.inv      = kwargs['invrad']
         self.T        = kwargs['T']
 
@@ -381,7 +381,7 @@ class MillerAbrahams:
         
         charge = particle.charge 
 
-        H      = raios(num,self.H,mat,self.inv,mats)
+        AtH      = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
@@ -421,7 +421,7 @@ class MillerAbrahams:
         #taxa = (10**-12)*(2*np.pi/hbar)*(H**2)*(1/np.sqrt(4*np.pi*reorg*kb*self.T))*np.exp(
         #                       -2*in_loc_rad*r)*np.exp(-((DE + reorg)**2)/(4*reorg*kb*self.T))
         #
-        taxa = (10E-12)*(H**2)*np.exp(
+        taxa = (10E-12)*(AtH)*np.exp(
                                -2*in_loc_rad*r)*np.exp(charge*DE/(2*kb*self.T))
         taxa[r == 0] = 0
 
@@ -442,7 +442,7 @@ class MillerAbrahams:
 class Dissociation:
     def __init__(self,**kwargs):
         self.kind = 'dissociation'
-        self.H = kwargs['H']
+        self.AtH = kwargs['AtH']
         self.inv      = kwargs['invrad']
         self.T        = kwargs['T']
         self.Map      = {}
@@ -460,7 +460,7 @@ class Dissociation:
         homos = np.copy(system.HOMO)
         s1s   = np.copy(system.s1) 
 
-        H      = raios(num,self.H,mat,self.inv,mats)
+        AtH      = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
@@ -470,8 +470,8 @@ class Dissociation:
         DEh = (lumos[local] - s1s[local]) - homos  
         
 
-        taxae = (10E-12)*(H**2)*np.exp(-2*in_loc_rad*r)*np.exp((DEe+abs(DEe))/(2*kb*self.T))
-        taxah = (10E-12)*(H**2)*np.exp(-2*in_loc_rad*r)*np.exp((DEh+abs(DEh))/(2*kb*self.T))
+        taxae = (10E-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp((DEe+abs(DEe))/(2*kb*self.T))
+        taxah = (10E-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp((DEh+abs(DEh))/(2*kb*self.T))
         taxae[r == 0] = 0
         taxah[r == 0] = 0
         taxae = np.nan_to_num(taxae)
