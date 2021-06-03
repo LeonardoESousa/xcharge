@@ -65,7 +65,7 @@ class System:
                     dy = np.nan_to_num(self.Y - self.Y[s.position])
                     dz = np.nan_to_num(self.Z - self.Z[s.position])
                     r  = np.sqrt(dx**2+dy**2+dz**2)
-                    #r[r == 0] = np.inf
+                    r[r == 0] = np.inf
                     potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential
             self.potential_time = self.time
@@ -370,7 +370,7 @@ class ForsterDye:
 class MillerAbrahams:
     def __init__(self,**kwargs):
         self.kind = 'miller-abrahams'
-        self.H = kwargs['H']
+        self.AtH = kwargs['AtH']
         self.inv      = kwargs['invrad']
         self.T        = kwargs['T']
 
@@ -385,68 +385,90 @@ class MillerAbrahams:
         
         charge = particle.charge 
 
-        H      = raios(num,self.H,mat,self.inv,mats)
+        AtH      = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
-        r[r == np.inf] = 0 
-        potential = 1*system.electrostatic()
+        
+        potential = np.copy(system.electrostatic())
         potential -= charge*abs(e)/(4*np.pi*system.epsilon*r)
-        potential = np.nan_to_num(potential,posinf=np.inf,neginf=-np.inf)  
+        
       
+        indices_e  = [ x.position for x in system.particles if x.charge == -1 and x.position != local ]
+        indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
+	
+	
         if particle.species == 'electron':
+            
             engs  = np.copy(system.LUMO)
             homos = np.copy(system.HOMO)
-            indices = np.where(potential == np.inf)
-            for m in indices[0]:
+            
+
+            for m in indices_h:
                 potential[m] = 0
                 engs[m] = homos[m]
+                
+            for m in indices_e:
+                potential[m] = 0
+                engs[m] = -np.inf             
+                
             engs += -1*potential
             DE = (engs - engs[local]) + abs(engs - engs[local])
-            #print('elec',DE)
-            #print('pot',potential)
-            #print('englocal',engs[local],local,potential[local])
         elif particle.species == 'hole':
             engs  = np.copy(system.HOMO)
             lumos = np.copy(system.LUMO)
-            indices = np.where(potential == -np.inf)
-            for m in indices[0]:
+          
+            for m in indices_e:
                 potential[m] = 0
                 engs[m] = lumos[m]
+                
+            for m in indices_h:
+                potential[m] = 0
+                engs[m] = +np.inf 
+                 
             engs += 1*potential
             DE = (engs - engs[local]) + abs(engs - engs[local])
             DE *= -1
-            #print('hole',DE)
-            #print('pot',potential)
-            #print('englocal',engs[local],local,potential[local])
             
         
-
-        #taxa = (10**-12)*(2*np.pi/hbar)*(H**2)*(1/np.sqrt(4*np.pi*reorg*kb*self.T))*np.exp(
-        #                       -2*in_loc_rad*r)*np.exp(-((DE + reorg)**2)/(4*reorg*kb*self.T))
-        #
-        taxa = (10E-12)*(H**2)*np.exp(
+        taxa = (10E-12)*(AtH)*np.exp(
                                -2*in_loc_rad*r)*np.exp(charge*DE/(2*kb*self.T))
+                               
+                               
+        '''                 
+        # experimental                       
+        if particle.species == 'hole':
+            for i in indices_e:
+            	taxa[i] = 1
+        
+        if particle.species == 'electron':
+            for i in indices_h:
+            	taxa[i] = 1
+        '''   	
+            	
+            	               
         taxa[r == 0] = 0
 
         taxa = np.nan_to_num(taxa)
-        #print(particle.kind())
-        #print('taxa',taxa)
-        #print(DE)
-        #input()
-        #print(particle.kind(),max(taxa),engs[list(taxa).index(max(taxa))])
         return taxa
 
     def label(self):
         return self.kind
      
     def action(self,particle,system,local):
-        particle.move(local)    
+        indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    
+    
+    	
+        if particle.species == 'hole' and local in indices_e:
+            particle.move(particle.position) 
+            print("a")
+        else:
+            particle.move(local)
 
 class Dissociation:
     def __init__(self,**kwargs):
         self.kind = 'dissociation'
-        self.H = kwargs['H']
+        self.AtH = kwargs['AtH']
         self.inv      = kwargs['invrad']
         self.T        = kwargs['T']
         self.Map      = {}
@@ -464,7 +486,7 @@ class Dissociation:
         homos = np.copy(system.HOMO)
         s1s   = np.copy(system.s1) 
 
-        H      = raios(num,self.H,mat,self.inv,mats)
+        AtH      = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
@@ -474,8 +496,8 @@ class Dissociation:
         DEh = (lumos[local] - s1s[local]) - homos  
         
 
-        taxae = (10E-12)*(H**2)*np.exp(-2*in_loc_rad*r)*np.exp((DEe+abs(DEe))/(2*kb*self.T))
-        taxah = (10E-12)*(H**2)*np.exp(-2*in_loc_rad*r)*np.exp((DEh+abs(DEh))/(2*kb*self.T))
+        taxae = (10E-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp((DEe+abs(DEe))/(2*kb*self.T))
+        taxah = (10E-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp((DEh+abs(DEh))/(2*kb*self.T))
         taxae[r == 0] = 0
         taxah[r == 0] = 0
         taxae = np.nan_to_num(taxae)

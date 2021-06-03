@@ -6,21 +6,21 @@ import morphology
 identifier = 'New'
 time_limit = np.inf
 animation_mode = True
-anni = True
-pause =True # if you want to annimation stops in the first frame (debug purposes)
+anni  = True
+pause = False # if you want to annimation stops in the first frame (debug purposes)
 lattice_filename = "lattice.txt"
 rounds = 1 #number of rounds
-num_ex = 200 #number of excitons
+num_ex = 50 #number of excitons
 relative_eps = 3.5 #relative permitivity
  
 ###SINGLET RATES
-r00 = 20.8   #Forster radius material 0 --> material 0 (Angstrom)    
-r01 = 22.2   #material 0 --> material 1      
-r10 = 21.2        
-r11 = 26.5     
+r00 = 5   #Forster radius material 0 --> material 0 (Angstrom)    
+r01 = 5  #material 0 --> material 1      
+r10 = 5       
+r11 = 5     
 
-f0 = 2940.0 #lifetime of material 0
-f1 = 747.27 #lifetime of material 1
+f0 = 29 #lifetime of material 0
+f1 = 29 #lifetime of material 1
 
 #dipoles (a.u.)
 mu0 = 2.136
@@ -43,26 +43,26 @@ nonrad  = {0:0,1:0}
 nonradiative = Nonrad(rate=nonrad)
 
 #ENERGIES
-s1s = {0:(1.9,0.0), 1:(1.9,0.00)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
-t1s = {0:(1.2,0.0), 1:(1.2,0.00)} # triplet energy, disperison (eV)
+s1s = {0:(1.9,0.5), 1:(1.9,0.5)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
+t1s = {0:(1.2,0.5), 1:(1.2,0.5)} # triplet energy, disperison (eV)
 
 #TRIPLET RATES
 Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
-phlife = {0:5.291E11,1:np.inf}
+phlife = {0:5.29,1:5.29}
 Ls = {0:5.0,1:5.0}
 
 dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
 phosph = Phosph(life=phlife)
 
 ###MillerAbrahams RATES
-H = {(0,0):0.1,(0,1):0.1,(1,0):0.1,(1,1):0.1}
-invrad = {0:10.5,1:10.5}
-miller = MillerAbrahams(H=H,invrad=invrad,T=300)
+H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
+invrad = {0:1.5,1:1.5}
+miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
 
 ###Dissociation
 H = {(0,0):50000.0,(0,1):50000.0,(1,0):100.0,(1,1):100.0}
 invrad = {0:0.1,1:0.1}
-dissociation = Dissociation(H=H,invrad=invrad,T=300)
+dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
 
 
 ###ForsterKappa
@@ -72,28 +72,30 @@ forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
 #PROCESSES
 processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
 monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
-#fluor,isc,nonradiative
+
 
 #Morphology functions
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
 #Type of particle
-#gen_function       = morphology.gen_pair_elechole
-gen_function       = morphology.gen_excitons
+gen_function       = morphology.gen_pair_elechole
+#gen_function       = morphology.gen_excitons
 #gen_function       = morphology.gen_electron
-
+#gen_function       = morphology.gen_hole
 
 #Shape of the particle's generation
 #Getting filter funcs from morphology		
-shape_dic = {'sphere': morphology.sphere_conditional, 'plane':morphology.plane_conditional,'cone':morphology.cone_conditional,'cilinder':morphology.cilinder_conditional,'free':morphology.no_conditional}
+shape_dic = {'sphere': morphology.sphere_conditional, 'plane':morphology.plane_conditional,'cone':morphology.cone_conditional,'cilinder':morphology.cilinder_conditional,'rectangle': morphology.rectangle_conditional,'free':morphology.no_conditional}
 
-#selection = range(len(X)) #if you dont want to mess with the formation
-selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[0],shape="free",origin=None,argum=None)
-#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="sphere",origin=[10,10,10],argum=10)
-#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="plane",origin=[10,10,10],argum=[1,0,0])
+
+
+selection = range(len(X)) #if you dont want to mess with the formation
+#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="free",origin=None,argum=None)
+#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="rectangle",origin=None,argum=[[40,50],[0,60],[0,40]])
+#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="sphere",origin=[30,30,30],argum=15)
+#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="plane",origin=[10,10,10],argum=[60,60,0])
 
 parameters_genfunc = [num_ex,selection]
-
 
 
 ener_function      = morphology.homo_lumo

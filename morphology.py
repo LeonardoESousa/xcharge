@@ -100,7 +100,6 @@ def gen_excitons(param):
        
     Ss, species = [], []
     
-    chosen = []
     while len(Ss) < num:
         number = random.choice(selection)
         Ss.append(Exciton('singlet',number))
@@ -111,7 +110,7 @@ def gen_excitonsv2(param):
     selection = param[1]
        
     Ss, species = [], []
-    chosen = []
+    
     while len(Ss) < num:
         number = random.choice(selection)
         Ss.append(Exciton('singlet',number))
@@ -178,10 +177,12 @@ def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
 		z   = Z_cop[index_mol]
 		mat = Mats_cop[index_mol]
 		
+		
 		if conditional([x,y,z],origin,argument_shape_func):
 			if (mat in mat_restriction) or (mat_restriction[0] == None):
 				selection.append(index_mol)
-	return selection                
+				#print(x,y,z)
+	return selection               
 
 
 #funcs that define the filtering, like inside a sphere, plane etc
@@ -246,6 +247,29 @@ def cilinder_conditional(pos,r0,COEF):
 def no_conditional(pos,r0,COEF):
 	return True			
 	
+def rectangle_conditional(pos,r0,COEF):
+	
+	x  = pos[0]
+	y  = pos[1]
+	z  = pos[2]	
+	
+	xlim = COEF[0]
+	ylim = COEF[1]
+	zlim = COEF[2]
+	
+	x_i = xlim[0]
+	x_f = xlim[1]
+	
+	y_i = ylim[0]
+	y_f = ylim[1]
+	
+	z_i = zlim[0]
+	z_f = zlim[1]
+	
+	if ( ( x >= x_i) and ( x <= x_f)):
+		if ( ( y >= y_i) and ( y <= y_f)):
+			if ( ( z >= z_i) and ( z <= z_f)):
+				return True
 ######################################################
 
 

@@ -79,8 +79,21 @@ def decision(s,system):
     
     probs = np.cumsum(final_rate)/np.sum(final_rate)
     sorte = random.uniform(0,1)
+    
+    '''
     jump = np.where(sorte < probs)[0][0]
     dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
+    '''
+    
+    try:
+    	jump = np.where(sorte < probs)[0][0]
+    	dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
+    except:
+    	jump = 0
+    	dt = np.inf
+    
+    #print(dt)
+    #input()	
     #print(kind,Mats[local],Mats[chosen],probs,labels[jump],dt)
     return labels[jump], chosen[jump], dt
  
@@ -110,7 +123,7 @@ def step(system):
             return Ss       
     Ss = system.particles.copy()
     for s in Ss:
-        Ss[i].kill('alive',system,system.s1)
+        s.kill('alive',system,system.s1)
   
             
                 
