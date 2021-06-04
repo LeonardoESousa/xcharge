@@ -7,13 +7,15 @@ from kmc_classes import *
 import sys
 import warnings
 import PARAM
-
 warnings.filterwarnings("ignore")   
-plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
-identifier = PARAM.identifier 
 
+#usuario de ruindows
+#plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
+
+identifier     = PARAM.identifier 
 animation_mode = PARAM.animation_mode
-time_limit = PARAM.time_limit 
+time_limit     = PARAM.time_limit 
+pause          = PARAM.pause # to freeze on the first frame
 
 #getting parameters from
 rounds        = PARAM.rounds
@@ -23,7 +25,9 @@ anni          = PARAM.anni
 
 anni_funcs_array = PARAM.annihi_funcs_array
 
-           
+  
+
+         
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
     locs = np.array([s.position for s in Ss])
@@ -75,8 +79,21 @@ def decision(s,system):
     
     probs = np.cumsum(final_rate)/np.sum(final_rate)
     sorte = random.uniform(0,1)
+    
+    '''
     jump = np.where(sorte < probs)[0][0]
     dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
+    '''
+    
+    try:
+    	jump = np.where(sorte < probs)[0][0]
+    	dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
+    except:
+    	jump = 0
+    	dt = np.inf
+    
+    #print(dt)
+    #input()	
     #print(kind,Mats[local],Mats[chosen],probs,labels[jump],dt)
     return labels[jump], chosen[jump], dt
  
@@ -106,7 +123,7 @@ def step(system):
             return Ss       
     Ss = system.particles.copy()
     for s in Ss:
-        Ss[i].kill('alive',system,system.s1)
+        s.kill('alive',system,system.s1)
   
             
                 
@@ -130,6 +147,7 @@ def animate(num,system,ax):
     #plt.cla()
     ax.clear()
     
+
     X0 = X[mats == 0]
     Y0 = Y[mats == 0]
     Z0 = Z[mats == 0]
@@ -140,6 +158,9 @@ def animate(num,system,ax):
     
     ax.scatter(X0,Y0,Z0,alpha=0.1,color='black')
     ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
+    
+   
+    
     try:  
         for s in Ss:
             xs = X[s.position]        	
@@ -177,17 +198,35 @@ def animate(num,system,ax):
     return ax,
 
 
+      
 if animation_mode:
+
+    #path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.gif"
+    path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.mp4"
+        
+
     system = PARAM.make_system()
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
+       
+   
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
                                 interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
     #ani.save('charges.avi', fps=20, dpi=300)
     #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
+    
+    #salvar .gif
+    #ani.save(path, writer='imagemagick', fps=30)
+    
+    #salvar .mp4
+    #writervideo = animation.FFMpegWriter(fps=30) 
+    #ani.save(path, writer=writervideo)
+    
     plt.show()
+    
 else:
     for i in range(rounds):
+    
         system = PARAM.make_system()
         step(system)
         spectra(system)

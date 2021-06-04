@@ -1,10 +1,10 @@
 import numpy as np
 import random
 
-epsilon = (3.5)*8.85*10**(-22) #Permitivity in C/VAngstrom
-e       = -1.60217662*(10**(-19)) #Electron charge    
-kb      = 8.617*(10**(-5))    # Boltzmann constant
-hbar    = 6.582*(10**(-16)) #Reduced Planck's constant
+epsilon_vaccum = (1)*8.85*10**(-22) #Permitivity in C/VAngstrom
+e              = -1.60217662*(10**(-19)) #Electron charge    
+kb             = 8.617*(10**(-5))    # Boltzmann constant
+hbar           = 6.582*(10**(-16)) #Reduced Planck's constant
         
 
 
@@ -33,20 +33,24 @@ class System:
     def count_particles(self):
         return len(self.particles)
     
-    
+    def set_medium(self,eps_rel):
+        self.epsilon = eps_rel*epsilon_vaccum
+        
     def get_num(self):
         return len(self.X)
-    
-    def set_orbital(self,h,l):
-        self.HOMO = np.array(h)
-        self.LUMO = np.array(l)
-    
-    def set_s1(self, energy):
-        self.s1 = energy
-    
-    def set_t1(self,energy):
-        self.t1 = energy
+           
+    def set_energies(self,energy_dic):
+    	
+        s1 = energy_dic.get("s1")
+        t1 = energy_dic.get("t1")
+        HOMO = energy_dic.get("HOMO")
+        LUMO = energy_dic.get("LUMO")      	
         
+        
+        self.s1   = s1 
+        self.t1   = t1
+        self.HOMO = HOMO
+        self.LUMO = LUMO
         
     def remove(self,particle):
         self.particles.remove(particle)
@@ -61,8 +65,8 @@ class System:
                     dy = np.nan_to_num(self.Y - self.Y[s.position])
                     dz = np.nan_to_num(self.Z - self.Z[s.position])
                     r  = np.sqrt(dx**2+dy**2+dz**2)
-                    #r[r == 0] = np.inf
-                    potential += s.charge*abs(e)/(4*np.pi*epsilon*r)
+                    r[r == 0] = np.inf
+                    potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential
             self.potential_time = self.time
         else:
@@ -351,7 +355,7 @@ class ForsterDye:
         
         switch = raios(num,self.switch,mat,self.mu,mats)
         
-        epsilon = eps*8.85*10**(-22) #Permitivity in C/VAngstrom    
+        epsilon = system.epsilon #Permitivity in C/VAngstrom    
         vf = t*(3/2)*lcc
         q  = np.linspace(0,hw/vf,1000)
         q  = q[:-1]
@@ -385,36 +389,46 @@ class MillerAbrahams:
         in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
-        r[r == np.inf] = 0 
-        potential = 1*system.electrostatic()
-        potential -= charge*abs(e)/(4*np.pi*epsilon*r)
-        potential = np.nan_to_num(potential,posinf=np.inf,neginf=-np.inf)  
+        
+        potential = np.copy(system.electrostatic())
+        potential -= charge*abs(e)/(4*np.pi*system.epsilon*r)
+        
       
+        indices_e  = [ x.position for x in system.particles if x.charge == -1 and x.position != local ]
+        indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
+	
+	
         if particle.species == 'electron':
+            
             engs  = np.copy(system.LUMO)
             homos = np.copy(system.HOMO)
-            indices = np.where(potential == np.inf)
-            for m in indices[0]:
+            
+
+            for m in indices_h:
                 potential[m] = 0
                 engs[m] = homos[m]
+                
+            for m in indices_e:
+                potential[m] = 0
+                engs[m] = -np.inf             
+                
             engs += -1*potential
             DE = (engs - engs[local]) + abs(engs - engs[local])
-            #print('elec',DE)
-            #print('pot',potential)
-            #print('englocal',engs[local],local,potential[local])
         elif particle.species == 'hole':
             engs  = np.copy(system.HOMO)
             lumos = np.copy(system.LUMO)
-            indices = np.where(potential == -np.inf)
-            for m in indices[0]:
+          
+            for m in indices_e:
                 potential[m] = 0
                 engs[m] = lumos[m]
+                
+            for m in indices_h:
+                potential[m] = 0
+                engs[m] = +np.inf 
+                 
             engs += 1*potential
             DE = (engs - engs[local]) + abs(engs - engs[local])
             DE *= -1
-            #print('hole',DE)
-            #print('pot',potential)
-            #print('englocal',engs[local],local,potential[local])
             
         
 
@@ -423,21 +437,37 @@ class MillerAbrahams:
         #
         taxa = (10E-12)*(AtH)*np.exp(
                                -2*in_loc_rad*r)*np.exp(charge*DE/(2*kb*self.T))
+                               
+                               
+        '''                 
+        # experimental                       
+        if particle.species == 'hole':
+            for i in indices_e:
+            	taxa[i] = 1
+        
+        if particle.species == 'electron':
+            for i in indices_h:
+            	taxa[i] = 1
+        '''   	
+            	
+            	               
         taxa[r == 0] = 0
 
         taxa = np.nan_to_num(taxa)
-        #print(particle.kind())
-        #print('taxa',taxa)
-        #print(DE)
-        #input()
-        #print(particle.kind(),max(taxa),engs[list(taxa).index(max(taxa))])
         return taxa
 
     def label(self):
         return self.kind
      
     def action(self,particle,system,local):
-        particle.move(local)    
+        indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    
+    
+    	
+        if particle.species == 'hole' and local in indices_e:
+            particle.move(particle.position) 
+            print("a")
+        else:
+            particle.move(local)
 
 class Dissociation:
     def __init__(self,**kwargs):
