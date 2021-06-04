@@ -20,3 +20,17 @@ git push origin branch_name
 Someonelse did changes:
 git pull main_user master
 git push
+
+
+How to update fork after BIG changes in main:
+On your fork page (https://github.com/TSA-Cassiano/KMC) click fetch upstream
+git checkout -b LeonardoESousa-main main
+git pull git@github.com:LeonardoESousa/KMC.git main
+
+Modify the files manually to allow the merging
+
+git add .
+git commit -m "Resolvendo merging"
+git checkout main
+git merge --no-ff LeonardoESousa-main
+git push origin main

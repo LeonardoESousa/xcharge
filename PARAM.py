@@ -1,25 +1,26 @@
 from kmc_classes import *
 import morphology
-
 # KMC PARAMETERS 
 
 #BASIC PARAMETERS
 identifier = 'New'
 time_limit = np.inf
 animation_mode = True
-anni = True
+anni  = True
+pause = False # if you want to annimation stops in the first frame (debug purposes)
 lattice_filename = "lattice.txt"
 rounds = 1 #number of rounds
-num_ex = 20 #number of excitons
-
+num_ex = 50 #number of excitons
+relative_eps = 3.5 #relative permitivity
+ 
 ###SINGLET RATES
-r00 = 20.8   #Forster radius material 0 --> material 0 (Angstrom)    
-r01 = 22.2   #material 0 --> material 1      
-r10 = 21.2        
-r11 = 26.5     
+r00 = 5   #Forster radius material 0 --> material 0 (Angstrom)    
+r01 = 5  #material 0 --> material 1      
+r10 = 5       
+r11 = 5     
 
-f0 = 2940.0 #lifetime of material 0
-f1 = 747.27 #lifetime of material 1
+f0 = 29 #lifetime of material 0
+f1 = 29 #lifetime of material 1
 
 #dipoles (a.u.)
 mu0 = 2.136
@@ -42,12 +43,12 @@ nonrad  = {0:0,1:0}
 nonradiative = Nonrad(rate=nonrad)
 
 #ENERGIES
-s1s = {0:(1.9,0.0), 1:(1.9,0.00)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
-t1s = {0:(1.2,0.0), 1:(1.2,0.00)} # triplet energy, disperison (eV)
+s1s = {0:(1.9,0.5), 1:(1.9,0.5)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
+t1s = {0:(1.2,0.5), 1:(1.2,0.5)} # triplet energy, disperison (eV)
 
 #TRIPLET RATES
 Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
-phlife = {0:5.291E11,1:np.inf}
+phlife = {0:5.29,1:5.29}
 Ls = {0:5.0,1:5.0}
 
 dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
@@ -65,12 +66,13 @@ dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
 
 
 ###ForsterKappa
-forster   = ForsterKappa(Rf=raios,life=lifetimes,mu=mus)
+forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
+#forster   = ForsterKappa(Rf=raios,life=lifetimes,mu=mus)
 
 #PROCESSES
 processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
 monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
-#fluor,isc,nonradiative
+
 
 #Morphology functions
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
@@ -92,14 +94,15 @@ annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all 
 s1, t1 = ener_function(parameters_enefunc)
 dipoles = np.loadtxt('dipoles.txt')
 
+ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choosed dissociation, you also must give HOMO and LUMO
+#ene_dic = {'s1':s1, 't1':t1}
 
 def make_system():
-    system = System(X,Y,Z,Mats)
-    system.set_s1(s1)
-    system.set_t1(t1)
-    system.set_orbital(t1,s1)
+
+    system = System(X,Y,Z,Mats)    
+    system.set_energies(ene_dic)
     system.set_dipoles(dipoles)
+    system.set_medium(relative_eps)
     excitons = gen_function(parameters_genfunc)
     system.set_particles(excitons)
     return system
-
