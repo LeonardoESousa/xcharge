@@ -7,6 +7,8 @@ from kmc_classes import *
 import sys
 import warnings
 import PARAM
+from joblib import Parallel, delayed
+
 warnings.filterwarnings("ignore")   
 
 #usuario de ruindows
@@ -22,6 +24,7 @@ rounds        = PARAM.rounds
 processes     = PARAM.processes
 monomolecular = PARAM.monomolecular
 anni          = PARAM.anni
+n_proc        = PARAM.n_proc
 
 anni_funcs_array = PARAM.annihi_funcs_array
 
@@ -84,7 +87,7 @@ def decision(s,system):
     jump = np.where(sorte < probs)[0][0]
     dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
     '''
-    
+    #allowing the particle to simply do no move
     try:
     	jump = np.where(sorte < probs)[0][0]
     	dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
@@ -156,6 +159,7 @@ def animate(num,system,ax):
     Y1 = Y[mats == 1]
     Z1 = Z[mats == 1]
     
+    #printing the lattice
     ax.scatter(X0,Y0,Z0,alpha=0.1,color='black')
     ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
     
@@ -204,17 +208,20 @@ def animate(num,system,ax):
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')     
 
-   
+    #pausing in the first frame
     if pause:
         ani.event_source.stop()
         
         
     return ax,
 
+#RUN of a single round   
+def RUN():
+    system = PARAM.make_system()
+    step(system)
+    spectra(system)
 
-      
 if animation_mode:
-
     #path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.gif"
     path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.mp4"
         
@@ -239,8 +246,13 @@ if animation_mode:
     plt.show()
     
 else:
-    for i in range(rounds):
+    if paralell: #paralell run
+        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)() for i in range(rounds))
+        
+    else: #normal run
+        for i in range(rounds):
+    	    RUN()                
+            
+exit()      
+            
     
-        system = PARAM.make_system()
-        step(system)
-        spectra(system)     

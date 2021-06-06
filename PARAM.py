@@ -1,21 +1,26 @@
 from kmc_classes import *
 import morphology
+import subprocess
+
 # KMC PARAMETERS 
 
 #BASIC PARAMETERS
-identifier = 'New'
-time_limit = np.inf
-animation_mode = True
-anni  = True
-pause = False # if you want to annimation stops in the first frame (debug purposes)
-lattice_filename = "lattice.txt"
-rounds = 1 #number of rounds
-num_ex = 50 #number of excitons
-relative_eps = 3.5 #relative permitivity
+identifier         = 'New'
+time_limit         = np.inf
+animation_mode     = True
+anni               = True
+pause              = False # if you want to annimation stops in the first frame (debug purposes)
+parallel           = True
+n_proc             = 2
+rounds             = 1 #number of rounds
+num_ex             = 2 #number of excitons
+relative_eps       = 3.5 #relative permitivity
+lattice_filename   = "lattice.txt"
+
  
 ###SINGLET RATES
 r00 = 5   #Forster radius material 0 --> material 0 (Angstrom)    
-r01 = 5  #material 0 --> material 1      
+r01 = 5   #material 0 --> material 1      
 r10 = 5       
 r11 = 5     
 
@@ -123,3 +128,7 @@ def make_system():
     excitons = gen_function(parameters_genfunc)
     system.set_particles(excitons)
     return system
+    
+#calling the main
+exec(open("./newkmc.py").read())
+
