@@ -48,8 +48,8 @@ nonrad  = {0:0,1:0}
 nonradiative = Nonrad(rate=nonrad)
 
 #ENERGIES
-s1s = {0:(1.9,0.5), 1:(1.9,0.5)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
-t1s = {0:(1.2,0.5), 1:(1.2,0.5)} # triplet energy, disperison (eV)
+s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
+t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # triplet energy, disperison (eV)
 
 #TRIPLET RATES
 Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
@@ -75,9 +75,11 @@ forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
 #forster   = ForsterKappa(Rf=raios,life=lifetimes,mu=mus)
 
 #PROCESSES
-processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
-monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
+#processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
+#monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 
+processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
+monomolecular = {'singlet':[],'triplet':[],'electron':[],'hole':[]}
 
 #Morphology functions
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)

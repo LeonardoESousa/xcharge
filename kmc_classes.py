@@ -367,6 +367,8 @@ class ForsterDye:
     def action(self,particle,system,local):
         particle.move(local)        
         
+        
+
 class MillerAbrahams:
     def __init__(self,**kwargs):
         self.kind = 'miller-abrahams'
@@ -431,12 +433,16 @@ class MillerAbrahams:
             DE *= -1
             
         
+
+        #taxa = (10**-12)*(2*np.pi/hbar)*(H**2)*(1/np.sqrt(4*np.pi*reorg*kb*self.T))*np.exp(
+        #                       -2*in_loc_rad*r)*np.exp(-((DE + reorg)**2)/(4*reorg*kb*self.T))
+        #
         taxa = (10E-12)*(AtH)*np.exp(
                                -2*in_loc_rad*r)*np.exp(charge*DE/(2*kb*self.T))
                                
                                
-        '''                
-        # experimental, forcing recombination                       
+        '''                 
+        # experimental                       
         if particle.species == 'hole':
             for i in indices_e:
             	taxa[i] = 1
@@ -444,8 +450,8 @@ class MillerAbrahams:
         if particle.species == 'electron':
             for i in indices_h:
             	taxa[i] = 1
-           	
-        ''' 	
+        '''   	
+            	
             	               
         taxa[r == 0] = 0
 
@@ -456,17 +462,15 @@ class MillerAbrahams:
         return self.kind
      
     def action(self,particle,system,local):
-    
-           
-        indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    
-    	
+        '''
+        indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    	
         if particle.species == 'hole' and local in indices_e:
             particle.move(particle.position) 
             print("a")
         else:
             particle.move(local)
-   
-            
+        '''          
+        particle.move(local)
 
 class Dissociation:
     def __init__(self,**kwargs):

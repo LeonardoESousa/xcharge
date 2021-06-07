@@ -48,6 +48,7 @@ def anni_general(system,Ss,anni_funcs_array):
                     anni_func(system,tipos,Ss,indices,locs)
               	
 
+
 def decision(s,system):
     kind = s.species      
     local = s.position    
@@ -87,7 +88,7 @@ def decision(s,system):
     jump = np.where(sorte < probs)[0][0]
     dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
     '''
-    #allowing the particle to simply do no move
+    
     try:
     	jump = np.where(sorte < probs)[0][0]
     	dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
@@ -100,7 +101,33 @@ def decision(s,system):
     #print(kind,Mats[local],Mats[chosen],probs,labels[jump],dt)
     return labels[jump], chosen[jump], dt
  
-  
+#checks if a electron's jumb matches with a hole position or vice versa 
+def pair_matching(particles_sample,W):
+    parts = particles_sample.copy()
+    W.copy()
+    pos   = [part.position for part in parts ]
+    jumps = W.copy()
+    
+    n = len(parts)
+    
+    recomb = []
+    
+    for i in range(n):
+    	part_i = parts[i]
+    	if part_i.species == 'hole':
+    	    for j in range(n):
+                part_j = parts[j]
+                if part_j.species == 'electron':
+                    
+                    #print(pos[i],jumps[i],"    ",pos[j],jumps[j])
+                    
+                    if jumps[i] == pos[j] or jumps[j] == pos[i]: #or jumps[i] == jumps[j]:
+                        recomb.append( i )
+                        
+    return recomb
+            
+ 
+
 def step(system): 
     while system.count_particles() > 0 and system.time < time_limit:
         Ss = system.particles.copy()     
@@ -127,6 +154,7 @@ def step(system):
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1)
+  
   
             
                 
@@ -203,6 +231,7 @@ def animate(num,system,ax):
     #debug infos
     ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
     ax.text2D(0.03, 0.94, "eps  = %.2f" % (PARAM.relative_eps), transform=ax.transAxes) #eps
+    ax.text2D(0.03, 0.90, "npart  = %.0f" % (len(system.particles)), transform=ax.transAxes) #npart
     
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -240,7 +269,7 @@ if animation_mode:
     #ani.save(path, writer='imagemagick', fps=30)
     
     #salvar .mp4
-    #writervideo = animation.FFMpegWriter(fps=30) 
+    #writervideo = animation.FFMpegWriter(fps=10) 
     #ani.save(path, writer=writervideo)
     
     plt.show()
