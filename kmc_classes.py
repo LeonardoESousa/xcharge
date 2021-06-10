@@ -367,6 +367,8 @@ class ForsterDye:
     def action(self,particle,system,local):
         particle.move(local)        
         
+        
+
 class MillerAbrahams:
     def __init__(self,**kwargs):
         self.kind = 'miller-abrahams'
@@ -460,14 +462,15 @@ class MillerAbrahams:
         return self.kind
      
     def action(self,particle,system,local):
-        indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    
-    
-    	
+        '''
+        indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    	
         if particle.species == 'hole' and local in indices_e:
             particle.move(particle.position) 
             print("a")
         else:
             particle.move(local)
+        '''          
+        particle.move(local)
 
 class Dissociation:
     def __init__(self,**kwargs):

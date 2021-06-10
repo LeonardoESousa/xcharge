@@ -7,6 +7,8 @@ from kmc_classes import *
 import sys
 import warnings
 import PARAM
+from joblib import Parallel, delayed
+
 warnings.filterwarnings("ignore")   
 
 #usuario de ruindows
@@ -22,6 +24,7 @@ rounds        = PARAM.rounds
 processes     = PARAM.processes
 monomolecular = PARAM.monomolecular
 anni          = PARAM.anni
+n_proc        = PARAM.n_proc
 
 anni_funcs_array = PARAM.annihi_funcs_array
 
@@ -44,6 +47,7 @@ def anni_general(system,Ss,anni_funcs_array):
                 for anni_func in anni_funcs_array:
                     anni_func(system,tipos,Ss,indices,locs)
               	
+
 
 def decision(s,system):
     kind = s.species      
@@ -97,7 +101,33 @@ def decision(s,system):
     #print(kind,Mats[local],Mats[chosen],probs,labels[jump],dt)
     return labels[jump], chosen[jump], dt
  
-  
+#checks if a electron's jumb matches with a hole position or vice versa 
+def pair_matching(particles_sample,W):
+    parts = particles_sample.copy()
+    W.copy()
+    pos   = [part.position for part in parts ]
+    jumps = W.copy()
+    
+    n = len(parts)
+    
+    recomb = []
+    
+    for i in range(n):
+    	part_i = parts[i]
+    	if part_i.species == 'hole':
+    	    for j in range(n):
+                part_j = parts[j]
+                if part_j.species == 'electron':
+                    
+                    #print(pos[i],jumps[i],"    ",pos[j],jumps[j])
+                    
+                    if jumps[i] == pos[j] or jumps[j] == pos[i]: #or jumps[i] == jumps[j]:
+                        recomb.append( i )
+                        
+    return recomb
+            
+ 
+
 def step(system): 
     while system.count_particles() > 0 and system.time < time_limit:
         Ss = system.particles.copy()     
@@ -124,6 +154,7 @@ def step(system):
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1)
+  
   
             
                 
@@ -156,6 +187,7 @@ def animate(num,system,ax):
     Y1 = Y[mats == 1]
     Z1 = Z[mats == 1]
     
+    #printing the lattice
     ax.scatter(X0,Y0,Z0,alpha=0.1,color='black')
     ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
     
@@ -195,12 +227,25 @@ def animate(num,system,ax):
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys())
     ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
+    ax.text2D(0.03, 0.94, "eps  = %.2f" % (PARAM.relative_eps), transform=ax.transAxes) #eps
+    ax.text2D(0.03, 0.90, "npart  = %.0f" % (len(system.particles)), transform=ax.transAxes) #npart
+    
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')     
+
+    #pausing in the first frame
+    if pause:
+        ani.event_source.stop()
     return ax,
 
+#RUN of a single round   
+def RUN():
+    system = PARAM.make_system()
+    step(system)
+    spectra(system)
 
-      
 if animation_mode:
-
     #path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.gif"
     path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.mp4"
         
@@ -219,14 +264,17 @@ if animation_mode:
     #ani.save(path, writer='imagemagick', fps=30)
     
     #salvar .mp4
-    #writervideo = animation.FFMpegWriter(fps=30) 
+    #writervideo = animation.FFMpegWriter(fps=10) 
     #ani.save(path, writer=writervideo)
     
     plt.show()
     
 else:
-    for i in range(rounds):
-    
-        system = PARAM.make_system()
-        step(system)
-        spectra(system)
+    if paralell: #paralell run
+        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)() for i in range(rounds))
+        
+    else: #normal run
+        for i in range(rounds):
+    	    RUN()                
+            
+exit()

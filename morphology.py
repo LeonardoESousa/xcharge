@@ -41,12 +41,10 @@ def gen_electron(param):
     
     num       = param[0] #relabeling the input parameters 
     selection = param[1]
-       
-    Ss, species = [], []
-    chosen = []
-    while len(Ss) < num:
-        number = random.choice(selection)
-        Ss.append(Electron(number))
+
+    part_sel = random.sample(selection,num)
+    Ss = [Electron(number) for number in part_sel]
+    
     return Ss
     
 def gen_hole(param):
@@ -55,15 +53,11 @@ def gen_hole(param):
     
     num       = param[0] #relabeling the input parameters 
     selection = param[1]
-       
-    Ss, species = [], []
 
-    chosen = []
-    while len(Ss) < num:
-        number = random.choice(selection)
-        Ss.append(Hole(number))
-    return Ss
+    part_sel = random.sample(selection,num)
+    Ss = [Hole(number) for number in part_sel]
     
+    return Ss
 def gen_pair_elechole(param):
     #num: number of excitons
     #X: one of the position vectors 
@@ -71,49 +65,23 @@ def gen_pair_elechole(param):
     num       = param[0] #relabeling the input parameters 
     selection = param[1]
     
+    part_sel = random.sample(selection,int(2*num))
+    part_sel_ele = part_sel[0:num]
+    part_sel_hol = part_sel[num+1:2*num]
     
-    Ss, species = [], []
+    Ss_ele = [Electron(number) for number in part_sel_ele]
+    Ss_hol = [Hole(number) for number in part_sel_hol]
     
-    chosen = []
-    while len(Ss) < num:
-        number = random.choice(selection)
-        Ss.append(Electron(number))
-        number = random.choice(selection)
-        Ss.append(Hole(number))
-    #while len(Ss) < num:
-        #number = random.choice(selection)
-        #Ss.append(Hole(number))
-        #number = random.choice(selection)
-        #if number not in chosen:
-        #    if random.uniform(0,1) < 0.5:
-        #        Ss.append(Electron(number))
-        #    else:
-        #        Ss.append(Hole(number))
-        #    #Ss.append(Exciton('singlet',number))
-        #else:
-        #    pass
+    Ss = Ss_ele + Ss_hol
     return Ss
     
 def gen_excitons(param):
     num       = param[0] #relabeling the input parameters 
     selection = param[1]
-       
-    Ss, species = [], []
     
-    while len(Ss) < num:
-        number = random.choice(selection)
-        Ss.append(Exciton('singlet',number))
-    return Ss
+    part_sel = random.sample(selection,num)
+    Ss = [Exciton('singlet',number) for number in part_sel]    
 
-def gen_excitonsv2(param):
-    num       = param[0] #relabeling the input parameters 
-    selection = param[1]
-       
-    Ss, species = [], []
-    
-    while len(Ss) < num:
-        number = random.choice(selection)
-        Ss.append(Exciton('singlet',number))
     return Ss
 
 
