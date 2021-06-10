@@ -65,7 +65,7 @@ invrad = {0:1.5,1:1.5}
 miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
 
 ###Dissociation
-H = {(0,0):50000.0,(0,1):50000.0,(1,0):100.0,(1,1):100.0}
+H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
 invrad = {0:0.1,1:0.1}
 dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
 
@@ -84,26 +84,9 @@ monomolecular = {'singlet':[],'triplet':[],'electron':[],'hole':[]}
 #Morphology functions
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
-#Type of particle
 gen_function       = morphology.gen_pair_elechole
 #gen_function       = morphology.gen_excitons
-#gen_function       = morphology.gen_electron
-#gen_function       = morphology.gen_hole
-
-#Shape of the particle's generation
-#Getting filter funcs from morphology		
-shape_dic = {'sphere': morphology.sphere_conditional, 'plane':morphology.plane_conditional,'cone':morphology.cone_conditional,'cilinder':morphology.cilinder_conditional,'rectangle': morphology.rectangle_conditional,'free':morphology.no_conditional}
-
-
-
-selection = range(len(X)) #if you dont want to mess with the formation
-#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="free",origin=None,argum=None)
-#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="rectangle",origin=None,argum=[[40,50],[0,60],[0,40]])
-#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="sphere",origin=[30,30,30],argum=15)
-#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="plane",origin=[10,10,10],argum=[60,60,0])
-
-parameters_genfunc = [num_ex,selection]
-
+parameters_genfunc = [num_ex,len(X)]
 
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]
