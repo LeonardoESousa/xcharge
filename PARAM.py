@@ -68,7 +68,7 @@ invrad = {0:1.5,1:1.5}
 miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
 
 ###Dissociation
-H = {(0,0):50000.0,(0,1):50000.0,(1,0):100.0,(1,1):100.0}
+H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
 invrad = {0:0.1,1:0.1}
 dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
 

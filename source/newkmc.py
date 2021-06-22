@@ -235,9 +235,6 @@ def animate(num,system,ax):
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys())
-    
-    
-    #debug infos
     ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
     ax.text2D(0.03, 0.94, "eps  = %.2f" % (PARAM.relative_eps), transform=ax.transAxes) #eps
     ax.text2D(0.03, 0.90, "npart  = %.0f" % (len(system.particles)), transform=ax.transAxes) #npart
@@ -249,8 +246,6 @@ def animate(num,system,ax):
     #pausing in the first frame
     if pause:
         ani.event_source.stop()
-        
-        
     return ax,
 
 
@@ -272,7 +267,7 @@ if animation_mode:
        
    
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
-                                interval=200, blit=False,repeat=False,cache_frame_data=True,save_count=500) 
+                                interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
     #ani.save('charges.avi', fps=20, dpi=300)
     #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
     
@@ -287,8 +282,8 @@ if animation_mode:
     
 else:
 
+
     RUN()
 
       
-            
-    
+
