@@ -2,6 +2,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+#plt.switch_backend('agg') #para cluster
 import collections
 from shutil import copyfile
 from math import sqrt
@@ -720,6 +721,7 @@ def multiply_lattice(lattice,n_times_ar,delta):
 	X_lenght = delta[0] #Increments
 	Y_lenght = delta[1]
 	Z_lenght = delta[2]
+	
 		
 	n_times_x = n_times_ar[0]
 	n_times_y = n_times_ar[1]
@@ -742,7 +744,7 @@ def multiply_lattice(lattice,n_times_ar,delta):
 					
 				new_lattice = np.vstack((new_lattice,new_cell))
 		
-	return new_lattice
+	return np.unique(new_lattice,axis=0)
 	
 def func_parametrize(t):
 	#return [t,t,0]
@@ -892,6 +894,16 @@ def heterojunction(par):
 	cell_left  = par[0][0]
 	cell_right = par[1][0]
 	n_times    = int(float(par[2][0]))
+	axis       = par[3][0]
+	
+	#direction in which we will join the two sides
+	if axis == 'X':
+		vec_joint = [1,0,0]
+	if axis == 'Y':
+		vec_joint = [0,1,0]
+	if axis == 'Z':
+		vec_joint = [0,0,1]
+	
 	
 	X_left ,Y_left ,Z_left ,Mats_left  = read_lattice(cell_left)
 	X_right,Y_right,Z_right,Mats_right = read_lattice(cell_right)
@@ -923,10 +935,12 @@ def heterojunction(par):
 		Mats_right = new_Mats_right.copy()
 		print(Mats_right)
 		
+	#left box size	
 	dX_left = np.amax(X_left) - np.amin(X_left)
 	dY_left = np.amax(Y_left) - np.amin(Y_left)
 	dZ_left = np.amax(Z_left) - np.amin(Z_left)
 	
+	#right box size
 	dX_right = np.amax(X_right) - np.amin(X_right)
 	dY_right = np.amax(Y_right) - np.amin(Y_right)
 	dZ_right = np.amax(Z_right) - np.amin(Z_right)
@@ -956,17 +970,118 @@ def heterojunction(par):
 	multiplied_right = multiply_lattice(unit_cell_right,n_times_right,[dX_right,dY_right,dZ_right])
 	
 
-	
 	shift_vec = [X_tot_left,Y_tot_left,Z_tot_left]
+	shift_vec = [ shift_vec[i]*vec_joint[i] for i in range(len(shift_vec))]	 
 	
 	#shifting the entire right lattice 
 	for site in multiplied_right:
 		site[0] = site[0] + shift_vec[0]
-		#site[1] = site[1] + shift_vec[1] 
-		#site[2] = site[2] + shift_vec[2]
+		site[1] = site[1] + shift_vec[1] 
+		site[2] = site[2] + shift_vec[2]
+	
+	#modeling the intersection
+	#returns the number of sites along a determined axis
+	def filter_lattice(lattice,axis):
+		x = lattice[:,0]
+		y = lattice[:,1]
+		z = lattice[:,2]
+		
+		if axis == "X":
+			y_min = np.amin(y)
+			fixed_latt = lattice[y==y_min]
+			z = fixed_latt[:,2]
+			z_min = np.amin(z)
+			fixed_latt = fixed_latt[z==z_min]
+			
+			return len(fixed_latt)
+			
+		
+		if axis == "Y":#y
+			x_min = np.amin(x)
+			fixed_latt = lattice[x==x_min]
+			z = fixed_latt[:,2]
+			z_min = np.amin(z)
+			fixed_latt = fixed_latt[z==z_min]
+			
+			return len(fixed_latt)			
+
+		if axis == "Z":#z
+			x_min = np.amin(x)
+			fixed_latt = lattice[x==x_min]
+			y = fixed_latt[:,1]
+			y_min = np.amin(y)
+			fixed_latt = fixed_latt[y==y_min]
+			
+			return len(fixed_latt)
+	#how many sites exist along an axis?		
+	n_sites_axis_left  = filter_lattice(multiplied_left,axis)
+	n_sites_axis_right = filter_lattice(multiplied_right,axis)	
+	
+	dens_left  = dX_left/n_sites_axis_left #density of sites along an axis on the left side
+	dens_right = dX_right/n_sites_axis_right #density of sites along an axis on the right side
+	
+	#picking the lowest dx among the two sides
+	if dens_left < dens_right:
+		dens = dens_left
+	else:
+		dens = dens_right
+	
+	def dist(vec1,vec2):
+		return sqrt((vec1[0]-vec2[0])**2 + (vec1[1]-vec2[1])**2 +(vec1[2]-vec2[2])**2)
+		
+	#identifies the sites located near the heterojunction	
+	def is_in_the_heterojunc(left_lattice,right_lattice,cutoff):
+		right_het, left_het = [], []
+		n_right = len(right_lattice)
+		n_left  = len(left_lattice)
+		
+		for i in range(n_left):
+			site_left = left_lattice[i][0:3]
+			for j in range(n_right):
+				site_right = right_lattice[j][0:3]
+
+				distance = dist(site_left,site_right)
+				
+				#if the distance between a site on the left and right is comparable to the first neighbor
+				# distance in the left side (a way to locate the sites in the heterojunc)
+				if distance <= cutoff:
+					#print(i,j,distance)
+					right_het.append(j)
+					left_het.append(i)
+					
+		return 	left_het, right_het		
+		
+	#add a disturbance in the sites located in the heterojunction	
+	def shift_hetero(latt,vec,indx_ar,mean,sigma,scale):
+		latt_ref = latt.copy()
+		for indx in indx_ar:
+			shift = np.array([ scale*pos*np.random.normal(mean,sigma) for pos in vec])
+			latt[indx][0:3] = latt_ref[indx][0:3] + shift
+			#print(shift)
+	
+	
+	
+	
+	mean = 1
+	sigma = mean
+	scale = dens/1
+
+
+	#getting the sites in the heterojunc
+	left_het, right_het = is_in_the_heterojunc(multiplied_left,multiplied_right,dens)
+
+	#shifting these sites
+	shift_hetero(multiplied_left,vec_joint,left_het,mean,sigma,scale)
+	shift_hetero(multiplied_right,vec_joint,right_het,mean,sigma,scale)
+
+	#getting the sites that are too close
+	left_het, right_het = is_in_the_heterojunc(multiplied_left,multiplied_right,dens)
+	shift_hetero(multiplied_left,vec_joint,left_het,dens,0.2,1)
+	shift_hetero(multiplied_right,vec_joint,right_het,dens,0.2,-1)
+	# END INTERSECTION
+	
 		
 	hetero_lattice = np.vstack((multiplied_left,multiplied_right))
-	
 	X    = hetero_lattice[:,0]
 	Y    = hetero_lattice[:,1]
 	Z    = hetero_lattice[:,2]
@@ -975,8 +1090,15 @@ def heterojunction(par):
 	return 	X,Y,Z,Mats
 ###########################################################
 
-
-
+'''
+colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+X,Y,Z,Mats = heterojunction([['lattice_lat.txt'],['lattice_lat.txt'],['3'],['X']])
+colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+ax.scatter3D(X, Y, Z,c=colors,marker='^');
+plt.show()  
+'''
 class morphology_function:
     def __init__(self,name,func,param_list):
     	self.name = name
@@ -987,7 +1109,7 @@ class morphology_function:
     
 
 #funcs option 2
-lattice_dir = ["dim","displacement_vec","distribuition_vec"] #should have the same order of the function
+lattice_dir = ["Number of Sites","displacement_vec","distribuition_vec"] #should have the same order of the function
 loadcif_dir = ["mol_filename"]
 
 latt_func      = morphology_function("lattice",lattice,lattice_dir)
@@ -996,7 +1118,7 @@ func_list      = [latt_func,loadcif_func] #list of functions to be included in o
 
 #funcs option 3
 parametrize_dir    = ["filename for the first unit cell"]
-heterojunction_dir = ["name_left_cell","name_right_cell","number_of_reps"]
+heterojunction_dir = ["name_left_cell","name_right_cell","number_of_reps","Joining axis (X,Y or Z)"]
 
 paramet_func           = morphology_function("parametrized",parametrize_mat,parametrize_dir)
 heterojunction_func    = morphology_function("heterojunction",heterojunction,heterojunction_dir)

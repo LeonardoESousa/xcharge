@@ -1,31 +1,34 @@
-from kmc_classes import *
+import sys
+
+bib_path = "XXX"
+sys.path.insert(1, bib_path)
 import morphology
-import subprocess
+from kmc_classes import *
+
+
 
 # KMC PARAMETERS 
-
 #BASIC PARAMETERS
 identifier         = 'New'
 time_limit         = np.inf
 animation_mode     = True
 anni               = True
 pause              = False # if you want to annimation stops in the first frame (debug purposes)
-parallel           = True
-n_proc             = 2
-rounds             = 1 #number of rounds
-num_ex             = 2 #number of excitons
+rounds             = 10 #number of rounds
+n_proc             = 1
+num_ex             = 300 #number of excitons
 relative_eps       = 3.5 #relative permitivity
 lattice_filename   = "lattice.txt"
 
  
 ###SINGLET RATES
-r00 = 5   #Forster radius material 0 --> material 0 (Angstrom)    
-r01 = 5   #material 0 --> material 1      
-r10 = 5       
-r11 = 5     
+r00 = 25   #Forster radius material 0 --> material 0 (Angstrom)    
+r01 = 25   #material 0 --> material 1      
+r10 = 25       
+r11 = 25     
 
-f0 = 29 #lifetime of material 0
-f1 = 29 #lifetime of material 1
+f0 = 2900000 #lifetime of material 0
+f1 = 2900 #lifetime of material 1
 
 #dipoles (a.u.)
 mu0 = 2.136
@@ -75,18 +78,15 @@ forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
 #forster   = ForsterKappa(Rf=raios,life=lifetimes,mu=mus)
 
 #PROCESSES
-#processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
-#monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
-
 processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
-monomolecular = {'singlet':[],'triplet':[],'electron':[],'hole':[]}
+monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 
 #Morphology functions
 X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
 #Type of particle
-gen_function       = morphology.gen_pair_elechole
-#gen_function       = morphology.gen_excitons
+#gen_function       = morphology.gen_pair_elechole
+gen_function       = morphology.gen_excitons
 #gen_function       = morphology.gen_electron
 #gen_function       = morphology.gen_hole
 
@@ -108,8 +108,6 @@ parameters_genfunc = [num_ex,selection]
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]
 
-#annihi_funcs_array = [morphology.anni_ele_hol] 
-#annihi_funcs_array = [morphology.anni_sing]
 annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
 
 
@@ -131,6 +129,5 @@ def make_system():
     system.set_particles(excitons)
     return system
     
-#calling the main
-exec(open("./newkmc.py").read())
+
 

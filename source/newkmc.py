@@ -6,8 +6,19 @@ import os
 from kmc_classes import *
 import sys
 import warnings
+
+
+#importing a param from another path
+try:
+    PARAM_path = sys.argv[1]
+    sys.path.insert(1, PARAM_path)
+except:
+    PARAM_path = os.getcwd()
+
+   
 import PARAM
-from joblib import Parallel, delayed
+
+
 
 warnings.filterwarnings("ignore")   
 
@@ -20,12 +31,10 @@ time_limit     = PARAM.time_limit
 pause          = PARAM.pause # to freeze on the first frame
 
 #getting parameters from
-rounds        = PARAM.rounds
-processes     = PARAM.processes
-monomolecular = PARAM.monomolecular
-anni          = PARAM.anni
-n_proc        = PARAM.n_proc
-
+rounds           = PARAM.rounds
+processes        = PARAM.processes
+monomolecular    = PARAM.monomolecular
+anni             = PARAM.anni
 anni_funcs_array = PARAM.annihi_funcs_array
 
   
@@ -244,15 +253,17 @@ def animate(num,system,ax):
         
     return ax,
 
+
 #RUN of a single round   
 def RUN():
     system = PARAM.make_system()
     step(system)
     spectra(system)
-
+   
+    
 if animation_mode:
-    #path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.gif"
-    path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.mp4"
+
+    path=PARAM_path+"animation.mp4"
         
 
     system = PARAM.make_system()
@@ -275,13 +286,9 @@ if animation_mode:
     plt.show()
     
 else:
-    if paralell: #paralell run
-        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)() for i in range(rounds))
-        
-    else: #normal run
-        for i in range(rounds):
-    	    RUN()                
-            
-exit()      
+
+    RUN()
+
+      
             
     

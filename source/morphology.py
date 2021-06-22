@@ -114,11 +114,15 @@ def anni_ele_hol(system,tipos,Ss,indices,locs):
             system.add_particle(Exciton('triplet',locs[indices[0][0]]))
         else:
             system.add_particle(Exciton('singlet',locs[indices[0][0]]))
+            
+            
 #annihililation exciton singlets pair
 def anni_sing(system,tipos,Ss,indices,locs): # e se tiver 4 excitons no mesmo sitio?
     duplicates = set([x for x in tipos if tipos.count(x) > 1]) # checking if there is 2 occurrences of the types
     if 'singlet' in duplicates:        
         Ss[indices[0][tipos.index('singlet')]].kill('anni',system,system.s1)
+             
+        
 ############################################           
 # FUNCS TO SHAPE THE GENERATION OF PARTICLES
 

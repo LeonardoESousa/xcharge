@@ -112,8 +112,7 @@ class Particles:
     def convert(self,system,energies,causamortis,newkind):
         self.make_text(system,energies,causamortis)
         self.species = newkind
-        
-    
+
     def write(self):
         return self.report
         
@@ -235,7 +234,7 @@ class ForsterKappa:
         mu       = system.norma_mu[local]
 
         taxa = (1/lifetime)*(kappa**2)*((Rf/(self.alpha*mu + r))**6)
-        taxa = np.nan_to_num(taxa)
+        #taxa = np.nan_to_num(taxa)
         return taxa
 
     def action(self,particle,system,local):
@@ -391,11 +390,13 @@ class MillerAbrahams:
         in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
-        
         potential = np.copy(system.electrostatic())
-        potential -= charge*abs(e)/(4*np.pi*system.epsilon*r)
         
-      
+        #case where two electrons or holes overlap
+        duplicate  = [ x.charge for x in system.particles if x.position == local]
+        for charge in duplicate:
+            potential -= charge*abs(e)/(4*np.pi*system.epsilon*r)
+         
         indices_e  = [ x.position for x in system.particles if x.charge == -1 and x.position != local ]
         indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
 	
@@ -462,15 +463,13 @@ class MillerAbrahams:
         return self.kind
      
     def action(self,particle,system,local):
-        '''
+        
         indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    	
         if particle.species == 'hole' and local in indices_e:
-            particle.move(particle.position) 
-            print("a")
+            pass
         else:
             particle.move(local)
-        '''          
-        particle.move(local)
+        
 
 class Dissociation:
     def __init__(self,**kwargs):

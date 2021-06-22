@@ -1,0 +1,25 @@
+#Installation guide:
+
+before anything, plese make sure that:
+
+1) you have the task-spooler installed
+2) your python env has numpy, matplotlib, and collections libs
+
+Next, run INSTALL.sh
+
+To perform an job, simply insert into your terminal:
+
+kmc
+
+in a folder with a PARAM.py file and its respective lattice setup
+
+
+#FILES NAMES AND THEIR FUNCTIONS:
+
+dipoles.py      (generate distribuition of dipole moments for a amorphous lattice)
+PARAM.py        (file that contains the parameter of the KMC)
+build_morph.py  (creates and modify lattice conformations)
+morphology.py   (set of auxilary funcs to construct the system's morphology)
+newkmc.py       (main file)
+paralellizer.py (Trigger the main file to run each round in paralell)
+ 
