@@ -6,7 +6,7 @@ hm=$(pwd)
 read -s -p "Enter Password for sudo: " sudoPW
 
 echo "--------------------------------------------------------------------------------------------------------------"
-echo "Install script for KMC software LCC-UnB (2021)"
+echo "Install script for KMC software LSSC-UnB (2021)"
 echo "Usage: Linux (Local/Global)"
 echo "In addition to this script, make sure that your python has the following libs:"
 echo "numpy, matplotlib, collections"

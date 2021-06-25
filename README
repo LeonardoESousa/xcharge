@@ -15,7 +15,6 @@ in a folder with a PARAM.py file and its respective lattice setup
 
 
 #FILES NAMES AND THEIR FUNCTIONS:
-
 dipoles.py      (generate distribuition of dipole moments for a amorphous lattice)
 PARAM.py        (file that contains the parameter of the KMC)
 build_morph.py  (creates and modify lattice conformations)

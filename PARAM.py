@@ -1,26 +1,25 @@
 import sys
-
 bib_path = "XXX"
 sys.path.insert(1, bib_path)
 import morphology
 from kmc_classes import *
 
 
-
 # KMC PARAMETERS 
 #BASIC PARAMETERS
 identifier         = 'New'
 time_limit         = np.inf
-animation_mode     = True
+animation_mode     = False
 anni               = True
 pause              = False # if you want to annimation stops in the first frame (debug purposes)
 rounds             = 10 #number of rounds
 n_proc             = 1
-num_ex             = 300 #number of excitons
+num_ex             = 30 #number of excitons
 relative_eps       = 3.5 #relative permitivity
 lattice_filename   = "lattice.txt"
 
- 
+
+
 ###SINGLET RATES
 r00 = 25   #Forster radius material 0 --> material 0 (Angstrom)    
 r01 = 25   #material 0 --> material 1      
@@ -51,8 +50,14 @@ nonrad  = {0:0,1:0}
 nonradiative = Nonrad(rate=nonrad)
 
 #ENERGIES
+#Gaussian distribuitions
 s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
 t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # triplet energy, disperison (eV)
+
+
+#If you have your own distribuition already
+#s1s = {0:'s1_mat0.txt', 1:'s1_mat1.txt'} 
+#t1s = {0:'t1_mat0.txt', 1:'t1_mat1.txt'}
 
 #TRIPLET RATES
 Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
@@ -104,18 +109,22 @@ selection = range(len(X)) #if you dont want to mess with the formation
 
 parameters_genfunc = [num_ex,selection]
 
-
+#ener_function      = morphology.s1_t1_distr
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s, Mats]
 
 annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing]#list of all annihi funcs that will be used
 
-
 #### GENERATE THE SYSTEM
 
-s1, t1 = ener_function(parameters_enefunc)
-dipoles = np.loadtxt('dipoles.txt')
 
+try:
+    dipoles = np.loadtxt('dipoles.txt')
+except:
+    dipoles = []
+    
+    
+s1, t1 = ener_function(parameters_enefunc)    
 ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choosed dissociation, you also must give HOMO and LUMO
 #ene_dic = {'s1':s1, 't1':t1}
 

@@ -14,18 +14,18 @@ def read_lattice(file_name):
 	
 	with open(file_name, 'r') as f:
 		for line in f:
-			line = line.split()
+			if '#' not in line:		
+				line = line.split()
+				x    = float(line[0])
+				y    = float(line[1])
+				z    = float(line[2])
+				mat  = int(float(line[3]))
 			
-			x    = float(line[0])
-			y    = float(line[1])
-			z    = float(line[2])
-			mat  = int(float(line[3]))
 			
-			
-			X.append(x)
-			Y.append(y)
-			Z.append(z)
-			Mats.append(mat)
+				X.append(x)
+				Y.append(y)
+				Z.append(z)
+				Mats.append(mat)
 	X = np.array(X)
 	Y = np.array(Y)	
 	Z = np.array(Z)	
@@ -882,10 +882,10 @@ def parametrize_mat(par):
 	Z    = mult_cell[:,2]
 	Mats = mult_cell[:,3]	
 	
-	fig = plt.figure()
-	ax = plt.axes(projection='3d')
-	ax.scatter3D(X, Y, Z,c='b',marker='^');
-	plt.show()	
+	#fig = plt.figure()
+	#ax = plt.axes(projection='3d')
+	#ax.scatter3D(X, Y, Z,c='b',marker='^');
+	#plt.show()	
 	
 	return X,Y,Z,Mats
 	
@@ -917,23 +917,27 @@ def heterojunction(par):
 	#case if you want to change the labeling of right mats
 	if(shift_mat == "y"):
 		print("Currenly, the right input has the following mat indexes:")
-		old_index = '\t'.join([str(int(mat)) for mat in non_duplicate_mat ])
+		#old_index = '\t'.join([str(int(mat)) for mat in non_duplicate_mat ])
+		old_index = ([str(int(mat)) for mat in non_duplicate_mat ])		
 		print(old_index)
 		print("Now, write the list that will substitute the indexing:")
 		
 		new_index = [str(int(item)) for item in input("Enter the index (separated by space): ").split()]
 		print(new_index)
-		print(Mats_right)
+		#print(Mats_right)
 		new_Mats_right = Mats_right.copy()
 		
 		n_mats = len(Mats_right)
+
 		for i in range(n_mats):
+	
 			mats = Mats_right[i]
-			indx = old_index.index(str(int(mats)))
+			indx = old_index.index(str(int(mats)))	
 			new_Mats_right[i] = new_index[indx]
+
 	
 		Mats_right = new_Mats_right.copy()
-		print(Mats_right)
+		
 		
 	#left box size	
 	dX_left = np.amax(X_left) - np.amin(X_left)
@@ -1089,10 +1093,28 @@ def heterojunction(par):
 	
 	return 	X,Y,Z,Mats
 ###########################################################
-
+def write_lattice(lattice_name,func_name,output_par,X,Y,Z,latt_length):
+    with open(lattice_name,'w') as f:
+        f.write( ('#Func name: %s \n') %(func_name))
+        f.write('\n'.join('#%s %s' % x for x in output_par))
+        f.write('\n')
+        for l in range(latt_length):
+            line = [X[l],Y[l],Z[l],Mats[l]]
+            f.write('\t'.join(["{:<10f} ".format(i) for i in line]) + '\n')
+            
+def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(X, Y, Z,c=color_dir,marker='^');
+    
+    try:
+        plt.show()    
+    except:
+        plt.switch_backend('agg')
+        plt.savefig(fig_name+'.png')
 '''
 colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
-X,Y,Z,Mats = heterojunction([['lattice_lat.txt'],['lattice_lat.txt'],['3'],['X']])
+X,Y,Z,Mats = heterojunction([['lattice.txt'],['lattice.txt'],['2'],['X']])
 colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
 fig = plt.figure()
 ax = plt.axes(projection='3d')
@@ -1133,7 +1155,7 @@ print("AUX PROGRAM TO GENERATE LATTICE FOR KMC SIMULATIONS")
 print("version: 1.0v, date 4/4/21 Author: Leo and Tiago")
 print()
 print("Select one of the options:")
-print("1) I want to run a simulation using a morphology that was already generated.")
+print("1) I want to see some lattice.")
 print("2) I want to generate a morhpology using one of our functions.")
 print("3) I already have a lattice, just want to mess around with it.")
 
@@ -1141,18 +1163,17 @@ lattice_output = "lattice.txt"
 
 choice1 = input()
 if ( choice1 == "1"):
-    morph_file = input("Ok! Give to me the file name of the data:")
+    morph_file = input("Ok! Give to me the file name of the data: ")
+    X,Y,Z,Mats = read_lattice(morph_file)
+    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+    draw_lattice(X,Y,Z,Mats,colors,'fig_option1.png')
     
-    if(morph_file != lattice_output):
-    	copyfile(morph_file, lattice_output)
-    else:
-    	pass
 #if you want to create a lattice     
 if ( choice1 == "2"):
     list_name_func = [ func.name for func in func_list ]
     n = len(list_name_func) 
     list_name_func = '\t'.join([str(i)+"  "+str(list_name_func[i]) for i in range(n) ]) #list with the names of the functions
-    print("This version has %s pre-written morphology functions. Choose one:" %(len(func_list)))
+    print("This version has %s pre-written morphology functions. Choose one: " %(len(func_list)))
     print(list_name_func) #printing the available functions	
     choice2 = int(input())	
     func = func_list[choice2] #choosing a function	
@@ -1171,21 +1192,18 @@ if ( choice1 == "2"):
         print(par_loc)
         par.append(par_loc)
 
-
+    output_parameters = [ (par_list_name[i],par[i]) for i in range(len(par_list_name))]
+       	
+    
     X,Y,Z,Mats = func(par)
+    colors     = np.array([colors_dic.get(int(mat)) for mat in Mats])
+    draw_lattice(X,Y,Z,Mats,colors,'lattice')
     
-    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
-    ax.scatter3D(X, Y, Z,c=colors,marker='^');
-    plt.show()    
-    
-    N = len(X)
     #writing the lattice.txt file
-    with open(lattice_output,'w') as f:
-        for l in range(N):
-            line = [X[l],Y[l],Z[l],Mats[l]]
-            f.write('\t'.join(["{:<10f} ".format(i) for i in line]) + '\n')	
+    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
+
+            
+
 
 #if you want to mess with the lattice
 if ( choice1 == "3"):
@@ -1211,22 +1229,15 @@ if ( choice1 == "3"):
         print(par_loc)
         par.append(par_loc)
         
+    output_parameters = [ (par_list_name[i],par[i]) for i in range(len(par_list_name))]        
+ 
+           
     X,Y,Z,Mats = func(par)
-
     colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
-    ax.scatter3D(X, Y, Z,c=colors,marker='^');
-    plt.show()    
-   
-   
-    N = len(X)
-    #writing the lattice.txt file
-    with open(lattice_output,'w') as f:
-        for l in range(N):
-            line = [X[l],Y[l],Z[l],Mats[l]]
-            f.write('\t'.join(["{:<10f} ".format(i) for i in line]) + '\n')
-   
+
+    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
+    draw_lattice(X,Y,Z,Mats,colors,'lattice')
+ 
 
 
 
