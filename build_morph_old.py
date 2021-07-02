@@ -79,220 +79,7 @@ def lattice(param):
     Mats = np.array(Mats)    
     return X,Y,Z,Mats
 
-#generates a bulk heterojunction conformation
-def lattice_BHJ(param):
-	
-	num_molecs =  int(param[0][0]) #adjusting to user's input     
-	vector     =  [ float(x) for x in param[1] ]
-	ps         =  [ float(x)   for x in param[2] ]
-	n_loops    =  int(param[3][0])
-	cutoff     =  float(param[4][0])
-	
-	
-	X, Y, Z, Mats = [], [], [],[]
-	ps = [i/np.sum(ps) for i in ps]
-	ps = np.cumsum(ps)
-	print(ps)
-	dx = vector[0]
-	dy = vector[1]
-	dz = vector[2]
-	dim = []
-	for elem in vector:
-		if elem != 0:
-			dim.append(1)
-		else:
-			dim.append(0)
-            
-	numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
-	numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
-	numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
-	 
-	#Se somar +1 vai aparecer duplicados no 2D
-	for nx in range(numx):
-		for ny in range(numy):
-			for nz in range(numz):
-			#print(nz)
-			
-				X.append(nx*dx)
-				Y.append(ny*dy)
-				Z.append(nz*dz)
-				sorte = random.uniform(0,1)
-				chosen = np.where(sorte < ps)[0][0]
-				Mats.append(chosen)
-	X = np.array(X)
-	Y = np.array(Y)
-	Z = np.array(Z)
-	Mats = np.array(Mats)
-	
-	
-	#finding the neighbors around each site based on a cutoff distance
-	neighbors_lattice = []
-	for j in range(len(X)):
-		
-		r = [X[j],Y[j],Z[j]]
-		neighbors = filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,j)
-		neighbors_lattice.append(neighbors)
-	
-	
-	#interating the BHJ process
-	for i in range(n_loops):
-		Mats_new = np.copy(Mats)
-		#print(Mats)
-		for k in range(len(X)): #finding which material is more present around the j-th site
-		
-			
-			
-			mats_selected  = [ Mats[ind] for ind in neighbors_lattice[k] ] 
-			unique, counts = np.unique(mats_selected, return_counts=True)
-			
-			mat_dict = dict(zip(unique, counts))
-			max_mat = max(mat_dict, key=mat_dict.get)
-			
-			
-			
-			#dealing with mats having equal max occurence
-			max_occurence = mat_dict[max_mat]
-			max_dict = {}
-			for entry in mat_dict:
-				if mat_dict[entry] == max_occurence:
-					max_dict[entry] = max_occurence
-			
-			mat_keys = list(max_dict.keys())
-			ps = np.zeros([len(mat_keys)])
-			ps = ps +1
-			ps = [i/np.sum(ps) for i in ps]
-			ps = np.cumsum(ps)
-			dice = random.uniform(0,1)
-			chosen = np.where(dice < ps)[0][0]
-			
-			
-			Mats_new[k] = mat_keys[chosen]
-			
-			#print(max_dict,mat_keys,dice)
-			#print(ps)
-			#print( mat_keys[chosen])
-			#print()
-			#input()			
-			
-		
-		Mats = np.copy(Mats_new)
-		#print("Loop %s out %s!" % (i+1,n_loops))
-	Mats = np.copy(Mats_new)
 
-	#input()
-	
-	unique, counts = np.unique(Mats, return_counts=True)
-	mat_dict = dict(zip(unique, counts))
-	print()
-	print("Done! the new lattice has the following population:")
-	print(mat_dict)
-	return X,Y,Z,Mats
-	
-#list sites' indexes of all neighbors of one given position
-def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
-	x = r[0]
-	y = r[1]
-	z = r[2]
-	neighbors = []
-	
-	for n in range(len(X)):
-	
-		dx   = (x - X[n])
-		dy   = (y - Y[n])
-		dz   = (z - Z[n])
-		dist = np.sqrt(dx**2+dy**2+dz**2)
-		if(dist <= cutoff and r_index != n):
-			neighbors.append(n)
-	#return np.array(neighbors)
-	return neighbors
-'''	
-def lattice_BHJ(param):
-	
-	num_molecs =  int(param[0][0]) #adjusting to user's input     
-	vector     =  [ float(x) for x in param[1] ]
-	ps         =  [ float(x)   for x in param[2] ]
-	X, Y, Z, Mats = [], [], [],[]
-	ps = [i/np.sum(ps) for i in ps]
-	ps = np.cumsum(ps)
-	
-	dx = vector[0]
-	dy = vector[1]
-	dz = vector[2]
-	dim = []
-	for elem in vector:
-		if elem != 0:
-			dim.append(1)
-		else:
-			dim.append(0)
-            
-	numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
-	numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
-	numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
-	 
-	#Se somar +1 vai aparecer duplicados no 2D
-	for nx in range(numx):
-		for ny in range(numy):
-			for nz in range(numz):
-			#print(nz)
-			
-				X.append(nx*dx)
-				Y.append(ny*dy)
-				Z.append(nz*dz)
-				sorte = random.uniform(0,1)
-				chosen = np.where(sorte < ps)[0][0]
-				Mats.append(chosen)
-	X = np.array(X)
-	Y = np.array(Y)
-	Z = np.array(Z)
-	Mats = np.array(Mats)
-	
-	n_loops = 10
-	cutoff = 1
-	
-	unique, counts = np.unique(Mats, return_counts=True)
-	mat_dict = dict(zip(unique, counts))
-	print(mat_dict,max(mat_dict), mat_dict.get(max(mat_dict)))
-	
-	
-	for i in range(n_loops):
-	
-		Mats_new = Mats.copy()
-		for j in range(len(X)):
-		
-			r_index = j
-			r = [X[r_index],Y[r_index],Z[r_index]]
-			mat_local = Mats[r_index]
-			
-			mats_selected = filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index)
-			unique, counts = np.unique(mats_selected, return_counts=True)
-			
-			mat_dict = dict(zip(unique, counts))
-
-			max_mat = max(mat_dict, key=mat_dict.get)
-			
-			
-			Mats_new[j] = max_mat
-		Mats = Mats_new.copy()
-	Mats = Mats_new
-	
-	return X,Y,Z,Mats
-	
-def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
-	x = r[0]
-	y = r[1]
-	z = r[2]
-	mats_selected = []
-	R = np.zeros([len(X)])
-	for n in range(len(X)):
-	
-		dx   = (x - X[n])
-		dy   = (y - Y[n])
-		dz   = (z - Z[n])
-		dist = np.sqrt(dx**2+dy**2+dz**2)
-		if(dist <= cutoff and r_index != n):
-			mats_selected.append(Mats[n])
-	return np.array(mats_selected)
-'''			
 def load_cif(mol_file):
 
 	#This program reads .cif files through a .mol2 files
@@ -1334,18 +1121,6 @@ ax = plt.axes(projection='3d')
 ax.scatter3D(X, Y, Z,c=colors,marker='^');
 plt.show()  
 '''
-
-'''
-colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
-X,Y,Z,Mats = lattice_BHJ([ [5000],[1,1,0], [0.5,0.5],[10],[1] ])
-colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(X, Y, Z,c=colors,marker='^');
-plt.show()  
-exit()
-'''
-
 class morphology_function:
     def __init__(self,name,func,param_list):
     	self.name = name
@@ -1357,13 +1132,11 @@ class morphology_function:
 
 #funcs option 2
 lattice_dir = ["Number of Sites","displacement_vec","distribuition_vec"] #should have the same order of the function
-BHJ_dir     = ["Number of Sites","displacement_vec","distribuition_vec","Number of times to loop","Cutoff distance (angstrom)"] #should have the same order of the function
 loadcif_dir = ["mol_filename"]
 
 latt_func      = morphology_function("lattice",lattice,lattice_dir)
-BHJ_func       = morphology_function("bulk heterojunction (BHJ)",lattice_BHJ,BHJ_dir)
 loadcif_func   = morphology_function("loadcif",load_cif,loadcif_dir)
-func_list      = [latt_func,loadcif_func,BHJ_func] #list of functions to be included in option 2
+func_list      = [latt_func,loadcif_func] #list of functions to be included in option 2
 
 #funcs option 3
 parametrize_dir    = ["filename for the first unit cell"]
