@@ -11,6 +11,7 @@ animation_mode = PARAM.animation_mode
 rounds = PARAM.rounds
 n_proc = PARAM.n_proc
 n_loops = int(rounds/n_proc)
+n_loops_leftover= rounds % n_proc
 
 bib_path = "XXX"
 main_script = bib_path +"newkmc.py"
@@ -29,3 +30,4 @@ else:
 	for i in range(n_loops):	    
 		run_parallel(n_proc)
 		print(i,"entrou!")
+	run_parallel(n_loops_leftover)
