@@ -126,6 +126,31 @@ def s1_t1_distr(param):
         t1.append(random.choice(t1s.get(i)))   
     return s1,t1
    
+def homo_lumo_s1_distr(param):
+    #s1_dic = {0: 'dist_s1_mat0.txt, 1:'dist_s1_mat1.txt' ...}
+    homo_dic    = param[0] #relabeling the input parameters
+    lumo_dic    = param[1]
+    s1_dic      = param[2]
+    mats        = param[3]
+    
+    s1s = {}
+    homos = {}
+    lumos = {}
+    
+    for ele in s1_dic:
+    	s1s[ele]   = np.loadtxt(s1_dic.get(ele))
+    	homos[ele] = np.loadtxt(homo_dic.get(ele))
+    	lumos[ele] = np.loadtxt(lumo_dic.get(ele))
+
+    
+    homo_dist,lumo_dist,s1_dist = [], [], []
+    for i in mats:
+    
+        s1_dist.append(random.choice(s1s.get(i)))
+        homo_dist.append(random.choice(homos.get(i)))
+        lumo_dist.append(random.choice(lumos.get(i)))
+    return s1_dist, homo_dist, lumo_dist  
+   
 ############################################
 # ANNI FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
 

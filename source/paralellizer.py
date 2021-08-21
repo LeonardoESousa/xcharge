@@ -17,9 +17,12 @@ bib_path = "XXX"
 main_script = bib_path +"newkmc.py"
 
 def run_parallel(n_jobs):
-	for i in range(n_jobs):
-		p = subprocess.Popen(['python3', main_script, str(working_dir)])
-	p.communicate()
+	if n_jobs > 0:
+		for i in range(n_jobs):
+			p = subprocess.Popen(['python3', main_script, str(working_dir)])
+		p.communicate()
+	else:
+		pass
 	
 	#while p.poll() is None:
 		#print('Still sleeping')
