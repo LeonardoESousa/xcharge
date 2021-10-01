@@ -2,6 +2,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+#plt.switch_backend('agg') #para cluster
 import collections
 from shutil import copyfile
 from math import sqrt
@@ -13,18 +14,18 @@ def read_lattice(file_name):
 	
 	with open(file_name, 'r') as f:
 		for line in f:
-			line = line.split()
+			if '#' not in line:		
+				line = line.split()
+				x    = float(line[0])
+				y    = float(line[1])
+				z    = float(line[2])
+				mat  = int(float(line[3]))
 			
-			x    = float(line[0])
-			y    = float(line[1])
-			z    = float(line[2])
-			mat  = int(float(line[3]))
 			
-			
-			X.append(x)
-			Y.append(y)
-			Z.append(z)
-			Mats.append(mat)
+				X.append(x)
+				Y.append(y)
+				Z.append(z)
+				Mats.append(mat)
 	X = np.array(X)
 	Y = np.array(Y)	
 	Z = np.array(Z)	
@@ -78,7 +79,220 @@ def lattice(param):
     Mats = np.array(Mats)    
     return X,Y,Z,Mats
 
+#generates a bulk heterojunction conformation
+def lattice_BHJ(param):
+	
+	num_molecs =  int(param[0][0]) #adjusting to user's input     
+	vector     =  [ float(x) for x in param[1] ]
+	ps         =  [ float(x)   for x in param[2] ]
+	n_loops    =  int(param[3][0])
+	cutoff     =  float(param[4][0])
+	
+	
+	X, Y, Z, Mats = [], [], [],[]
+	ps = [i/np.sum(ps) for i in ps]
+	ps = np.cumsum(ps)
+	print(ps)
+	dx = vector[0]
+	dy = vector[1]
+	dz = vector[2]
+	dim = []
+	for elem in vector:
+		if elem != 0:
+			dim.append(1)
+		else:
+			dim.append(0)
+            
+	numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
+	numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
+	numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
+	 
+	#Se somar +1 vai aparecer duplicados no 2D
+	for nx in range(numx):
+		for ny in range(numy):
+			for nz in range(numz):
+			#print(nz)
+			
+				X.append(nx*dx)
+				Y.append(ny*dy)
+				Z.append(nz*dz)
+				sorte = random.uniform(0,1)
+				chosen = np.where(sorte < ps)[0][0]
+				Mats.append(chosen)
+	X = np.array(X)
+	Y = np.array(Y)
+	Z = np.array(Z)
+	Mats = np.array(Mats)
+	
+	
+	#finding the neighbors around each site based on a cutoff distance
+	neighbors_lattice = []
+	for j in range(len(X)):
+		
+		r = [X[j],Y[j],Z[j]]
+		neighbors = filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,j)
+		neighbors_lattice.append(neighbors)
+	
+	
+	#interating the BHJ process
+	for i in range(n_loops):
+		Mats_new = np.copy(Mats)
+		#print(Mats)
+		for k in range(len(X)): #finding which material is more present around the j-th site
+		
+			
+			
+			mats_selected  = [ Mats[ind] for ind in neighbors_lattice[k] ] 
+			unique, counts = np.unique(mats_selected, return_counts=True)
+			
+			mat_dict = dict(zip(unique, counts))
+			max_mat = max(mat_dict, key=mat_dict.get)
+			
+			
+			
+			#dealing with mats having equal max occurence
+			max_occurence = mat_dict[max_mat]
+			max_dict = {}
+			for entry in mat_dict:
+				if mat_dict[entry] == max_occurence:
+					max_dict[entry] = max_occurence
+			
+			mat_keys = list(max_dict.keys())
+			ps = np.zeros([len(mat_keys)])
+			ps = ps +1
+			ps = [i/np.sum(ps) for i in ps]
+			ps = np.cumsum(ps)
+			dice = random.uniform(0,1)
+			chosen = np.where(dice < ps)[0][0]
+			
+			
+			Mats_new[k] = mat_keys[chosen]
+			
+			#print(max_dict,mat_keys,dice)
+			#print(ps)
+			#print( mat_keys[chosen])
+			#print()
+			#input()			
+			
+		
+		Mats = np.copy(Mats_new)
+		#print("Loop %s out %s!" % (i+1,n_loops))
+	Mats = np.copy(Mats_new)
 
+	#input()
+	
+	unique, counts = np.unique(Mats, return_counts=True)
+	mat_dict = dict(zip(unique, counts))
+	print()
+	print("Done! the new lattice has the following population:")
+	print(mat_dict)
+	return X,Y,Z,Mats
+	
+#list sites' indexes of all neighbors of one given position
+def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
+	x = r[0]
+	y = r[1]
+	z = r[2]
+	neighbors = []
+	
+	for n in range(len(X)):
+	
+		dx   = (x - X[n])
+		dy   = (y - Y[n])
+		dz   = (z - Z[n])
+		dist = np.sqrt(dx**2+dy**2+dz**2)
+		if(dist <= cutoff and r_index != n):
+			neighbors.append(n)
+	#return np.array(neighbors)
+	return neighbors
+'''	
+def lattice_BHJ(param):
+	
+	num_molecs =  int(param[0][0]) #adjusting to user's input     
+	vector     =  [ float(x) for x in param[1] ]
+	ps         =  [ float(x)   for x in param[2] ]
+	X, Y, Z, Mats = [], [], [],[]
+	ps = [i/np.sum(ps) for i in ps]
+	ps = np.cumsum(ps)
+	
+	dx = vector[0]
+	dy = vector[1]
+	dz = vector[2]
+	dim = []
+	for elem in vector:
+		if elem != 0:
+			dim.append(1)
+		else:
+			dim.append(0)
+            
+	numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
+	numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
+	numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
+	 
+	#Se somar +1 vai aparecer duplicados no 2D
+	for nx in range(numx):
+		for ny in range(numy):
+			for nz in range(numz):
+			#print(nz)
+			
+				X.append(nx*dx)
+				Y.append(ny*dy)
+				Z.append(nz*dz)
+				sorte = random.uniform(0,1)
+				chosen = np.where(sorte < ps)[0][0]
+				Mats.append(chosen)
+	X = np.array(X)
+	Y = np.array(Y)
+	Z = np.array(Z)
+	Mats = np.array(Mats)
+	
+	n_loops = 10
+	cutoff = 1
+	
+	unique, counts = np.unique(Mats, return_counts=True)
+	mat_dict = dict(zip(unique, counts))
+	print(mat_dict,max(mat_dict), mat_dict.get(max(mat_dict)))
+	
+	
+	for i in range(n_loops):
+	
+		Mats_new = Mats.copy()
+		for j in range(len(X)):
+		
+			r_index = j
+			r = [X[r_index],Y[r_index],Z[r_index]]
+			mat_local = Mats[r_index]
+			
+			mats_selected = filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index)
+			unique, counts = np.unique(mats_selected, return_counts=True)
+			
+			mat_dict = dict(zip(unique, counts))
+
+			max_mat = max(mat_dict, key=mat_dict.get)
+			
+			
+			Mats_new[j] = max_mat
+		Mats = Mats_new.copy()
+	Mats = Mats_new
+	
+	return X,Y,Z,Mats
+	
+def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
+	x = r[0]
+	y = r[1]
+	z = r[2]
+	mats_selected = []
+	R = np.zeros([len(X)])
+	for n in range(len(X)):
+	
+		dx   = (x - X[n])
+		dy   = (y - Y[n])
+		dz   = (z - Z[n])
+		dist = np.sqrt(dx**2+dy**2+dz**2)
+		if(dist <= cutoff and r_index != n):
+			mats_selected.append(Mats[n])
+	return np.array(mats_selected)
+'''			
 def load_cif(mol_file):
 
 	#This program reads .cif files through a .mol2 files
@@ -720,6 +934,7 @@ def multiply_lattice(lattice,n_times_ar,delta):
 	X_lenght = delta[0] #Increments
 	Y_lenght = delta[1]
 	Z_lenght = delta[2]
+	
 		
 	n_times_x = n_times_ar[0]
 	n_times_y = n_times_ar[1]
@@ -742,7 +957,7 @@ def multiply_lattice(lattice,n_times_ar,delta):
 					
 				new_lattice = np.vstack((new_lattice,new_cell))
 		
-	return new_lattice
+	return np.unique(new_lattice,axis=0)
 	
 def func_parametrize(t):
 	#return [t,t,0]
@@ -880,10 +1095,10 @@ def parametrize_mat(par):
 	Z    = mult_cell[:,2]
 	Mats = mult_cell[:,3]	
 	
-	fig = plt.figure()
-	ax = plt.axes(projection='3d')
-	ax.scatter3D(X, Y, Z,c='b',marker='^');
-	plt.show()	
+	#fig = plt.figure()
+	#ax = plt.axes(projection='3d')
+	#ax.scatter3D(X, Y, Z,c='b',marker='^');
+	#plt.show()	
 	
 	return X,Y,Z,Mats
 	
@@ -892,6 +1107,16 @@ def heterojunction(par):
 	cell_left  = par[0][0]
 	cell_right = par[1][0]
 	n_times    = int(float(par[2][0]))
+	axis       = par[3][0]
+	
+	#direction in which we will join the two sides
+	if axis == 'X':
+		vec_joint = [1,0,0]
+	if axis == 'Y':
+		vec_joint = [0,1,0]
+	if axis == 'Z':
+		vec_joint = [0,0,1]
+	
 	
 	X_left ,Y_left ,Z_left ,Mats_left  = read_lattice(cell_left)
 	X_right,Y_right,Z_right,Mats_right = read_lattice(cell_right)
@@ -905,28 +1130,34 @@ def heterojunction(par):
 	#case if you want to change the labeling of right mats
 	if(shift_mat == "y"):
 		print("Currenly, the right input has the following mat indexes:")
-		old_index = '\t'.join([str(int(mat)) for mat in non_duplicate_mat ])
+		#old_index = '\t'.join([str(int(mat)) for mat in non_duplicate_mat ])
+		old_index = ([str(int(mat)) for mat in non_duplicate_mat ])		
 		print(old_index)
 		print("Now, write the list that will substitute the indexing:")
 		
 		new_index = [str(int(item)) for item in input("Enter the index (separated by space): ").split()]
 		print(new_index)
-		print(Mats_right)
+		#print(Mats_right)
 		new_Mats_right = Mats_right.copy()
 		
 		n_mats = len(Mats_right)
+
 		for i in range(n_mats):
+	
 			mats = Mats_right[i]
-			indx = old_index.index(str(int(mats)))
+			indx = old_index.index(str(int(mats)))	
 			new_Mats_right[i] = new_index[indx]
+
 	
 		Mats_right = new_Mats_right.copy()
-		print(Mats_right)
 		
+		
+	#left box size	
 	dX_left = np.amax(X_left) - np.amin(X_left)
 	dY_left = np.amax(Y_left) - np.amin(Y_left)
 	dZ_left = np.amax(Z_left) - np.amin(Z_left)
 	
+	#right box size
 	dX_right = np.amax(X_right) - np.amin(X_right)
 	dY_right = np.amax(Y_right) - np.amin(Y_right)
 	dZ_right = np.amax(Z_right) - np.amin(Z_right)
@@ -956,17 +1187,118 @@ def heterojunction(par):
 	multiplied_right = multiply_lattice(unit_cell_right,n_times_right,[dX_right,dY_right,dZ_right])
 	
 
-	
 	shift_vec = [X_tot_left,Y_tot_left,Z_tot_left]
+	shift_vec = [ shift_vec[i]*vec_joint[i] for i in range(len(shift_vec))]	 
 	
 	#shifting the entire right lattice 
 	for site in multiplied_right:
 		site[0] = site[0] + shift_vec[0]
-		#site[1] = site[1] + shift_vec[1] 
-		#site[2] = site[2] + shift_vec[2]
+		site[1] = site[1] + shift_vec[1] 
+		site[2] = site[2] + shift_vec[2]
+	
+	#modeling the intersection
+	#returns the number of sites along a determined axis
+	def filter_lattice(lattice,axis):
+		x = lattice[:,0]
+		y = lattice[:,1]
+		z = lattice[:,2]
+		
+		if axis == "X":
+			y_min = np.amin(y)
+			fixed_latt = lattice[y==y_min]
+			z = fixed_latt[:,2]
+			z_min = np.amin(z)
+			fixed_latt = fixed_latt[z==z_min]
+			
+			return len(fixed_latt)
+			
+		
+		if axis == "Y":#y
+			x_min = np.amin(x)
+			fixed_latt = lattice[x==x_min]
+			z = fixed_latt[:,2]
+			z_min = np.amin(z)
+			fixed_latt = fixed_latt[z==z_min]
+			
+			return len(fixed_latt)			
+
+		if axis == "Z":#z
+			x_min = np.amin(x)
+			fixed_latt = lattice[x==x_min]
+			y = fixed_latt[:,1]
+			y_min = np.amin(y)
+			fixed_latt = fixed_latt[y==y_min]
+			
+			return len(fixed_latt)
+	#how many sites exist along an axis?		
+	n_sites_axis_left  = filter_lattice(multiplied_left,axis)
+	n_sites_axis_right = filter_lattice(multiplied_right,axis)	
+	
+	dens_left  = dX_left/n_sites_axis_left #density of sites along an axis on the left side
+	dens_right = dX_right/n_sites_axis_right #density of sites along an axis on the right side
+	
+	#picking the lowest dx among the two sides
+	if dens_left < dens_right:
+		dens = dens_left
+	else:
+		dens = dens_right
+	
+	def dist(vec1,vec2):
+		return sqrt((vec1[0]-vec2[0])**2 + (vec1[1]-vec2[1])**2 +(vec1[2]-vec2[2])**2)
+		
+	#identifies the sites located near the heterojunction	
+	def is_in_the_heterojunc(left_lattice,right_lattice,cutoff):
+		right_het, left_het = [], []
+		n_right = len(right_lattice)
+		n_left  = len(left_lattice)
+		
+		for i in range(n_left):
+			site_left = left_lattice[i][0:3]
+			for j in range(n_right):
+				site_right = right_lattice[j][0:3]
+
+				distance = dist(site_left,site_right)
+				
+				#if the distance between a site on the left and right is comparable to the first neighbor
+				# distance in the left side (a way to locate the sites in the heterojunc)
+				if distance <= cutoff:
+					#print(i,j,distance)
+					right_het.append(j)
+					left_het.append(i)
+					
+		return 	left_het, right_het		
+		
+	#add a disturbance in the sites located in the heterojunction	
+	def shift_hetero(latt,vec,indx_ar,mean,sigma,scale):
+		latt_ref = latt.copy()
+		for indx in indx_ar:
+			shift = np.array([ scale*pos*np.random.normal(mean,sigma) for pos in vec])
+			latt[indx][0:3] = latt_ref[indx][0:3] + shift
+			#print(shift)
+	
+	
+	
+	
+	mean = 1
+	sigma = mean
+	scale = dens/1
+
+
+	#getting the sites in the heterojunc
+	left_het, right_het = is_in_the_heterojunc(multiplied_left,multiplied_right,dens)
+
+	#shifting these sites
+	shift_hetero(multiplied_left,vec_joint,left_het,mean,sigma,scale)
+	shift_hetero(multiplied_right,vec_joint,right_het,mean,sigma,scale)
+
+	#getting the sites that are too close
+	left_het, right_het = is_in_the_heterojunc(multiplied_left,multiplied_right,dens)
+	shift_hetero(multiplied_left,vec_joint,left_het,dens,0.2,1)
+	shift_hetero(multiplied_right,vec_joint,right_het,dens,0.2,-1)
+	# END INTERSECTION
+	
 		
 	hetero_lattice = np.vstack((multiplied_left,multiplied_right))
-	
 	X    = hetero_lattice[:,0]
 	Y    = hetero_lattice[:,1]
 	Z    = hetero_lattice[:,2]
@@ -974,8 +1306,45 @@ def heterojunction(par):
 	
 	return 	X,Y,Z,Mats
 ###########################################################
+def write_lattice(lattice_name,func_name,output_par,X,Y,Z,latt_length):
+    with open(lattice_name,'w') as f:
+        f.write( ('#Func name: %s \n') %(func_name))
+        f.write('\n'.join('#%s %s' % x for x in output_par))
+        f.write('\n')
+        for l in range(latt_length):
+            line = [X[l],Y[l],Z[l],Mats[l]]
+            f.write('\t'.join(["{:<10f} ".format(i) for i in line]) + '\n')
+            
+def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(X, Y, Z,c=color_dir,marker='^');
+    
+    try:
+        plt.show()    
+    except:
+        plt.switch_backend('agg')
+        plt.savefig(fig_name+'.png')
+'''
+colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+X,Y,Z,Mats = heterojunction([['lattice.txt'],['lattice.txt'],['2'],['X']])
+colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+ax.scatter3D(X, Y, Z,c=colors,marker='^');
+plt.show()  
+'''
 
-
+'''
+colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+X,Y,Z,Mats = lattice_BHJ([ [5000],[1,1,0], [0.5,0.5],[10],[1] ])
+colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+ax.scatter3D(X, Y, Z,c=colors,marker='^');
+plt.show()  
+exit()
+'''
 
 class morphology_function:
     def __init__(self,name,func,param_list):
@@ -987,16 +1356,18 @@ class morphology_function:
     
 
 #funcs option 2
-lattice_dir = ["dim","displacement_vec","distribuition_vec"] #should have the same order of the function
+lattice_dir = ["Number of Sites","displacement_vec","distribuition_vec"] #should have the same order of the function
+BHJ_dir     = ["Number of Sites","displacement_vec","distribuition_vec","Number of times to loop","Cutoff distance (angstrom)"] #should have the same order of the function
 loadcif_dir = ["mol_filename"]
 
 latt_func      = morphology_function("lattice",lattice,lattice_dir)
+BHJ_func       = morphology_function("bulk heterojunction (BHJ)",lattice_BHJ,BHJ_dir)
 loadcif_func   = morphology_function("loadcif",load_cif,loadcif_dir)
-func_list      = [latt_func,loadcif_func] #list of functions to be included in option 2
+func_list      = [latt_func,loadcif_func,BHJ_func] #list of functions to be included in option 2
 
 #funcs option 3
 parametrize_dir    = ["filename for the first unit cell"]
-heterojunction_dir = ["name_left_cell","name_right_cell","number_of_reps"]
+heterojunction_dir = ["name_left_cell","name_right_cell","number_of_reps","Joining axis (X,Y or Z)"]
 
 paramet_func           = morphology_function("parametrized",parametrize_mat,parametrize_dir)
 heterojunction_func    = morphology_function("heterojunction",heterojunction,heterojunction_dir)
@@ -1011,7 +1382,7 @@ print("AUX PROGRAM TO GENERATE LATTICE FOR KMC SIMULATIONS")
 print("version: 1.0v, date 4/4/21 Author: Leo and Tiago")
 print()
 print("Select one of the options:")
-print("1) I want to run a simulation using a morphology that was already generated.")
+print("1) I want to see some lattice.")
 print("2) I want to generate a morhpology using one of our functions.")
 print("3) I already have a lattice, just want to mess around with it.")
 
@@ -1019,18 +1390,17 @@ lattice_output = "lattice.txt"
 
 choice1 = input()
 if ( choice1 == "1"):
-    morph_file = input("Ok! Give to me the file name of the data:")
+    morph_file = input("Ok! Give to me the file name of the data: ")
+    X,Y,Z,Mats = read_lattice(morph_file)
+    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+    draw_lattice(X,Y,Z,Mats,colors,'fig_option1.png')
     
-    if(morph_file != lattice_output):
-    	copyfile(morph_file, lattice_output)
-    else:
-    	pass
 #if you want to create a lattice     
 if ( choice1 == "2"):
     list_name_func = [ func.name for func in func_list ]
     n = len(list_name_func) 
     list_name_func = '\t'.join([str(i)+"  "+str(list_name_func[i]) for i in range(n) ]) #list with the names of the functions
-    print("This version has %s pre-written morphology functions. Choose one:" %(len(func_list)))
+    print("This version has %s pre-written morphology functions. Choose one: " %(len(func_list)))
     print(list_name_func) #printing the available functions	
     choice2 = int(input())	
     func = func_list[choice2] #choosing a function	
@@ -1049,21 +1419,18 @@ if ( choice1 == "2"):
         print(par_loc)
         par.append(par_loc)
 
-
+    output_parameters = [ (par_list_name[i],par[i]) for i in range(len(par_list_name))]
+       	
+    
     X,Y,Z,Mats = func(par)
+    colors     = np.array([colors_dic.get(int(mat)) for mat in Mats])
+    draw_lattice(X,Y,Z,Mats,colors,'lattice')
     
-    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
-    ax.scatter3D(X, Y, Z,c=colors,marker='^');
-    plt.show()    
-    
-    N = len(X)
     #writing the lattice.txt file
-    with open(lattice_output,'w') as f:
-        for l in range(N):
-            line = [X[l],Y[l],Z[l],Mats[l]]
-            f.write('\t'.join(["{:<10f} ".format(i) for i in line]) + '\n')	
+    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
+
+            
+
 
 #if you want to mess with the lattice
 if ( choice1 == "3"):
@@ -1089,22 +1456,15 @@ if ( choice1 == "3"):
         print(par_loc)
         par.append(par_loc)
         
+    output_parameters = [ (par_list_name[i],par[i]) for i in range(len(par_list_name))]        
+ 
+           
     X,Y,Z,Mats = func(par)
-
     colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
-    ax.scatter3D(X, Y, Z,c=colors,marker='^');
-    plt.show()    
-   
-   
-    N = len(X)
-    #writing the lattice.txt file
-    with open(lattice_output,'w') as f:
-        for l in range(N):
-            line = [X[l],Y[l],Z[l],Mats[l]]
-            f.write('\t'.join(["{:<10f} ".format(i) for i in line]) + '\n')
-   
+
+    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
+    draw_lattice(X,Y,Z,Mats,colors,'lattice')
+ 
 
 
 
