@@ -1,23 +1,19 @@
 import sys
 import morphology
 from kmc_classes import *
-from newkmc import *
 
-import os
-import matplotlib.pyplot as plt
-from matplotlib import animation
-from joblib import Parallel, delayed
- 
+
+
  
 # KMC PARAMETERS 
 #BASIC PARAMETERS
 identifier         = 'New' #output identifier
 time_limit         = np.inf
-animation_mode     = True  
+animation_mode     = False  
 anni               = True  # Turn on annihilation
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 100   # Number of rounds
-n_proc             = 2     # Number of cores to be used
+rounds             = 10000   # Number of rounds
+n_proc             = 6     # Number of cores to be used
 num_ex             = 3     #number of excitons
 relative_eps       = 3.5   #relative permitivity
 lattice_filename   = "lattice.txt" # file name of the system's morphology
@@ -105,8 +101,7 @@ shape_dic = {'sphere': morphology.sphere_conditional, 'plane':morphology.plane_c
 
 
 
-selection = range(len(X)) #if you dont want to mess with the formation
-#selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="free",origin=None,argum=None)
+selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="free",origin=None,argum=None) #if you dont want to mess with the formation
 #selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="rectangle",origin=None,argum=[[40,50],[0,60],[0,40]])
 #selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="sphere",origin=[30,30,30],argum=15)
 #selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="plane",origin=[10,10,10],argum=[60,60,0])
@@ -133,7 +128,7 @@ ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choosed disso
 
 
 
-# PROCEED ONLY IF YOU KNOW WHAT ARE YOU DOING! 
+# PROCEED ONLY IF YOU KNOW WHAT YOU ARE DOING! 
 def make_system():
 
     system = System(X,Y,Z,Mats)   
@@ -143,39 +138,7 @@ def make_system():
     system.set_medium(relative_eps)
     excitons = gen_function(parameters_genfunc)
     system.set_particles(excitons)
+    
     return system
-    
-    
-    
-    
-if animation_mode:
-
-    #path="animation.mp4"
-        
-
-    system = make_system()
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-       
    
-    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
-                                interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
-    #ani.save('charges.avi', fps=20, dpi=300)
-    #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
-    
-    #salvar .gif
-    #ani.save(path, writer='imagemagick', fps=30)
-    
-    #salvar .mp4
-    #writervideo = animation.FFMpegWriter(fps=10) 
-    #ani.save(path, writer=writervideo)
-    
-    plt.show()
-    
-    
-else:
-
-    Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system()) for i in range(rounds))
-    
-    
 

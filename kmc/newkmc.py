@@ -1,23 +1,33 @@
 import numpy as np
 import random
-import matplotlib.pyplot as plt
-from matplotlib import animation
-import os
 from kmc_classes import *
 import sys
 import warnings
-
-
-
-
+import os
+import matplotlib.pyplot as plt
+from matplotlib import animation
+from joblib import Parallel, delayed
+import importlib
 warnings.filterwarnings("ignore")   
 
-#usuario de ruindows
-#plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
+
+#importing param module
+param = importlib.import_module(sys.argv[1].split('.')[0])
+param
 
 
+n_proc          = param.n_proc
+identifier      = param.identifier 
+animation_mode  = param.animation_mode
+time_limit      = param.time_limit 
+pause           = param.pause # to freeze on the first frame
 
-  
+#getting parameters from
+rounds           = param.rounds
+processes        = param.processes
+monomolecular    = param.monomolecular
+anni             = param.anni
+anni_funcs_array = param.annihi_funcs_array
 
          
 # runs the annihilations defined in anni_funcs_array                 
@@ -235,5 +245,34 @@ def RUN(system):
     spectra(system)
    
 
-      
+    
+if animation_mode:
+
+    #path="animation.mp4"
+        
+
+    system = param.make_system()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+       
+   
+    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
+                                interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
+    #ani.save('charges.avi', fps=20, dpi=300)
+    #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
+    
+    #salvar .gif
+    #ani.save(path, writer='imagemagick', fps=30)
+    
+    #salvar .mp4
+    #writervideo = animation.FFMpegWriter(fps=10) 
+    #ani.save(path, writer=writervideo)
+    
+    plt.show()
+    
+    
+else:
+
+    Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(param.make_system()) for i in range(rounds))
+          
 
