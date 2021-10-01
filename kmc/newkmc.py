@@ -6,27 +6,16 @@ import os
 from kmc_classes import *
 import sys
 import warnings
-import PARAM
-from joblib import Parallel, delayed
+
+
+
 
 warnings.filterwarnings("ignore")   
 
 #usuario de ruindows
 #plt.rcParams['animation.ffmpeg_path'] = r'C:\ffmpeg\ffmpeg.exe'  
 
-identifier     = PARAM.identifier 
-animation_mode = PARAM.animation_mode
-time_limit     = PARAM.time_limit 
-pause          = PARAM.pause # to freeze on the first frame
 
-#getting parameters from
-rounds        = PARAM.rounds
-processes     = PARAM.processes
-monomolecular = PARAM.monomolecular
-anni          = PARAM.anni
-n_proc        = PARAM.n_proc
-
-anni_funcs_array = PARAM.annihi_funcs_array
 
   
 
@@ -63,7 +52,7 @@ def decision(s,system):
     final_rate = []
     labels     = []
     chosen     = []
-    hop = processes.get(kind)
+    hop = system.processes.get(kind)
     for transfer in hop:    
         jump_rate  = transfer.rate(r=r,system=system,particle=s)
         probs = np.cumsum(jump_rate)/np.sum(jump_rate)
@@ -75,7 +64,7 @@ def decision(s,system):
         final_rate.append(jump_rate[chosen[-1]])
         labels.append(transfer)
  
-    mono = monomolecular.get(kind)   
+    mono = system.monomolecular.get(kind)   
     for m in mono:
         final_rate.append(m.rate(material=Mat))
         labels.append(m)
@@ -129,7 +118,7 @@ def pair_matching(particles_sample,W):
  
 
 def step(system): 
-    while system.count_particles() > 0 and system.time < time_limit:
+    while system.count_particles() > 0 and system.time < system.time_limit:
         Ss = system.particles.copy()     
         #print([m.species for m in Ss])
         J, W, DT = [],[],[]
@@ -146,10 +135,10 @@ def step(system):
         for i in range(len(Ss)):
             if fator <= time_step/DT[i]:
                 J[i].action(Ss[i],system,W[i])
-        if anni:
+        if system.anni:
             #anni_singlet(system,Ss)
-            anni_general(system,Ss,anni_funcs_array)
-        if animation_mode:
+            anni_general(system,Ss,system.anni_funcs_array)
+        if system.animation_mode:
             return Ss       
     Ss = system.particles.copy()
     for s in Ss:
@@ -160,11 +149,11 @@ def step(system):
                 
 #Prints Spectra
 def spectra(system):
-    if os.path.isfile("Simulation_"+identifier+".txt") == False:
-        with open("Simulation_"+identifier+".txt", "w") as f:
+    if os.path.isfile("Simulation_"+system.identifier+".txt") == False:
+        with open("Simulation_"+system.identifier+".txt", "w") as f:
             texto = "{0:^10}    {1:^6} {2:^6} {3:^6} {4:^4} {5:^4} {6:^9} {7:^6} {8:^6} {9:^6} {10:^4}".format("Time", "DeltaX", "DeltaY", "DeltaZ", "Type", "Energy", "Location" ,"FinalX", "FinalY", "FinalZ", "Causa Mortis")
             f.write(texto+"\n") 
-    with open("Simulation_"+identifier+".txt", "a") as f:   
+    with open("Simulation_"+system.identifier+".txt", "a") as f:   
         for s in system.dead:
             texto = s.write()
             f.write(texto)
@@ -227,7 +216,7 @@ def animate(num,system,ax):
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys())
     ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
-    ax.text2D(0.03, 0.94, "eps  = %.2f" % (PARAM.relative_eps), transform=ax.transAxes) #eps
+    ax.text2D(0.03, 0.94, "eps  = %.2f" %    (system.eps_rel), transform=ax.transAxes) #eps
     ax.text2D(0.03, 0.90, "npart  = %.0f" % (len(system.particles)), transform=ax.transAxes) #npart
     
     ax.set_xlabel('X')
@@ -235,46 +224,16 @@ def animate(num,system,ax):
     ax.set_zlabel('Z')     
 
     #pausing in the first frame
-    if pause:
+    if system.pause:
         ani.event_source.stop()
     return ax,
 
+
 #RUN of a single round   
-def RUN():
-    system = PARAM.make_system()
+def RUN(system):
     step(system)
     spectra(system)
-
-if animation_mode:
-    #path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.gif"
-    path="/home/tiago/Documents/Pesquisa/Estrutura_eletronica/KMC_TRY/KMC/animation.mp4"
-        
-
-    system = PARAM.make_system()
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-       
    
-    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
-                                interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
-    #ani.save('charges.avi', fps=20, dpi=300)
-    #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
-    
-    #salvar .gif
-    #ani.save(path, writer='imagemagick', fps=30)
-    
-    #salvar .mp4
-    #writervideo = animation.FFMpegWriter(fps=10) 
-    #ani.save(path, writer=writervideo)
-    
-    plt.show()
-    
-else:
-    if paralell: #paralell run
-        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)() for i in range(rounds))
-        
-    else: #normal run
-        for i in range(rounds):
-    	    RUN()                
-            
-exit()
+
+      
+

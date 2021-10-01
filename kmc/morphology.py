@@ -15,18 +15,18 @@ def read_lattice(file_name):
 	
 	with open(file_name, 'r') as f:
 		for line in f:
-			line = line.split()
+			if '#' not in line:		
+				line = line.split()
+				x    = float(line[0])
+				y    = float(line[1])
+				z    = float(line[2])
+				mat  = int(float(line[3]))
 			
-			x    = float(line[0])
-			y    = float(line[1])
-			z    = float(line[2])
-			mat  = int(float(line[3]))
 			
-			
-			X.append(x)
-			Y.append(y)
-			Z.append(z)
-			Mats.append(mat)
+				X.append(x)
+				Y.append(y)
+				Z.append(z)
+				Mats.append(mat)
 	X = np.array(X)
 	Y = np.array(Y)	
 	Z = np.array(Z)	
@@ -100,6 +100,57 @@ def homo_lumo(param):
         s1.append(np.random.normal(s1s.get(i)[0],s1s.get(i)[1]))
         t1.append(np.random.normal(t1s.get(i)[0],t1s.get(i)[1]))
     return s1, t1
+   
+   
+#energy functions when you have the distribuitions of t1 and s1 energies    
+def s1_t1_distr(param):
+    #s1_dic = {0: 'dist_s1_mat0.txt, 1:'dist_s1_mat1.txt' ...}
+    s1_dic    = param[0] #relabeling the input parameters 
+    t1_dic    = param[1]
+    mats      = param[2]
+    
+
+    
+    s1s = {}
+    t1s = {}
+    
+    for ele in s1_dic:
+    	s1s[ele] = np.loadtxt(s1_dic.get(ele))
+    	t1s[ele] = np.loadtxt(t1_dic.get(ele))
+    
+    s1 = []
+    t1 = []
+    
+    for i in mats:
+        s1.append(random.choice(s1s.get(i)))
+        t1.append(random.choice(t1s.get(i)))   
+    return s1,t1
+   
+def homo_lumo_s1_distr(param):
+    #s1_dic = {0: 'dist_s1_mat0.txt, 1:'dist_s1_mat1.txt' ...}
+    homo_dic    = param[0] #relabeling the input parameters
+    lumo_dic    = param[1]
+    s1_dic      = param[2]
+    mats        = param[3]
+    
+    s1s = {}
+    homos = {}
+    lumos = {}
+    
+    for ele in s1_dic:
+    	s1s[ele]   = np.loadtxt(s1_dic.get(ele))
+    	homos[ele] = np.loadtxt(homo_dic.get(ele))
+    	lumos[ele] = np.loadtxt(lumo_dic.get(ele))
+
+    
+    homo_dist,lumo_dist,s1_dist = [], [], []
+    for i in mats:
+    
+        s1_dist.append(random.choice(s1s.get(i)))
+        homo_dist.append(random.choice(homos.get(i)))
+        lumo_dist.append(random.choice(lumos.get(i)))
+    return s1_dist, homo_dist, lumo_dist  
+   
 ############################################
 # ANNI FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
 
@@ -114,11 +165,15 @@ def anni_ele_hol(system,tipos,Ss,indices,locs):
             system.add_particle(Exciton('triplet',locs[indices[0][0]]))
         else:
             system.add_particle(Exciton('singlet',locs[indices[0][0]]))
+            
+            
 #annihililation exciton singlets pair
 def anni_sing(system,tipos,Ss,indices,locs): # e se tiver 4 excitons no mesmo sitio?
     duplicates = set([x for x in tipos if tipos.count(x) > 1]) # checking if there is 2 occurrences of the types
     if 'singlet' in duplicates:        
         Ss[indices[0][tipos.index('singlet')]].kill('anni',system,system.s1)
+             
+        
 ############################################           
 # FUNCS TO SHAPE THE GENERATION OF PARTICLES
 
@@ -154,7 +209,6 @@ def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
 
 
 #funcs that define the filtering, like inside a sphere, plane etc
-
 def sphere_conditional(pos,r0,r_min):
 	x  = pos[0] - r0[0]
 	y  = pos[1] - r0[1]

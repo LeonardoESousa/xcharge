@@ -18,14 +18,26 @@ class System:
         self.dead = []
         self.time = 0
         self.potential_time = -1
+   
+  
+    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,anni_funcs_array):
+    	self.processes        = processes
+    	self.monomolecular    = monomolecular
+    	self.identifier       = identifier
+    	self.animation_mode   = animation_mode
+    	self.time_limit       = time_limit
+    	self.pause            =   pause
+    	self.anni_funcs_array = anni_funcs_array
+    	self.anni             = anni
     
     def set_particles(self,Ss):
         self.particles = Ss            
     
     def set_dipoles(self,mus):
-        self.mu = mus
-        self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
-        self.mu /= self.norma_mu[:,np.newaxis]
+        if mus: #in case you dont have the dipoles
+                self.mu = mus
+                self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
+                self.mu /= self.norma_mu[:,np.newaxis]
 
     def add_particle(self,s):
         self.particles.append(s)
@@ -34,7 +46,8 @@ class System:
         return len(self.particles)
     
     def set_medium(self,eps_rel):
-        self.epsilon = eps_rel*epsilon_vaccum
+    	self.eps_rel = eps_rel
+    	self.epsilon = eps_rel*epsilon_vaccum
         
     def get_num(self):
         return len(self.X)
@@ -112,8 +125,7 @@ class Particles:
     def convert(self,system,energies,causamortis,newkind):
         self.make_text(system,energies,causamortis)
         self.species = newkind
-        
-    
+
     def write(self):
         return self.report
         
@@ -235,7 +247,7 @@ class ForsterKappa:
         mu       = system.norma_mu[local]
 
         taxa = (1/lifetime)*(kappa**2)*((Rf/(self.alpha*mu + r))**6)
-        taxa = np.nan_to_num(taxa)
+        #taxa = np.nan_to_num(taxa)
         return taxa
 
     def action(self,particle,system,local):
@@ -391,11 +403,13 @@ class MillerAbrahams:
         in_loc_rad  = self.inv[mat]
         
         np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
-        
         potential = np.copy(system.electrostatic())
-        potential -= charge*abs(e)/(4*np.pi*system.epsilon*r)
         
-      
+        #case where two electrons or holes overlap
+        duplicate  = [ x.charge for x in system.particles if x.position == local]
+        for charge in duplicate:
+            potential -= charge*abs(e)/(4*np.pi*system.epsilon*r)
+         
         indices_e  = [ x.position for x in system.particles if x.charge == -1 and x.position != local ]
         indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
 	
@@ -462,15 +476,13 @@ class MillerAbrahams:
         return self.kind
      
     def action(self,particle,system,local):
-        '''
+        
         indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    	
         if particle.species == 'hole' and local in indices_e:
-            particle.move(particle.position) 
-            print("a")
+            pass
         else:
             particle.move(local)
-        '''          
-        particle.move(local)
+        
 
 class Dissociation:
     def __init__(self,**kwargs):
