@@ -1,7 +1,6 @@
-import sys
-import morphology
-from kmc_classes import *
-
+import kmc.morphology as morphology
+from kmc.kmc_classes import *
+import numpy as np
 
 
  
@@ -91,7 +90,7 @@ X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
 #Type of particle
 #gen_function       = morphology.gen_pair_elechole
-gen_function       = morphology.gen_excitons
+gen_function        = morphology.gen_excitons
 #gen_function       = morphology.gen_electron
 #gen_function       = morphology.gen_hole
 
@@ -109,10 +108,10 @@ selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="f
 parameters_genfunc = [num_ex,selection]
 
 #ener_function      = morphology.s1_t1_distr
-ener_function      = morphology.homo_lumo
-parameters_enefunc = [s1s, t1s, Mats]
+ener_function       = morphology.homo_lumo
+parameters_enefunc  = [s1s, t1s, Mats]
 
-annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing] #list of all annihi funcs that will be used
+annihi_funcs_array  = [morphology.anni_ele_hol,morphology.anni_sing] #list of all annihi funcs that will be used
 
 #### GENERATE THE SYSTEM
 

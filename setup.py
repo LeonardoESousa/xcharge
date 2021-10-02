@@ -104,7 +104,7 @@ setup(
     packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
     # If your package is a single module, use this instead of 'packages':
     #py_modules=['mypackage'],
-    entry_points={'console_scripts': ["lx = lx.__main__:main"]},
+    entry_points={'console_scripts': ["kmc = kmc.__main__:main"]},
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
