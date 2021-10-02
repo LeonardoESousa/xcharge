@@ -21,7 +21,7 @@ REQUIRES_PYTHON = '>=3.6.0'
 VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
-REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib', 'mpl_toolkits']
+REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib']
 
 # What packages are optional?
 EXTRAS = {
@@ -34,6 +34,7 @@ EXTRAS = {
 # If you do change the License, remember to change the Trove Classifier for that!
 
 here = os.path.abspath(os.path.dirname(__file__))
+
 
 # Import the README and use it as the long-description.
 # Note: this will only work if 'README.md' is present in your MANIFEST.in file!

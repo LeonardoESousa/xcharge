@@ -3,7 +3,7 @@ import random
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import collections
-from kmc_classes import *
+from kmc.kmc_classes import *
 from math import sqrt
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed

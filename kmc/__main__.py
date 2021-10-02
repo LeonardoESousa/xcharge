@@ -11,10 +11,15 @@ import importlib
 warnings.filterwarnings("ignore")   
 
 
+working_dir = os.getcwd()+'/'
 #importing param module
-param = importlib.import_module(sys.argv[1].split('.')[0])
-param
+
+spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
+param = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(param)
+
          
+
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
     locs = np.array([s.position for s in Ss])

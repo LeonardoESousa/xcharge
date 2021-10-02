@@ -1,9 +1,8 @@
+import sys
 import kmc.morphology as morphology
 from kmc.kmc_classes import *
-import numpy as np
 
 
- 
 # KMC PARAMETERS 
 #BASIC PARAMETERS
 identifier         = 'New' #output identifier
@@ -11,7 +10,7 @@ time_limit         = np.inf
 animation_mode     = False  
 anni               = True  # Turn on annihilation
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 10000   # Number of rounds
+rounds             = 100   # Number of rounds
 n_proc             = 6     # Number of cores to be used
 num_ex             = 3     #number of excitons
 relative_eps       = 3.5   #relative permitivity
@@ -90,7 +89,7 @@ X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
 #Type of particle
 #gen_function       = morphology.gen_pair_elechole
-gen_function        = morphology.gen_excitons
+gen_function       = morphology.gen_excitons
 #gen_function       = morphology.gen_electron
 #gen_function       = morphology.gen_hole
 
@@ -108,10 +107,10 @@ selection = morphology.filter_selection(X,Y,Z,Mats,shape_dic,mat=[None],shape="f
 parameters_genfunc = [num_ex,selection]
 
 #ener_function      = morphology.s1_t1_distr
-ener_function       = morphology.homo_lumo
-parameters_enefunc  = [s1s, t1s, Mats]
+ener_function      = morphology.homo_lumo
+parameters_enefunc = [s1s, t1s, Mats]
 
-annihi_funcs_array  = [morphology.anni_ele_hol,morphology.anni_sing] #list of all annihi funcs that will be used
+annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing] #list of all annihi funcs that will be used
 
 #### GENERATE THE SYSTEM
 
