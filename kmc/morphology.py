@@ -1,8 +1,6 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
-import collections
 from kmc.kmc_classes import *
 from math import sqrt
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM

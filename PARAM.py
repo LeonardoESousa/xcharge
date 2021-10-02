@@ -1,4 +1,3 @@
-import sys
 import kmc.morphology as morphology
 from kmc.kmc_classes import *
 
@@ -122,7 +121,7 @@ except:
     
     
 s1, t1 = ener_function(parameters_enefunc)    
-ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choosed dissociation, you also must give HOMO and LUMO
+ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choose dissociation, you also must give HOMO and LUMO
 
 
 

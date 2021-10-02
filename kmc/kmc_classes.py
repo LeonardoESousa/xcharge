@@ -1,10 +1,10 @@
 import numpy as np
 import random
 
-epsilon_vaccum = (1)*8.85*10**(-22) #Permitivity in C/VAngstrom
-e              = -1.60217662*(10**(-19)) #Electron charge    
-kb             = 8.617*(10**(-5))    # Boltzmann constant
-hbar           = 6.582*(10**(-16)) #Reduced Planck's constant
+epsilon_vaccum = 8.85e-22        #Permitivity in C/VAngstrom
+e              = -1.60217662e-19 #Electron charge    
+kb             = 8.617e-5        # Boltzmann constant
+hbar           = 6.582e-16       #Reduced Planck's constant
         
 
 
@@ -35,9 +35,9 @@ class System:
     
     def set_dipoles(self,mus):
         if mus: #in case you dont have the dipoles
-                self.mu = mus
-                self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
-                self.mu /= self.norma_mu[:,np.newaxis]
+            self.mu = mus
+            self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
+            self.mu /= self.norma_mu[:,np.newaxis]
 
     def add_particle(self,s):
         self.particles.append(s)
@@ -84,8 +84,6 @@ class System:
             self.potential_time = self.time
         else:
             pass   
-        #print(self.potential)
-        #input()
         return self.potential
             
    
@@ -103,9 +101,9 @@ class Particles:
 
     
     def make_text(self,system,energies,causamortis):
-        time = system.time   #clock()
-        X,Y,Z = system.X, system.Y, system.Z   #get_XYZ()
-        Mats  = system.mats    #get_mats()
+        time = system.time   
+        X,Y,Z = system.X, system.Y, system.Z  
+        Mats  = system.mats 
         x0,y0,z0 = X[self.initial],Y[self.initial],Z[self.initial]
         x, y, z  = X[self.position],Y[self.position],Z[self.position]
         dx = np.nan_to_num(x-x0)
@@ -412,14 +410,11 @@ class MillerAbrahams:
          
         indices_e  = [ x.position for x in system.particles if x.charge == -1 and x.position != local ]
         indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
-	
-	
+
         if particle.species == 'electron':
-            
             engs  = np.copy(system.LUMO)
             homos = np.copy(system.HOMO)
             
-
             for m in indices_h:
                 potential[m] = 0
                 engs[m] = homos[m]
@@ -446,8 +441,6 @@ class MillerAbrahams:
             DE = (engs - engs[local]) + abs(engs - engs[local])
             DE *= -1
             
-        
-
         #taxa = (10**-12)*(2*np.pi/hbar)*(H**2)*(1/np.sqrt(4*np.pi*reorg*kb*self.T))*np.exp(
         #                       -2*in_loc_rad*r)*np.exp(-((DE + reorg)**2)/(4*reorg*kb*self.T))
         #

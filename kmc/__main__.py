@@ -163,11 +163,8 @@ def animate(num,system,ax):
     Ss = step(system)
     X, Y, Z = system.X, system.Y, system.Z        
     mats = system.mats                            
-    nx,ny = [],[]
-    #plt.cla()
     ax.clear()
     
-
     X0 = X[mats == 0]
     Y0 = Y[mats == 0]
     Z0 = Z[mats == 0]
@@ -179,8 +176,6 @@ def animate(num,system,ax):
     #printing the lattice
     ax.scatter(X0,Y0,Z0,alpha=0.1,color='black')
     ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
-    
-   
     
     try:  
         for s in Ss:
