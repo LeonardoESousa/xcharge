@@ -18,8 +18,7 @@ working_dir = os.getcwd()+'/'
 spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
 param = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(param)
-
-         
+  
 
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
@@ -229,29 +228,48 @@ def RUN(system):
     step(system)
     spectra(system)
    
-
+def make_system(module_param):
+    #in case you want that each round recieves a new lattice, it must be altered here
+    system = System(module_param.X,module_param.Y,module_param.Z,module_param.Mats)   
+    
+    system.set_basic_info(module_param.monomolecular,module_param.processes,
+    module_param.identifier,module_param.animation_mode,module_param.time_limit,module_param.pause,
+    module_param.anni,module_param.annihi_funcs_array) 
+    
+    system.set_energies(module_param.ene_dic)
+    
+    try:
+        system.set_dipoles(module_param.dipoles)
+    except:
+        pass
+    system.set_medium(module_param.relative_eps)
+    excitons = param.gen_function(module_param.parameters_genfunc)
+    system.set_particles(excitons)
+    
+    return system 
+    
+    
 def main():
+
     n_proc          = param.n_proc
     identifier      = param.identifier 
     animation_mode  = param.animation_mode
-    time_limit      = param.time_limit
+
     save_animation  = param.save_animation 
     animation_exten = param.animation_exten    
     pause           = param.pause # to freeze on the first frame
 
     #getting parameters from
     rounds           = param.rounds
-    processes        = param.processes
-    monomolecular    = param.monomolecular
-    anni             = param.anni
-    anni_funcs_array = param.annihi_funcs_array
 
+
+    
     if animation_mode:
     
         path=identifier+"_animation."+animation_exten
             
     
-        system = param.make_system()
+        system = make_system(param)
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')         
     
@@ -276,8 +294,7 @@ def main():
         
     else:
     
-        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(param.make_system()) for i in range(rounds))
-          
-
+        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system(param)) for i in range(rounds))
+                
 if __name__ == "__main__":
     sys.exit(main())        

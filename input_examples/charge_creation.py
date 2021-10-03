@@ -2,7 +2,7 @@ import kmc.morphology as morphology
 from kmc.kmc_classes import *
 
 ###BASIC PARAMETERS######################################################################
-identifier         = 'New' #output identifier
+identifier         = 'charge_creation' #output identifier
 time_limit         = np.inf
 animation_mode     = True
 save_animation     = False  # if you want to save the animation
@@ -37,9 +37,6 @@ forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
 ##FLUORESCENCE RATES
 fluor     = Fluor(life=lifetimes)
 
-##ISC
-isc_rates     = {0:2.4E10*1E-12,1:0}
-isc = ISC(rate=isc_rates)
 
 ##NONRADIATIVE DECAY RATES
 nonrad  = {0:0,1:0}
@@ -50,29 +47,6 @@ H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
 invrad = {0:0.1,1:0.1}
 dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
 
-##FORSTER WITHOUT AVERAGED ORIENTATION FACTOR
-###ForsterKappa
-#forster   = ForsterKappa(Rf=raios,life=lifetimes,mu=mus)
-#dipoles = np.loadtxt('dipoles.txt')
-#########################################################################################
-
-###TRIPLET EXCITONS######################################################################
-
-##DEXTER RADII (Å)
-Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
-
-##PHOSPHORESCENCE LIFETIMES (PS)
-phlife = {0:5.29,1:5.29}
-
-##SUM OF VAN DER WALLS RADII (Å)
-Ls = {0:5.0,1:5.0}
-
-##TRIPLET TRANSFER RATES
-dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
-
-##PHOSPHORESCENCE RATE
-phosph = Phosph(life=phlife)
-#########################################################################################
 
 ###CHARGES###############################################################################
 
@@ -91,8 +65,8 @@ miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
 
 ###PROCESSES#############################################################################
 
-processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
-monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
+processes = {'singlet':[forster], 'triplet':[], 'electron':[miller],'hole':[miller]}
+monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
@@ -103,12 +77,9 @@ X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
 
 ##ENERGIES
 #Gaussian distribuitions
-s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
+s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), disperison (eV)
 t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # triplet energy, disperison (eV)
 
-#If you have your own distribuition already
-#s1s = {0:'s1_mat0.txt', 1:'s1_mat1.txt'} 
-#t1s = {0:'t1_mat0.txt', 1:'t1_mat1.txt'}
 
 #ener_function     = morphology.s1_t1_distr
 ener_function      = morphology.homo_lumo
@@ -118,25 +89,15 @@ ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choose dissoc
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 20     #number of particles
+num_ex             = 10     #number of particles
 
 #Type of particle
-#gen_function       = morphology.gen_pair_elechole
-gen_function        = morphology.gen_excitons
-#gen_function       = morphology.gen_electron
-#gen_function       = morphology.gen_hole
+gen_function       = morphology.gen_pair_elechole
+
 
 #Shape of the particle's generation
 #Getting filter funcs from morphology		
-#if you dont want to mess with the formation
 selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="free",origin=None,argum=None) 
-
-
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="rectangle",origin=None,argum=[[10,20],[0,10],[0]])
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="plane",origin=[100,100,0],argum=[5,10,0])
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="rectangle",origin=None,argum=[[40,50],[0,60],[0,40]])
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="sphere",origin=[30,30,30],argum=15)
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="plane",origin=[10,10,10],argum=[60,60,0])
 
 parameters_genfunc = [num_ex,selection]
 #########################################################################################
