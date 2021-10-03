@@ -4,7 +4,9 @@ from kmc.kmc_classes import *
 ###BASIC PARAMETERS######################################################################
 identifier         = 'New' #output identifier
 time_limit         = np.inf
-animation_mode     = False  
+animation_mode     = True
+save_animation     = True  # if you want to save the animation
+animation_exten    = 'gif' # possible options ('gif' and 'mp4')  
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 6     # Number of cores to be used

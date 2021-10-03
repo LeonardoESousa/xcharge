@@ -7,6 +7,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from joblib import Parallel, delayed
+from mpl_toolkits.mplot3d import Axes3D
 import importlib
 warnings.filterwarnings("ignore")   
 
@@ -165,17 +166,16 @@ def animate(num,system,ax):
     mats = system.mats                            
     ax.clear()
     
-    X0 = X[mats == 0]
-    Y0 = Y[mats == 0]
-    Z0 = Z[mats == 0]
     
-    X1 = X[mats == 1]
-    Y1 = Y[mats == 1]
-    Z1 = Z[mats == 1]
-    
-    #printing the lattice
-    ax.scatter(X0,Y0,Z0,alpha=0.1,color='black')
-    ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
+    #ploting the sites according to mat index
+    colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+    n_mats = np.unique(mats)
+    for mat in n_mats:
+        X_mat = X[mats == mat]
+        Y_mat = Y[mats == mat]
+        Z_mat = Z[mats == mat]
+        
+        ax.scatter(X_mat,Y_mat,Z_mat,alpha=0.1,color=colors_dic.get(int(mat)))
     
     try:  
         for s in Ss:
@@ -234,7 +234,9 @@ def main():
     n_proc          = param.n_proc
     identifier      = param.identifier 
     animation_mode  = param.animation_mode
-    time_limit      = param.time_limit 
+    time_limit      = param.time_limit
+    save_animation  = param.save_animation 
+    animation_exten = param.animation_exten    
     pause           = param.pause # to freeze on the first frame
 
     #getting parameters from
@@ -246,25 +248,28 @@ def main():
 
     if animation_mode:
     
-        #path="animation.mp4"
+        path=identifier+"_animation."+animation_exten
             
     
         system = param.make_system()
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-           
+        ax = fig.add_subplot(111, projection='3d')         
     
         ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
-                                    interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
-        #ani.save('charges.avi', fps=20, dpi=300)
-        #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
-        
-        #salvar .gif
-        #ani.save(path, writer='imagemagick', fps=30)
-        
-        #salvar .mp4
-        #writervideo = animation.FFMpegWriter(fps=10) 
-        #ani.save(path, writer=writervideo)
+                                    interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)
+                                    
+        if save_animation:                   
+            #ani.save('charges.avi', fps=20, dpi=300)
+            #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
+            
+            #save .gif
+            if animation_exten == 'gif':
+                ani.save(path, writer='imagemagick', fps=10)
+            
+            #save .mp4
+            if animation_exten == 'mp4':
+                writervideo = animation.FFMpegWriter(fps=10) 
+                ani.save(path, writer=writervideo)
         
         plt.show()
         
