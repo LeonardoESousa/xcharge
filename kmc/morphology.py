@@ -290,6 +290,11 @@ def rectangle_conditional(pos,r0,COEF):
 		if ( ( y >= y_i) and ( y <= y_f)):
 			if ( ( z >= z_i) and ( z <= z_f)):
 				return True
+				
+# dictonary of all possible geometric creation of particles				
+shape_dic = {'sphere': sphere_conditional, 'plane':plane_conditional,'cone':cone_conditional,'cilinder':cilinder_conditional,'rectangle': rectangle_conditional,'free':no_conditional}				
+
+
 ######################################################
 
 

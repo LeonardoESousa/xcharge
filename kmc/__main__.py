@@ -7,6 +7,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from joblib import Parallel, delayed
+from mpl_toolkits.mplot3d import Axes3D
 import importlib
 warnings.filterwarnings("ignore")   
 
@@ -17,8 +18,7 @@ working_dir = os.getcwd()+'/'
 spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
 param = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(param)
-
-         
+  
 
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
@@ -165,17 +165,16 @@ def animate(num,system,ax):
     mats = system.mats                            
     ax.clear()
     
-    X0 = X[mats == 0]
-    Y0 = Y[mats == 0]
-    Z0 = Z[mats == 0]
     
-    X1 = X[mats == 1]
-    Y1 = Y[mats == 1]
-    Z1 = Z[mats == 1]
-    
-    #printing the lattice
-    ax.scatter(X0,Y0,Z0,alpha=0.1,color='black')
-    ax.scatter(X1,Y1,Z1,alpha=0.1,color='blue')
+    #ploting the sites according to mat index
+    colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+    n_mats = np.unique(mats)
+    for mat in n_mats:
+        X_mat = X[mats == mat]
+        Y_mat = Y[mats == mat]
+        Z_mat = Z[mats == mat]
+        
+        ax.scatter(X_mat,Y_mat,Z_mat,alpha=0.1,color=colors_dic.get(int(mat)))
     
     try:  
         for s in Ss:
@@ -229,50 +228,73 @@ def RUN(system):
     step(system)
     spectra(system)
    
-
+def make_system(module_param):
+    #in case you want that each round recieves a new lattice, it must be altered here
+    system = System(module_param.X,module_param.Y,module_param.Z,module_param.Mats)   
+    
+    system.set_basic_info(module_param.monomolecular,module_param.processes,
+    module_param.identifier,module_param.animation_mode,module_param.time_limit,module_param.pause,
+    module_param.anni,module_param.annihi_funcs_array) 
+    
+    system.set_energies(module_param.ene_dic)
+    
+    try:
+        system.set_dipoles(module_param.dipoles)
+    except:
+        pass
+    system.set_medium(module_param.relative_eps)
+    excitons = param.gen_function(module_param.parameters_genfunc)
+    system.set_particles(excitons)
+    
+    return system 
+    
+    
 def main():
+
     n_proc          = param.n_proc
     identifier      = param.identifier 
     animation_mode  = param.animation_mode
-    time_limit      = param.time_limit 
+
+    save_animation  = param.save_animation 
+    animation_exten = param.animation_exten    
     pause           = param.pause # to freeze on the first frame
 
     #getting parameters from
     rounds           = param.rounds
-    processes        = param.processes
-    monomolecular    = param.monomolecular
-    anni             = param.anni
-    anni_funcs_array = param.annihi_funcs_array
 
+
+    
     if animation_mode:
     
-        #path="animation.mp4"
+        path=identifier+"_animation."+animation_exten
             
     
-        system = param.make_system()
+        system = make_system(param)
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-           
+        ax = fig.add_subplot(111, projection='3d')         
     
         ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
-                                    interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000) 
-        #ani.save('charges.avi', fps=20, dpi=300)
-        #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
-        
-        #salvar .gif
-        #ani.save(path, writer='imagemagick', fps=30)
-        
-        #salvar .mp4
-        #writervideo = animation.FFMpegWriter(fps=10) 
-        #ani.save(path, writer=writervideo)
+                                    interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)
+                                    
+        if save_animation:                   
+            #ani.save('charges.avi', fps=20, dpi=300)
+            #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
+            
+            #save .gif
+            if animation_exten == 'gif':
+                ani.save(path, writer='imagemagick', fps=10)
+            
+            #save .mp4
+            if animation_exten == 'mp4':
+                writervideo = animation.FFMpegWriter(fps=10) 
+                ani.save(path, writer=writervideo)
         
         plt.show()
         
         
     else:
     
-        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(param.make_system()) for i in range(rounds))
-          
-
+        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system(param)) for i in range(rounds))
+                
 if __name__ == "__main__":
     sys.exit(main())        
