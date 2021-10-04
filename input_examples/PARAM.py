@@ -116,11 +116,13 @@ ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choose dissoc
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 3     #number of particles
+
+##INITIAL NUMBER OF PARTICLES
+num_ex             = 3     
 
 #Type of particle
 #gen_function       = morphology.gen_pair_elechole
-gen_function        = morphology.gen_excitons
+gen_function        = morphology.gen_excitons  #TRIPLETS OR SINGLETS??
 #gen_function       = morphology.gen_electron
 #gen_function       = morphology.gen_hole
 
@@ -136,7 +138,10 @@ parameters_genfunc = [num_ex,selection]
 #########################################################################################
 
 ##ANNIHILATION OPTIONS###################################################################
-anni               = True  # Turn on annihilation
+
+##TURN ON ANNIHILATION
+anni               = True
+
 ##list of all annihi funcs that will be used
 annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing] 
 #########################################################################################
@@ -154,7 +159,7 @@ def make_system():
     system.set_medium(relative_eps)
     excitons = gen_function(parameters_genfunc)
     system.set_particles(excitons)
-    
+
     return system
    
 
