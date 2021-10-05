@@ -1,8 +1,6 @@
 import numpy as np
 import random
-import matplotlib.pyplot as plt
 from kmc.kmc_classes import *
-from math import sqrt
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
 
@@ -56,6 +54,7 @@ def gen_hole(param):
     Ss = [Hole(number) for number in part_sel]
     
     return Ss
+
 def gen_pair_elechole(param):
     #num: number of excitons
     #X: one of the position vectors 
@@ -106,9 +105,7 @@ def s1_t1_distr(param):
     s1_dic    = param[0] #relabeling the input parameters 
     t1_dic    = param[1]
     mats      = param[2]
-    
-
-    
+       
     s1s = {}
     t1s = {}
     
@@ -166,7 +163,7 @@ def anni_ele_hol(system,tipos,Ss,indices,locs):
             
             
 #annihililation exciton singlets pair
-def anni_sing(system,tipos,Ss,indices,locs): # e se tiver 4 excitons no mesmo sitio?
+def anni_sing(system,tipos,Ss,indices,locs):
     duplicates = set([x for x in tipos if tipos.count(x) > 1]) # checking if there is 2 occurrences of the types
     if 'singlet' in duplicates:        
         Ss[indices[0][tipos.index('singlet')]].kill('anni',system,system.s1)
@@ -185,9 +182,9 @@ def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
 	selection = []
 	
 	
-	mat_restriction     = kwargs['mat']   #list of materials that will generate part
-	shape_type          = kwargs['shape'] #the shape that the particles will be aranged
-	argument_shape_func = kwargs['argum'] #arguments of the shape func
+	mat_restriction     = kwargs['mat']    #list of materials that will generate part
+	shape_type          = kwargs['shape']  #the shape that the particles will be aranged
+	argument_shape_func = kwargs['argum']  #arguments of the shape func
 	origin              = kwargs['origin'] #origin of the shape
 	conditional = shape_dic.get(shape_type)
 	
@@ -198,11 +195,9 @@ def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
 		z   = Z_cop[index_mol]
 		mat = Mats_cop[index_mol]
 		
-		
 		if conditional([x,y,z],origin,argument_shape_func):
 			if (mat in mat_restriction) or (mat_restriction[0] == None):
 				selection.append(index_mol)
-				#print(x,y,z)
 	return selection               
 
 
@@ -212,7 +207,7 @@ def sphere_conditional(pos,r0,r_min):
 	y  = pos[1] - r0[1]
 	z  = pos[2] - r0[2]
 	
-	r_pos = sqrt(x**2 + y**2 + z**2)
+	r_pos = np.sqrt(x**2 + y**2 + z**2)
 	
 	return r_pos <= r_min #condition to be inside the sphere
 	
@@ -258,10 +253,7 @@ def cilinder_conditional(pos,r0,COEF):
 	
 	RHO_min   = COEF
 	
-	cond = sqrt( x**2 + y**2) <= RHO_min
-	
-	#print(sqrt( x**2 + y**2))
-	
+	cond = np.sqrt( x**2 + y**2) <= RHO_min
 	return cond	
 		
 def no_conditional(pos,r0,COEF):

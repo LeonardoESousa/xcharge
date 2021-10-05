@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 #plt.switch_backend('agg') #para cluster
 import collections
-from shutil import copyfile
-from math import sqrt
 ################################
 #AUXILIARY CODE TO GENERATE LATTICE FOR KMC
 
@@ -66,7 +64,6 @@ def lattice(param):
     for nx in range(numx):
         for ny in range(numy):
             for nz in range(numz):
-                #print(nz)
                 X.append(nx*dx)
                 Y.append(ny*dy)
                 Z.append(nz*dz)
@@ -137,19 +134,13 @@ def lattice_BHJ(param):
 	#interating the BHJ process
 	for i in range(n_loops):
 		Mats_new = np.copy(Mats)
-		#print(Mats)
 		for k in range(len(X)): #finding which material is more present around the j-th site
-		
-			
-			
 			mats_selected  = [ Mats[ind] for ind in neighbors_lattice[k] ] 
 			unique, counts = np.unique(mats_selected, return_counts=True)
 			
 			mat_dict = dict(zip(unique, counts))
 			max_mat = max(mat_dict, key=mat_dict.get)
-			
-			
-			
+		
 			#dealing with mats having equal max occurence
 			max_occurence = mat_dict[max_mat]
 			max_dict = {}
@@ -168,19 +159,9 @@ def lattice_BHJ(param):
 			
 			Mats_new[k] = mat_keys[chosen]
 			
-			#print(max_dict,mat_keys,dice)
-			#print(ps)
-			#print( mat_keys[chosen])
-			#print()
-			#input()			
-			
-		
 		Mats = np.copy(Mats_new)
-		#print("Loop %s out %s!" % (i+1,n_loops))
 	Mats = np.copy(Mats_new)
 
-	#input()
-	
 	unique, counts = np.unique(Mats, return_counts=True)
 	mat_dict = dict(zip(unique, counts))
 	print()
@@ -205,78 +186,8 @@ def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
 			neighbors.append(n)
 	#return np.array(neighbors)
 	return neighbors
-'''	
-def lattice_BHJ(param):
-	
-	num_molecs =  int(param[0][0]) #adjusting to user's input     
-	vector     =  [ float(x) for x in param[1] ]
-	ps         =  [ float(x)   for x in param[2] ]
-	X, Y, Z, Mats = [], [], [],[]
-	ps = [i/np.sum(ps) for i in ps]
-	ps = np.cumsum(ps)
-	
-	dx = vector[0]
-	dy = vector[1]
-	dz = vector[2]
-	dim = []
-	for elem in vector:
-		if elem != 0:
-			dim.append(1)
-		else:
-			dim.append(0)
-            
-	numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
-	numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
-	numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
-	 
-	#Se somar +1 vai aparecer duplicados no 2D
-	for nx in range(numx):
-		for ny in range(numy):
-			for nz in range(numz):
-			#print(nz)
-			
-				X.append(nx*dx)
-				Y.append(ny*dy)
-				Z.append(nz*dz)
-				sorte = random.uniform(0,1)
-				chosen = np.where(sorte < ps)[0][0]
-				Mats.append(chosen)
-	X = np.array(X)
-	Y = np.array(Y)
-	Z = np.array(Z)
-	Mats = np.array(Mats)
-	
-	n_loops = 10
-	cutoff = 1
-	
-	unique, counts = np.unique(Mats, return_counts=True)
-	mat_dict = dict(zip(unique, counts))
-	print(mat_dict,max(mat_dict), mat_dict.get(max(mat_dict)))
-	
-	
-	for i in range(n_loops):
-	
-		Mats_new = Mats.copy()
-		for j in range(len(X)):
-		
-			r_index = j
-			r = [X[r_index],Y[r_index],Z[r_index]]
-			mat_local = Mats[r_index]
-			
-			mats_selected = filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index)
-			unique, counts = np.unique(mats_selected, return_counts=True)
-			
-			mat_dict = dict(zip(unique, counts))
 
-			max_mat = max(mat_dict, key=mat_dict.get)
-			
-			
-			Mats_new[j] = max_mat
-		Mats = Mats_new.copy()
-	Mats = Mats_new
-	
-	return X,Y,Z,Mats
-	
+'''	
 def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
 	x = r[0]
 	y = r[1]
@@ -292,11 +203,12 @@ def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
 		if(dist <= cutoff and r_index != n):
 			mats_selected.append(Mats[n])
 	return np.array(mats_selected)
-'''			
+'''
+
+
 def load_cif(mol_file):
 
 	#This program reads .cif files through a .mol2 files
-
 	print("------------------------------------------------------------------------------------------------------------")
 	print("༼つಠ益ಠ༽つ                          LOAD .CIF PROGRAM (via .mol extension)                       ༼つಠ益ಠ༽つ")
 	print("author: Tiago Cassiano, version: 1.2v (hoping that will sufice)")
@@ -322,8 +234,7 @@ def load_cif(mol_file):
 	print("------------------------------------------------------------------------------------------------------------")
 	print()
 	print()
-	#input_file= input("Assuming that you already finished all these steps, give to me the .mol file name:  ")
-
+	
 	input_file   = mol_file[0][0]
 
 	output_file  = input_file.split(".")[0]+".txt"
@@ -537,17 +448,10 @@ def load_cif(mol_file):
 			
 	
 			atoms_array.append( atom_class(atom_ele,indx,pos,neighbor) )
-				 
-		
-	#input()	
-		
-		
+				 	
 	for atom_individual in atoms_array: #calculating the mass of each atom
 		atom_individual.get_mass(periodic_table)
 		
-
-
-
 
 	# Finding the molecules in the crystal
 	# agragates_array = [ [1,2,3,4] , [6,7,52] ...] => 1,2,3,4 are in the same molecule, 6,7 and 52 consist of another one...
@@ -558,7 +462,6 @@ def load_cif(mol_file):
 	neighbor_arr = np.array(neighbor_arr,dtype=object)
 	neighbor_arr_new = neighbor_arr
 	first_it = True #first iteration
-
 
 
 	# the following lines deal with a limitation of python. If the array of neighbors is symmetric
@@ -588,9 +491,6 @@ def load_cif(mol_file):
 		neighbor_arr_new = neighbor_arr
 	########## END GAMBIARRA ###################################
 
-
-
-	#while( ( neighbor_arr != neighbor_arr_new).any() or (first_it == True)):
 	while( ( not np.array_equal(neighbor_arr,neighbor_arr_new) ) or (first_it == True)  ):
 		first_it = False
 		neighbor_arr = neighbor_arr_new	
@@ -615,9 +515,6 @@ def load_cif(mol_file):
 						break
 
 				if((done)):
-
-
-
 					neighbor_arr_new[j] = list(set(L_j + L_k))
 					neighbor_arr_new[k] = neighbor_arr_new[j]
 
@@ -634,10 +531,6 @@ def load_cif(mol_file):
 	agragates_array = np.array(agragates_array, dtype=object)
 
 
-
-
-
-
 		
 	# changing from an array of indexes to an array of objects
 	def get_atoms(agragates_array,atoms_array):
@@ -647,8 +540,6 @@ def load_cif(mol_file):
 		for i in range(N_mol):
 			group_atoms = []
 			molecule = agragates_array[i]
-			#print(molecule)
-			#print()
 			for atom in molecule:
 
 				for atom_test in atoms_array:
@@ -657,9 +548,7 @@ def load_cif(mol_file):
 						group_atoms.append(atom_test)
 						break
 				aux = [ a.index for a in group_atoms]
-				#print(aux)		
-				#print(atom, atom_test.index)
-				#input()
+				
 			new_agg_array.append(group_atoms)
 			
 		return new_agg_array
@@ -690,7 +579,6 @@ def load_cif(mol_file):
 				
 				element_neighbor = [element] + element_neighbor #novo 
 				element_neighbor.sort() #must investigate if influences the output	
-				#print(element_neighbor)
 				agg_mol.append(element_neighbor)
 		
 			agg_mol.sort()		
@@ -714,11 +602,8 @@ def load_cif(mol_file):
 			
 			for j in range(0,i):
 				
-				#if ( (molecular_types[i].all() == molecular_types[j].all())  and (i != j)) : #aqui
-				#if ( np.all(molecular_types[i]==molecular_types[j])  and (i != j)) : #aqui			
 				if ( (np.array_equal(molecular_types[i],molecular_types[j]))  and (i != j)) :
 				
-					#print(molecular_types[i],molecular_types[j])
 					molecular_types_int[i] = molecular_types_int[j]
 					match = True
 					break
@@ -734,7 +619,6 @@ def load_cif(mol_file):
 
 	reduced_moltype_list = list(set(molecular_types_int.tolist()))
 
-	#AQUI
 	samples_arr = []
 	for mol_type in reduced_moltype_list: #getting samples of each molecule type
 
@@ -756,9 +640,6 @@ def load_cif(mol_file):
 		return soich
 
 
-
-
-		
 	#getting the elements of the neighbors of each atom within a molecule
 	def get_bondelements(samples_arr,atoms_array):
 		bond_samples = []
@@ -863,12 +744,9 @@ def load_cif(mol_file):
 	print()
 	n_times = int(input("Insert the number of times that you want to duplicate the unit cell (integer!):"))
 
-	#n_times = 2
-
 	#generating multiple cells
 	def multiply_unitcells(center_mass,n_times):
-		
-		
+				
 		new_lattice = np.copy(center_mass)
 		n_cm = len(center_mass)
 		
@@ -879,7 +757,6 @@ def load_cif(mol_file):
 					new_cell = np.copy(center_mass)
 					for i in range(n_cm):
 						#multipling the X position in the unit cell dx times	
-						#print(dx,dy,dz)			
 						new_cell[i][1] = new_cell[i][1] +dx*X_lenght 
 						new_cell[i][2] = new_cell[i][2] +dy*Y_lenght
 						new_cell[i][3] = new_cell[i][3] +dz*Z_lenght
@@ -901,19 +778,7 @@ def load_cif(mol_file):
 	Z_lenght_mult = np.amax(Z_cm_mult) - np.amin(Z_cm_mult)
 
 	print("Now, the lattice, with %i molecules, has the dimensions of %f X %f X %f angstrons" %(len(new_lattice),X_lenght_mult,Y_lenght_mult,Z_lenght_mult))
-
-	#print(new_lattice)
-
-	#if you want to see both unit and multiplied cells
-	'''
-	fig = plt.figure()
-	ax = plt.axes(projection='3d')
-	ax.scatter3D(X_cm_mult, Y_cm_mult, Z_cm_mult,c='b',marker='^');
-	ax.scatter3D(X_cm, Y_cm, Z_cm, c='r',s=50);
-	plt.show()	
-	'''
-
-		
+	
 	X_cm_mult = new_lattice[:,1]
 	Y_cm_mult = new_lattice[:,2]
 	Z_cm_mult = new_lattice[:,3]		
@@ -960,19 +825,12 @@ def multiply_lattice(lattice,n_times_ar,delta):
 	return np.unique(new_lattice,axis=0)
 	
 def func_parametrize(t):
-	#return [t,t,0]
 	return [np.cos(t),np.sin(t),t]
-	#return [np.cos(t),np.sin(t),0]
-	#return [(np.cos(t))**2,np.sin(t),-t]
-	#return [((t+1)/(t-1)),((t-1)/(t+1)),0]
-	#return  [np.exp(t)*np.sin(t),np.exp(-t)*np.cos(t),0]
-	#return  [np.sin(t),np.sin(2*t),0]
 	
 #incomplete	
 def parametrize_mat(par):
 	cell_file_1 = par[0][0] 
 		
-	
 	N_points = 500
 	t_min    = 0
 	t_max    = 20
@@ -987,13 +845,6 @@ def parametrize_mat(par):
 	zfun = func[:,2]
 
 	r0 = [xfun[0],yfun[0],zfun[0]]
-
-	'''
-	#plot of the function parametrized
-	fig = plt.figure()
-	ax = plt.axes(projection='3d')
-	ax.scatter3D(xfun, yfun, zfun,c='r',marker='^');
-	'''
 
 	#getting the lowest values in each direction to produce a normalized lattice
 	try:
@@ -1095,11 +946,6 @@ def parametrize_mat(par):
 	Z    = mult_cell[:,2]
 	Mats = mult_cell[:,3]	
 	
-	#fig = plt.figure()
-	#ax = plt.axes(projection='3d')
-	#ax.scatter3D(X, Y, Z,c='b',marker='^');
-	#plt.show()	
-	
 	return X,Y,Z,Mats
 	
 	
@@ -1117,27 +963,21 @@ def heterojunction(par):
 	if axis == 'Z':
 		vec_joint = [0,0,1]
 	
-	
 	X_left ,Y_left ,Z_left ,Mats_left  = read_lattice(cell_left)
 	X_right,Y_right,Z_right,Mats_right = read_lattice(cell_right)
-	
 	
 	non_duplicate_mat = set(Mats_right.tolist())
 	shift_mat = input("The cell on the right has %s types of molecules. Do you wish to relabel its indexes?(y/n)" %(len(non_duplicate_mat)))
 	
-	
-	
 	#case if you want to change the labeling of right mats
 	if(shift_mat == "y"):
 		print("Currenly, the right input has the following mat indexes:")
-		#old_index = '\t'.join([str(int(mat)) for mat in non_duplicate_mat ])
 		old_index = ([str(int(mat)) for mat in non_duplicate_mat ])		
 		print(old_index)
 		print("Now, write the list that will substitute the indexing:")
 		
 		new_index = [str(int(item)) for item in input("Enter the index (separated by space): ").split()]
 		print(new_index)
-		#print(Mats_right)
 		new_Mats_right = Mats_right.copy()
 		
 		n_mats = len(Mats_right)
@@ -1244,7 +1084,7 @@ def heterojunction(par):
 		dens = dens_right
 	
 	def dist(vec1,vec2):
-		return sqrt((vec1[0]-vec2[0])**2 + (vec1[1]-vec2[1])**2 +(vec1[2]-vec2[2])**2)
+		return np.sqrt((vec1[0]-vec2[0])**2 + (vec1[1]-vec2[1])**2 +(vec1[2]-vec2[2])**2)
 		
 	#identifies the sites located near the heterojunction	
 	def is_in_the_heterojunc(left_lattice,right_lattice,cutoff):
@@ -1262,7 +1102,6 @@ def heterojunction(par):
 				#if the distance between a site on the left and right is comparable to the first neighbor
 				# distance in the left side (a way to locate the sites in the heterojunc)
 				if distance <= cutoff:
-					#print(i,j,distance)
 					right_het.append(j)
 					left_het.append(i)
 					
@@ -1274,10 +1113,7 @@ def heterojunction(par):
 		for indx in indx_ar:
 			shift = np.array([ scale*pos*np.random.normal(mean,sigma) for pos in vec])
 			latt[indx][0:3] = latt_ref[indx][0:3] + shift
-			#print(shift)
-	
-	
-	
+			
 	
 	mean = 1
 	sigma = mean
@@ -1376,96 +1212,95 @@ func_opt3_list  = [paramet_func,heterojunction_func] #list of functions to be in
 
 ##########################################################
 
-colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+def main():
+	colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
 
-print("AUX PROGRAM TO GENERATE LATTICE FOR KMC SIMULATIONS")
-print("version: 1.0v, date 4/4/21 Author: Leo and Tiago")
-print()
-print("Select one of the options:")
-print("1) I want to see some lattice.")
-print("2) I want to generate a morhpology using one of our functions.")
-print("3) I already have a lattice, just want to mess around with it.")
+	print("AUX PROGRAM TO GENERATE LATTICE FOR KMC SIMULATIONS")
+	print("version: 1.0v, date 4/4/21 Author: Leo and Tiago")
+	print()
+	print("Select one of the options:")
+	print("1) I want to see some lattice.")
+	print("2) I want to generate a morhpology using one of our functions.")
+	print("3) I already have a lattice, just want to mess around with it.")
 
-lattice_output = "lattice.txt"
+	lattice_output = "lattice.txt"
 
-choice1 = input()
-if ( choice1 == "1"):
-    morph_file = input("Ok! Give to me the file name of the data: ")
-    X,Y,Z,Mats = read_lattice(morph_file)
-    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
-    draw_lattice(X,Y,Z,Mats,colors,'fig_option1.png')
-    
-#if you want to create a lattice     
-if ( choice1 == "2"):
-    list_name_func = [ func.name for func in func_list ]
-    n = len(list_name_func) 
-    list_name_func = '\t'.join([str(i)+"  "+str(list_name_func[i]) for i in range(n) ]) #list with the names of the functions
-    print("This version has %s pre-written morphology functions. Choose one: " %(len(func_list)))
-    print(list_name_func) #printing the available functions	
-    choice2 = int(input())	
-    func = func_list[choice2] #choosing a function	
+	choice1 = input()
+	if ( choice1 == "1"):
+	    morph_file = input("Ok! Give to me the file name of the data: ")
+	    X,Y,Z,Mats = read_lattice(morph_file)
+	    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+	    draw_lattice(X,Y,Z,Mats,colors,'fig_option1.png')
+	
+	#if you want to create a lattice     
+	if ( choice1 == "2"):
+	    list_name_func = [ func.name for func in func_list ]
+	    n = len(list_name_func) 
+	    list_name_func = '\t'.join([str(i)+"  "+str(list_name_func[i]) for i in range(n) ]) #list with the names of the functions
+	    print("This version has %s pre-written morphology functions. Choose one: " %(len(func_list)))
+	    print(list_name_func) #printing the available functions	
+	    choice2 = int(input())	
+	    func = func_list[choice2] #choosing a function	
 
-    par_list_name = func.param_list
-    
-    list_name_pars = '\t'.join([str(par) for par in par_list_name ])    #list of parameters for a given func		
-    print("This function has %s parameters. Namely," %(len(par_list_name)))
-    print(list_name_pars)
-    par = []
-    
-    for par_set in par_list_name: #looping through each parameter
-        print()
-        print(par_set) 	
-        par_loc = [item for item in input("Enter the parameter's entries (separated by space): ").split()] #needed if a parameter is an array
-        print(par_loc)
-        par.append(par_loc)
+	    par_list_name = func.param_list
+	
+	    list_name_pars = '\t'.join([str(par) for par in par_list_name ])    #list of parameters for a given func		
+	    print("This function has %s parameters. Namely," %(len(par_list_name)))
+	    print(list_name_pars)
+	    par = []
+	
+	    for par_set in par_list_name: #looping through each parameter
+	        print()
+	        print(par_set) 	
+	        par_loc = [item for item in input("Enter the parameter's entries (separated by space): ").split()] #needed if a parameter is an array
+	        print(par_loc)
+	        par.append(par_loc)
 
-    output_parameters = [ (par_list_name[i],par[i]) for i in range(len(par_list_name))]
-       	
-    
-    X,Y,Z,Mats = func(par)
-    colors     = np.array([colors_dic.get(int(mat)) for mat in Mats])
-    draw_lattice(X,Y,Z,Mats,colors,'lattice')
-    
-    #writing the lattice.txt file
-    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
+	    output_parameters = [ (par_list_name[i],par[i]) for i in range(len(par_list_name))]
+	
+	
+	    X,Y,Z,Mats = func(par)
+	    colors     = np.array([colors_dic.get(int(mat)) for mat in Mats])
+	    draw_lattice(X,Y,Z,Mats,colors,'lattice')
+	
+	    #writing the lattice.txt file
+	    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
 
-            
+	#if you want to mess with the lattice
+	if ( choice1 == "3"):
+	    list_name_func = [ func.name for func in func_opt3_list ]
+	    n = len(list_name_func) 
+	    list_name_func = '\t'.join([str(i)+"  "+str(list_name_func[i]) for i in range(n) ]) #list with the names of the functions
+	    print("This version has %s pre-written morphology functions. Choose one:" %(len(func_opt3_list)))
+	    print(list_name_func) #printing the available functions	
+	    choice2 = int(input())	
+	    func = func_opt3_list[choice2] #choosing a function	
 
+	    par_list_name = func.param_list
+	
+	    list_name_pars = '\t'.join([str(par) for par in par_list_name ])    #list of parameters for a given func		
+	    print("This function has %s parameters. Namely," %(len(par_list_name)))
+	    print(list_name_pars)
+	    par = []
+	
+	    for par_set in par_list_name: #looping through each parameter
+	        print()
+	        print(par_set) 	
+	        par_loc = [item for item in input("Enter the parameter's entries (separated by space): ").split()] #needed if a parameter is an array
+	        print(par_loc)
+	        par.append(par_loc)
+	
+	    output_parameters = [ (par_list_name[i],par[i]) for i in range(len(par_list_name))]        
+	
+	
+	    X,Y,Z,Mats = func(par)
+	    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
 
-#if you want to mess with the lattice
-if ( choice1 == "3"):
-    list_name_func = [ func.name for func in func_opt3_list ]
-    n = len(list_name_func) 
-    list_name_func = '\t'.join([str(i)+"  "+str(list_name_func[i]) for i in range(n) ]) #list with the names of the functions
-    print("This version has %s pre-written morphology functions. Choose one:" %(len(func_opt3_list)))
-    print(list_name_func) #printing the available functions	
-    choice2 = int(input())	
-    func = func_opt3_list[choice2] #choosing a function	
+	    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
+	    draw_lattice(X,Y,Z,Mats,colors,'lattice')
+	
 
-    par_list_name = func.param_list
-    
-    list_name_pars = '\t'.join([str(par) for par in par_list_name ])    #list of parameters for a given func		
-    print("This function has %s parameters. Namely," %(len(par_list_name)))
-    print(list_name_pars)
-    par = []
-    
-    for par_set in par_list_name: #looping through each parameter
-        print()
-        print(par_set) 	
-        par_loc = [item for item in input("Enter the parameter's entries (separated by space): ").split()] #needed if a parameter is an array
-        print(par_loc)
-        par.append(par_loc)
-        
-    output_parameters = [ (par_list_name[i],par[i]) for i in range(len(par_list_name))]        
- 
-           
-    X,Y,Z,Mats = func(par)
-    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+import sys
 
-    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
-    draw_lattice(X,Y,Z,Mats,colors,'lattice')
- 
-
-
-
-
+if __name__ == "__main__":
+	sys.exit(main())  

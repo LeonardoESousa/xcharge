@@ -238,14 +238,12 @@ class ForsterKappa:
         dR /= modulo
 
         kappa = np.inner(mus[local,:],mus) -  3*(np.inner(mus[local,:],dR)*(np.sum(mus*dR,axis=1)))  
-        #print(np.nanmean(kappa**2),max(kappa**2),min(kappa**2))
         Rf = raios(num,self.Rf,mat,self.lifetime,mats)
         
         lifetime = self.lifetime[mat]
         mu       = system.norma_mu[local]
 
         taxa = (1/lifetime)*(kappa**2)*((Rf/(self.alpha*mu + r))**6)
-        #taxa = np.nan_to_num(taxa)
         return taxa
 
     def action(self,particle,system,local):
@@ -387,20 +385,19 @@ class MillerAbrahams:
         self.T        = kwargs['T']
 
     def rate(self,**kwargs):
-        system = kwargs['system']
-        r      = kwargs['r']
+        system   = kwargs['system']
+        r        = kwargs['r']
         particle = kwargs['particle']
-        local = particle.position 
-        mats = system.mats        
-        mat = mats[local]
-        num = len(mats)
+        local    = particle.position 
+        mats     = system.mats        
+        mat      = mats[local]
+        num      = len(mats)
         
-        charge = particle.charge 
+        charge   = particle.charge 
 
-        AtH      = raios(num,self.AtH,mat,self.inv,mats)
-        in_loc_rad  = self.inv[mat]
+        AtH        = raios(num,self.AtH,mat,self.inv,mats)
+        in_loc_rad = self.inv[mat]
         
-        np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
         potential = np.copy(system.electrostatic())
         
         #case where two electrons or holes overlap
@@ -486,22 +483,21 @@ class Dissociation:
         self.Map      = {}
 
     def rate(self,**kwargs):
-        system = kwargs['system']
-        r      = kwargs['r']
+        system   = kwargs['system']
+        r        = kwargs['r']
         particle = kwargs['particle']
-        local = particle.position 
-        mats = system.mats        
-        mat = mats[local]
-        num = len(mats)
+        local    = particle.position 
+        mats     = system.mats        
+        mat      = mats[local]
+        num      = len(mats)
 
         lumos = np.copy(system.LUMO)
         homos = np.copy(system.HOMO)
         s1s   = np.copy(system.s1) 
 
-        AtH      = raios(num,self.AtH,mat,self.inv,mats)
-        in_loc_rad  = self.inv[mat]
+        AtH        = raios(num,self.AtH,mat,self.inv,mats)
+        in_loc_rad = self.inv[mat]
         
-        np.set_printoptions(suppress=True,formatter={'float': '{: 6.3f}'.format})        
         r[r == np.inf] = 0 
         
         DEe = lumos - (homos[local] + s1s[local])

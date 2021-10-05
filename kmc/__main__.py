@@ -72,71 +72,33 @@ def decision(s,system):
     
     probs = np.cumsum(final_rate)/np.sum(final_rate)
     sorte = random.uniform(0,1)
-    
-    '''
-    jump = np.where(sorte < probs)[0][0]
-    dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
-    '''
-    
+
     try:
     	jump = np.where(sorte < probs)[0][0]
     	dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
+    #If no option is available, particle stands still
     except:
     	jump = 0
     	dt = np.inf
     
-    #print(dt)
-    #input()	
-    #print(kind,Mats[local],Mats[chosen],probs,labels[jump],dt)
     return labels[jump], chosen[jump], dt
- 
-#checks if a electron's jumb matches with a hole position or vice versa 
-def pair_matching(particles_sample,W):
-    parts = particles_sample.copy()
-    W.copy()
-    pos   = [part.position for part in parts ]
-    jumps = W.copy()
-    
-    n = len(parts)
-    
-    recomb = []
-    
-    for i in range(n):
-    	part_i = parts[i]
-    	if part_i.species == 'hole':
-    	    for j in range(n):
-                part_j = parts[j]
-                if part_j.species == 'electron':
-                    
-                    #print(pos[i],jumps[i],"    ",pos[j],jumps[j])
-                    
-                    if jumps[i] == pos[j] or jumps[j] == pos[i]: #or jumps[i] == jumps[j]:
-                        recomb.append( i )
-                        
-    return recomb
-            
- 
 
 def step(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         Ss = system.particles.copy()     
-        #print([m.species for m in Ss])
         J, W, DT = [],[],[]
         for s in Ss:
             jump, where, dt = decision(s,system)
             J.append(jump)
             W.append(where)
             DT.append(dt)    
-        #print(W)
         time_step = min(DT)
         system.time += time_step
-        #print(system.time) 
         fator = random.uniform(0,1)
         for i in range(len(Ss)):
             if fator <= time_step/DT[i]:
                 J[i].action(Ss[i],system,W[i])
         if system.anni:
-            #anni_singlet(system,Ss)
             anni_general(system,Ss,system.anni_funcs_array)
         if system.animation_mode:
             return Ss       
@@ -144,9 +106,7 @@ def step(system):
     for s in Ss:
         s.kill('alive',system,system.s1)
   
-  
-            
-                
+               
 #Prints Spectra
 def spectra(system):
     if os.path.isfile("Simulation_"+system.identifier+".txt") == False:
@@ -159,13 +119,11 @@ def spectra(system):
             f.write(texto)
         f.write("Fim\n")
         
-def animate(num,system,ax): 
+def animate(system,ax): 
     Ss = step(system)
     X, Y, Z = system.X, system.Y, system.Z        
     mats = system.mats                            
     ax.clear()
-    
-    
     #ploting the sites according to mat index
     colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
     n_mats = np.unique(mats)
@@ -173,15 +131,12 @@ def animate(num,system,ax):
         X_mat = X[mats == mat]
         Y_mat = Y[mats == mat]
         Z_mat = Z[mats == mat]
-        
         ax.scatter(X_mat,Y_mat,Z_mat,alpha=0.1,color=colors_dic.get(int(mat)))
-    
     try:  
         for s in Ss:
             xs = X[s.position]        	
             ys = Y[s.position]
-            zs = Z[s.position]
-              
+            zs = Z[s.position]              
             #opcao 1 (com os markers)
             '''        
             if s.kind() == 'electron':
@@ -210,8 +165,8 @@ def animate(num,system,ax):
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys())
     ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
-    ax.text2D(0.03, 0.94, "eps  = %.2f" %    (system.eps_rel), transform=ax.transAxes) #eps
-    ax.text2D(0.03, 0.90, "npart  = %.0f" % (len(system.particles)), transform=ax.transAxes) #npart
+    ax.text2D(0.03, 0.94, "eps  = %.2f"    % (system.eps_rel), transform=ax.transAxes) #eps
+    ax.text2D(0.03, 0.90, "npart  = %.0f"  % (len(system.particles)), transform=ax.transAxes) #npart
     
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -238,10 +193,7 @@ def make_system(module_param):
     
     system.set_energies(module_param.ene_dic)
     
-    try:
-        system.set_dipoles(module_param.dipoles)
-    except:
-        pass
+    system.set_dipoles(module_param.dipoles)
     system.set_medium(module_param.relative_eps)
     excitons = param.gen_function(module_param.parameters_genfunc)
     system.set_particles(excitons)
@@ -294,7 +246,7 @@ def main():
         
     else:
     
-        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system(param)) for i in range(rounds))
+        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system(param)) for _ in range(rounds))
                 
 if __name__ == "__main__":
     sys.exit(main())        
