@@ -52,14 +52,7 @@ class System:
     def get_num(self):
         return len(self.X)
            
-    def set_energies(self,energy_dic):
-    	
-        s1 = energy_dic.get("s1")
-        t1 = energy_dic.get("t1")
-        HOMO = energy_dic.get("HOMO")
-        LUMO = energy_dic.get("LUMO")      	
-        
-        
+    def set_energies(self,s1, t1, HOMO, LUMO):
         self.s1   = s1 
         self.t1   = t1
         self.HOMO = HOMO

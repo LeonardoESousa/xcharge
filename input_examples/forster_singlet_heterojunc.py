@@ -2,7 +2,7 @@ import kmc.morphology as morphology
 from kmc.kmc_classes import *
 
 ###BASIC PARAMETERS######################################################################
-identifier         = '3mats_singlet' #output identifier
+identifier         = 'forster_singlet' #output identifier
 time_limit         = np.inf# in PS
 animation_mode     = True
 save_animation     = False # if you want to save the animation
@@ -10,7 +10,7 @@ animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
-n_proc             = 6     # Number of cores to be used
+n_proc             = 1     # Number of cores to be used
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################
@@ -19,26 +19,18 @@ n_proc             = 6     # Number of cores to be used
 r00   = 25   #Forster radius material 0 --> material 0 (Angstrom)    
 r01   = 25   #material 0 --> material 1      
 r10   = 25       
-r11   = 25
-r22   = 25
-r21   = 25
-r20   = 25
-r12   = 25
-r02   = 25
-     
-raios = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11, (0,2):r02, (2,0):r10, (2,1):r21, (1,2):r12, (2,2):r22}
+r11   = 25     
+raios = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
 ##FLUORESCENCE LIFETIMES (PS)
-f0 = 2900000 #lifetime of material 0
-f1 = 2900    #lifetime of material 1
-f2 = 2900    #lifetime of material 2
-lifetimes = {0:f0,1:f1,2:f2}
+f0 = 29000 #lifetime of material 0
+f1 = 2900 #lifetime of material 1
+lifetimes = {0:f0,1:f1}
 
 ##TANSITION DIPOLE MOMENTS (a.u.)
 mu0 = 2.136
 mu1 = 5.543
-mu2 = 3
-mus       = {0:mu0,1:mu1,2:mu2}
+mus = {0:mu0,1:mu1}
 
 ##EXCITION TRANSFER RATES
 forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
@@ -49,7 +41,6 @@ fluor     = Fluor(life=lifetimes)
 
 ##relative permitivity
 relative_eps       = 3.5   
-
 
 
 
@@ -65,21 +56,24 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 
 #Reading a file name that contains your lattice
 #lattice_func = morphology.read_lattice
-#lattice_func_par   = ["lattice_3mat.example"] # file name of the system's morphology
+#lattice_func_par   = ["lattice_heterojun.example"] # file name of the system's morphology
 
 
 # Creating a new lattice at each new round
-lattice_func      = morphology.lattice
-displacement_vect = [ 5, 5, 5]
-num_sites         = 100
-distribu_vect     = [0.5,0.5,0.3]
-lattice_func_par  = [num_sites,displacement_vect,distribu_vect]
+lattice_func      = morphology.heterojunction
+n_times           = 2   #number of duplications
+axis              = 'X' #axis of the junction
+displacement_vect = [ 5, 5, 0]
+num_sites         = 10
+distribu_vect     = [1]
+latt_param        = [num_sites,displacement_vect,distribu_vect]
+lattice_func_par  = [n_times,axis,latt_param]
 
 
 ##ENERGIES
 #Gaussian distribuitions
-s1s = {0:(3.7,0.0), 1:(2.85,0.0), 2:(1.85,0.0)} #(Peak emission energy (eV), disperison (eV)
-t1s = {0:(6.1,0.0), 1:(5.25,0.0), 2:(6.25,0.0)} # triplet energy, disperison (eV)
+s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), disperison (eV)
+t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # triplet energy, disperison (eV)
 
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s]  
@@ -87,7 +81,7 @@ parameters_enefunc = [s1s, t1s]
 
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 20     #number of particles
+num_ex             = 10     #number of particles
 
 #Type of particle
 gen_function        = morphology.gen_excitons

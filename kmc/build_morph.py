@@ -187,28 +187,9 @@ def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
 	#return np.array(neighbors)
 	return neighbors
 
-'''	
-def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
-	x = r[0]
-	y = r[1]
-	z = r[2]
-	mats_selected = []
-	R = np.zeros([len(X)])
-	for n in range(len(X)):
-	
-		dx   = (x - X[n])
-		dy   = (y - Y[n])
-		dz   = (z - Z[n])
-		dist = np.sqrt(dx**2+dy**2+dz**2)
-		if(dist <= cutoff and r_index != n):
-			mats_selected.append(Mats[n])
-	return np.array(mats_selected)
-'''
-
-
 def load_cif(mol_file):
 
-	#This program reads .cif files through a .mol2 files
+	#This program reads .cif files through .mol2 inputs
 	print("------------------------------------------------------------------------------------------------------------")
 	print("༼つಠ益ಠ༽つ                          LOAD .CIF PROGRAM (via .mol extension)                       ༼つಠ益ಠ༽つ")
 	print("author: Tiago Cassiano, version: 1.2v (hoping that will sufice)")
@@ -371,12 +352,12 @@ def load_cif(mol_file):
 					self.mass = periodic_table[atom_ele]
 			
 	#READING .MOL FILES	
-	init_atoms_array     = [] #atoms array without object initialization and neighbors
+	init_atoms_array     = [] # atoms array without object initialization and neighbors
 	init_neighbors_array = []
-	atom_part=False
-	bond_part=False
-	atom_keyword = "@<TRIPOS>ATOM"
-	bond_keyword = "@<TRIPOS>BOND" 
+	atom_part            = False
+	bond_part            = False
+	atom_keyword         = "@<TRIPOS>ATOM"
+	bond_keyword         = "@<TRIPOS>BOND" 
 
 	with open(input_file) as f:
 		i = 0
@@ -398,7 +379,6 @@ def load_cif(mol_file):
 			
 				if("@" in line): #avoid additional data like @<TRIPOS>SUBSTRUCTURE
 					break
-					
 					
 				line        = line.split()
 				origin_atom = int(line[1])
@@ -1019,22 +999,41 @@ def heterojunction(par):
 	Y_tot_left = np.amax(mult_y_left)-np.amin(mult_y_left)
 	Z_tot_left = np.amax(mult_z_left)-np.amin(mult_z_left)	
 	
-	n_times_x_right = int(X_tot_left/dX_right)
-	n_times_y_right = int(Y_tot_left/dY_right)
-	n_times_z_right = int(Z_tot_left/dZ_right)
+	#try/except in case the lattice is 1-D or 2-D
+	dimension = 3
+	try:
+		n_times_x_right = int(X_tot_left/dX_right)
+	except:
+		n_times_x_right = 1
+		dimension       = dimension-1
+	try:
+		n_times_y_right = int(Y_tot_left/dY_right)
+	except:
+		n_times_y_right = 1
+		dimension       = dimension-1		
+	try:
+		n_times_z_right = int(Z_tot_left/dZ_right)
+	except:
+		n_times_z_right = 1
+		dimension       = dimension-1
 	
 	n_times_right = [n_times_x_right,n_times_y_right,n_times_z_right]
 	multiplied_right = multiply_lattice(unit_cell_right,n_times_right,[dX_right,dY_right,dZ_right])
 	
 
-	shift_vec = [X_tot_left,Y_tot_left,Z_tot_left]
-	shift_vec = [ shift_vec[i]*vec_joint[i] for i in range(len(shift_vec))]	 
+	shift_vec = [ X_tot_left,Y_tot_left,Z_tot_left ]
+	shift_vec = [ shift_vec[i]*vec_joint[i] for i in range(len(shift_vec))]
+		 
+	#safety distance so the sites do not overlap	 
+	#lowest length in the system, will be used as reference to define a minimum distance towards the two cells
+	dist = np.array([i for i in [dX_left,dY_left,dZ_left ] if i > 0])
 	
+	r_min = np.amin(dist)/(len(X_left)**(1/dimension))
 	#shifting the entire right lattice 
 	for site in multiplied_right:
-		site[0] = site[0] + shift_vec[0]
-		site[1] = site[1] + shift_vec[1] 
-		site[2] = site[2] + shift_vec[2]
+		site[0] = site[0] + shift_vec[0] + vec_joint[0]*r_min
+		site[1] = site[1] + shift_vec[1] + vec_joint[1]*r_min
+		site[2] = site[2] + shift_vec[2] + vec_joint[2]*r_min
 	
 	#modeling the intersection
 	#returns the number of sites along a determined axis
@@ -1051,7 +1050,6 @@ def heterojunction(par):
 			fixed_latt = fixed_latt[z==z_min]
 			
 			return len(fixed_latt)
-			
 		
 		if axis == "Y":#y
 			x_min = np.amin(x)
@@ -1070,6 +1068,7 @@ def heterojunction(par):
 			fixed_latt = fixed_latt[y==y_min]
 			
 			return len(fixed_latt)
+			
 	#how many sites exist along an axis?		
 	n_sites_axis_left  = filter_lattice(multiplied_left,axis)
 	n_sites_axis_right = filter_lattice(multiplied_right,axis)	
@@ -1114,23 +1113,25 @@ def heterojunction(par):
 			shift = np.array([ scale*pos*np.random.normal(mean,sigma) for pos in vec])
 			latt[indx][0:3] = latt_ref[indx][0:3] + shift
 			
-	
-	mean = 1
-	sigma = mean
-	scale = dens/1
 
+	disorder_on = input('Do you wish to include disorder at the intersection?(y/n)')
+	if disorder_on == 'y':
+		disord_par = [str(int(item)) for item in input("Enter the mean and the sigma of the noise (separated by space): ").split()]
+		mean       = disord_par[0]
+		sigma      = disord_par[1]
+		scale      = dens/1
+		
+		#getting the sites in the heterojunc
+		left_het, right_het = is_in_the_heterojunc(multiplied_left,multiplied_right,dens)
 
-	#getting the sites in the heterojunc
-	left_het, right_het = is_in_the_heterojunc(multiplied_left,multiplied_right,dens)
+		#shifting these sites
+		shift_hetero(multiplied_left,vec_joint,left_het,mean,sigma,scale)
+		shift_hetero(multiplied_right,vec_joint,right_het,mean,sigma,scale)
 
-	#shifting these sites
-	shift_hetero(multiplied_left,vec_joint,left_het,mean,sigma,scale)
-	shift_hetero(multiplied_right,vec_joint,right_het,mean,sigma,scale)
-
-	#getting the sites that are too close
-	left_het, right_het = is_in_the_heterojunc(multiplied_left,multiplied_right,dens)
-	shift_hetero(multiplied_left,vec_joint,left_het,dens,0.2,1)
-	shift_hetero(multiplied_right,vec_joint,right_het,dens,0.2,-1)
+		#getting the sites that are too close
+		left_het, right_het = is_in_the_heterojunc(multiplied_left,multiplied_right,dens)
+		shift_hetero(multiplied_left,vec_joint,left_het,dens,mean,sigma)
+		shift_hetero(multiplied_right,vec_joint,right_het,dens,mean,-sigma)
 	# END INTERSECTION
 	
 		
@@ -1142,7 +1143,7 @@ def heterojunction(par):
 	
 	return 	X,Y,Z,Mats
 ###########################################################
-def write_lattice(lattice_name,func_name,output_par,X,Y,Z,latt_length):
+def write_lattice(lattice_name,func_name,output_par,X,Y,Z,Mats,latt_length):
     with open(lattice_name,'w') as f:
         f.write( ('#Func name: %s \n') %(func_name))
         f.write('\n'.join('#%s %s' % x for x in output_par))
@@ -1161,26 +1162,6 @@ def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
     except:
         plt.switch_backend('agg')
         plt.savefig(fig_name+'.png')
-'''
-colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
-X,Y,Z,Mats = heterojunction([['lattice.txt'],['lattice.txt'],['2'],['X']])
-colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(X, Y, Z,c=colors,marker='^');
-plt.show()  
-'''
-
-'''
-colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
-X,Y,Z,Mats = lattice_BHJ([ [5000],[1,1,0], [0.5,0.5],[10],[1] ])
-colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(X, Y, Z,c=colors,marker='^');
-plt.show()  
-exit()
-'''
 
 class morphology_function:
     def __init__(self,name,func,param_list):
@@ -1189,7 +1170,8 @@ class morphology_function:
     	self.param_list = param_list
     def __call__(self,param):
     	return self.func(param)	
-    
+
+################## END FUNCS #############################
 
 #funcs option 2
 lattice_dir = ["Number of Sites","displacement_vec","distribuition_vec"] #should have the same order of the function
@@ -1264,7 +1246,7 @@ def main():
 	    draw_lattice(X,Y,Z,Mats,colors,'lattice')
 	
 	    #writing the lattice.txt file
-	    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
+	    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,Mats,len(X))
 
 	#if you want to mess with the lattice
 	if ( choice1 == "3"):
@@ -1296,11 +1278,10 @@ def main():
 	    X,Y,Z,Mats = func(par)
 	    colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
 
-	    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,len(X))
+	    write_lattice(lattice_output,func.name,output_parameters,X,Y,Z,Mats,len(X))
 	    draw_lattice(X,Y,Z,Mats,colors,'lattice')
 	
 
 import sys
-
 if __name__ == "__main__":
 	sys.exit(main())  

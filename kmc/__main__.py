@@ -119,7 +119,7 @@ def spectra(system):
             f.write(texto)
         f.write("Fim\n")
         
-def animate(system,ax): 
+def animate(num,system,ax,marker_option): 
     Ss = step(system)
     X, Y, Z = system.X, system.Y, system.Z        
     mats = system.mats                            
@@ -131,32 +131,31 @@ def animate(system,ax):
         X_mat = X[mats == mat]
         Y_mat = Y[mats == mat]
         Z_mat = Z[mats == mat]
-        ax.scatter(X_mat,Y_mat,Z_mat,alpha=0.1,color=colors_dic.get(int(mat)))
+        ax.scatter(X_mat,Y_mat,Z_mat,alpha=0.25,color=colors_dic.get(int(mat)))
     try:  
         for s in Ss:
             xs = X[s.position]        	
             ys = Y[s.position]
-            zs = Z[s.position]              
-            #opcao 1 (com os markers)
-            '''        
-            if s.kind() == 'electron':
-                ax.scatter(xs,ys,zs,marker="$e^-$",color='red',s=200,alpha=1,label=s.kind())
-            elif s.kind() == 'hole':
-                ax.scatter(xs,ys,zs,marker="$h^+$",color='blue',s=200,alpha=1,label=s.kind())
-            elif s.kind() == 'triplet':
-                ax.scatter(xs,ys,zs,marker='$T_1$',color='green',s=200,alpha=1,label=s.kind())
-            elif s.kind() == 'singlet':
-                ax.scatter(xs,ys,zs,marker='$S_1$',color='orange',s=200,alpha=1,label=s.kind())
-            ''' 
-            #opcao 2(sem marker)                
-            if s.species == 'electron':
-                ax.scatter(xs,ys,zs,color='red',s=100,alpha=1,label=s.species)
-            elif s.species == 'hole':
-                ax.scatter(xs,ys,zs,color='blue',s=100,alpha=1,label=s.species)
-            elif s.species == 'triplet':
-                ax.scatter(xs,ys,zs,color='green',s=100,alpha=1,label=s.species)
-            elif s.species == 'singlet':
-                ax.scatter(xs,ys,zs,color='orange',s=100,alpha=1,label=s.species)
+            zs = Z[s.position]    
+                
+            if marker_option == 1:      
+                if s.species == 'electron':
+                    ax.scatter(xs,ys,zs,marker="$e^-$",color='red',s=200,alpha=1,label=s.species)
+                elif s.species == 'hole':
+                    ax.scatter(xs,ys,zs,marker="$h^+$",color='blue',s=200,alpha=1,label=s.species)
+                elif s.species == 'triplet':
+                    ax.scatter(xs,ys,zs,marker='$T_1$',color='green',s=200,alpha=1,label=s.species)
+                elif s.species == 'singlet':
+                    ax.scatter(xs,ys,zs,marker='$S_1$',color='orange',s=200,alpha=1,label=s.species)
+            if marker_option == 0:               
+                if s.species == 'electron':
+                    ax.scatter(xs,ys,zs,color='red',s=100,alpha=1,label=s.species)
+                elif s.species == 'hole':
+                    ax.scatter(xs,ys,zs,color='blue',s=100,alpha=1,label=s.species)
+                elif s.species == 'triplet':
+                    ax.scatter(xs,ys,zs,color='green',s=100,alpha=1,label=s.species)
+                elif s.species == 'singlet':
+                    ax.scatter(xs,ys,zs,color='orange',s=100,alpha=1,label=s.species)
     except:
         pass
     
@@ -177,25 +176,46 @@ def animate(system,ax):
         ani.event_source.stop()
     return ax,
 
-
+def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(X, Y, Z,c=color_dir,marker='^');
+    
+    try:
+        plt.show()    
+    except:
+        plt.switch_backend('agg')
+        plt.savefig(fig_name+'.png')
+        
 #RUN of a single round   
 def RUN(system):
     step(system)
     spectra(system)
-   
+#n_rounds_runned = 0   
 def make_system(module_param):
-    #in case you want that each round recieves a new lattice, it must be altered here
-    system = System(module_param.X,module_param.Y,module_param.Z,module_param.Mats)   
+
+    #getting the lattice for this particular round (can be a fresh one or not, depending on the user's choice)
+    X,Y,Z,Mats = module_param.lattice_func(module_param.lattice_func_par)
+    system = System(X,Y,Z,Mats)   
     
     system.set_basic_info(module_param.monomolecular,module_param.processes,
     module_param.identifier,module_param.animation_mode,module_param.time_limit,module_param.pause,
     module_param.anni,module_param.annihi_funcs_array) 
     
-    system.set_energies(module_param.ene_dic)
+    #getting the s1, t1, HOMO, and LUMO and then adding to the system
+    s1,t1,HOMO,LUMO = module_param.ener_function(module_param.parameters_enefunc,Mats)
+    system.set_energies(s1,t1,HOMO,LUMO)
     
-    system.set_dipoles(module_param.dipoles)
+    try:
+        system.set_dipoles(module_param.dipoles)
+    except:
+        pass
     system.set_medium(module_param.relative_eps)
-    excitons = param.gen_function(module_param.parameters_genfunc)
+    
+    #setting up particle generation
+    selection          = range(len(X))
+    parameters_genfunc = [module_param.num_ex,selection]
+    excitons = param.gen_function(parameters_genfunc)
     system.set_particles(excitons)
     
     return system 
@@ -210,7 +230,7 @@ def main():
     save_animation  = param.save_animation 
     animation_exten = param.animation_exten    
     pause           = param.pause # to freeze on the first frame
-
+    marker_type     = param.marker_type
     #getting parameters from
     rounds           = param.rounds
 
@@ -225,7 +245,7 @@ def main():
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')         
     
-        ani = animation.FuncAnimation(fig, animate, fargs=[system,ax],
+        ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type],
                                     interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)
                                     
         if save_animation:                   

@@ -3,13 +3,14 @@ from kmc.kmc_classes import *
 
 ###BASIC PARAMETERS######################################################################
 identifier         = 'charge_creation' #output identifier
-time_limit         = np.inf
+time_limit         = np.inf# in PS
 animation_mode     = True
-save_animation     = False  # if you want to save the animation
-animation_exten    = 'gif' # possible options ('gif' and 'mp4')  
+save_animation     = False # if you want to save the animation
+animation_exten    = 'gif' # possible options ('gif' and 'mp4')
+marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
-n_proc             = 6     # Number of cores to be used
+n_proc             = 1     # Number of cores to be used
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################
@@ -72,20 +73,28 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 ###MORPHOLOGY############################################################################
 
 ##Morphology functions
-lattice_filename   = "lattice.example" # file name of the system's morphology
-X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
+
+#Reading a file name that contains your lattice
+#lattice_func = morphology.read_lattice
+#lattice_func_par   = ["lattice.example"] # file name of the system's morphology
+
+
+# Creating a new lattice at each new round
+lattice_func      = morphology.lattice
+displacement_vect = [ 5, 5, 0]
+num_sites         = 100
+distribu_vect     = [0.5,0.5]
+lattice_func_par  = [num_sites,displacement_vect,distribu_vect]
+
+
 
 ##ENERGIES
 #Gaussian distribuitions
 s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), disperison (eV)
 t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # triplet energy, disperison (eV)
 
-
-#ener_function     = morphology.s1_t1_distr
 ener_function      = morphology.homo_lumo
-parameters_enefunc = [s1s, t1s, Mats]
-s1, t1 = ener_function(parameters_enefunc)    
-ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choose dissociation, you also must give HOMO and LUMO
+parameters_enefunc = [s1s, t1s]  
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
@@ -95,11 +104,6 @@ num_ex             = 10     #number of particles
 gen_function       = morphology.gen_pair_elechole
 
 
-#Shape of the particle's generation
-#Getting filter funcs from morphology		
-selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="free",origin=None,argum=None) 
-
-parameters_genfunc = [num_ex,selection]
 #########################################################################################
 
 ##ANNIHILATION OPTIONS###################################################################
