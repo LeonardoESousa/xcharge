@@ -63,8 +63,8 @@ def gen_pair_elechole(param):
     selection = param[1]
     
     part_sel = random.sample(selection,int(2*num))
-    part_sel_ele = part_sel[0:num]
-    part_sel_hol = part_sel[num+1:2*num]
+    part_sel_ele = part_sel[:num]
+    part_sel_hol = part_sel[num:]
     
     Ss_ele = [Electron(number) for number in part_sel_ele]
     Ss_hol = [Hole(number) for number in part_sel_hol]
@@ -343,7 +343,6 @@ def lattice_BHJ(param):
 	X, Y, Z, Mats = [], [], [],[]
 	ps = [i/np.sum(ps) for i in ps]
 	ps = np.cumsum(ps)
-	print(ps)
 	dx = vector[0]
 	dy = vector[1]
 	dz = vector[2]
@@ -362,7 +361,6 @@ def lattice_BHJ(param):
 	for nx in range(numx):
 		for ny in range(numy):
 			for nz in range(numz):
-			#print(nz)
 			
 				X.append(nx*dx)
 				Y.append(ny*dy)
