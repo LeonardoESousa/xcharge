@@ -8,7 +8,7 @@ animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = False # if you want that the annimation stops in the first frame (debug purposes)
+pause              = True # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
@@ -60,11 +60,11 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-lattice_func      = morphology.heterojunction
+lattice_func      = morphology.bilayer
 n_times           = 2   #number of duplications
 axis              = 'X' #axis of the junction
 displacement_vect = [ 5, 5, 0]
-num_sites         = 10
+num_sites         = 20
 distribu_vect     = [1]
 latt_param        = [num_sites,displacement_vect,distribu_vect]
 lattice_func_par  = [n_times,axis,latt_param]
@@ -81,7 +81,7 @@ parameters_enefunc = [s1s, t1s]
 
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 10     #number of particles
+num_ex             = 5     #number of particles
 
 #Type of particle
 gen_function        = morphology.gen_excitons
