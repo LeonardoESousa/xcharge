@@ -8,7 +8,7 @@ animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = True # if you want that the annimation stops in the first frame (debug purposes)
+pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
@@ -72,11 +72,10 @@ lattice_func_par  = [n_times,axis,latt_param]
 
 ##ENERGIES
 #Gaussian distribuitions
-s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), disperison (eV)
-t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # triplet energy, disperison (eV)
+t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
+s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-ener_function      = morphology.homo_lumo
-parameters_enefunc = [s1s, t1s]  
+ener_function      = [morphology.Gaussian_energy(s1s),morphology.Gaussian_energy(t1s)]  
 #########################################################################################
 
 

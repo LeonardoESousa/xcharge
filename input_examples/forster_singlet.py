@@ -69,11 +69,10 @@ lattice_func_par  = [num_sites,displacement_vect,distribu_vect]
 
 #ENERGIES
 #Gaussian distribuitions
-s1s = {0:(3.7,0.0), 1:(2.85,0.0)} # Peak emission energy (eV), disperison (eV)
-t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # Triplet energy (eV), disperison (eV)
+t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
+s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-ener_function      = morphology.homo_lumo
-parameters_enefunc = [s1s, t1s]  
+ener_function      = [morphology.Gaussian_energy(s1s),morphology.Gaussian_energy(t1s)]  
 #########################################################################################
 
 

@@ -75,13 +75,8 @@ invrad = {0:1.5,1:1.5}
 miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
 ###PROCESSES#############################################################################
 
-<<<<<<< HEAD
-processes = {'singlet':[forster], 'triplet':[forster], 'electron':[miller],'hole':[miller]}
-monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
-=======
-processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
+processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
 monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
->>>>>>> 7cf3b75d9012ac8d29666ca9918efcbf220682cb
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
@@ -104,11 +99,12 @@ lattice_func_par  = [num_sites,displacement_vect,distribu_vect]
 
 ##ENERGIES
 #Gaussian distribuitions
-s1s = {0:(-3.7,0.0), 1:(-3.7,0.0)} #(Peak emission energy (eV), disperison (eV)
-t1s = {0:(-6.1,0.0), 1:(-6.1,0.0)} # triplet energy, disperison (eV)
+lumos = {0:(-3.7,0.0), 1:(-3.7,0.0), 'level':'lumo'} #(Peak emission energy (eV), disperison (eV)
+homos = {0:(-6.1,0.0), 1:(-6.1,0.0), 'level':'homo'} # triplet energy, disperison (eV)
+t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
+s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-ener_function      = morphology.homo_lumo
-parameters_enefunc = [s1s, t1s]  
+ener_function      = [morphology.Gaussian_energy(s1s),morphology.Gaussian_energy(t1s),morphology.Gaussian_energy(homos),morphology.Gaussian_energy(lumos)]  
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
