@@ -175,7 +175,7 @@ def anni_sing(system,tipos,Ss,indices,locs):
 # FUNCS TO SHAPE THE GENERATION OF PARTICLES
 
 #main function, regardless of the conditional, filters the sites according to it	
-def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
+def filter_selection(X,Y,Z,Mats,param_dic):
 
 	X_cop     = X.copy()
 	Y_cop     = Y.copy()
@@ -183,12 +183,12 @@ def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
 	Mats_cop  = Mats.copy()
 	selection = []
 	
-	
-	mat_restriction     = kwargs['mat']    #list of materials that will generate part
-	shape_type          = kwargs['shape']  #the shape that the particles will be aranged
-	argument_shape_func = kwargs['argum']  #arguments of the shape func
-	origin              = kwargs['origin'] #origin of the shape
-	conditional = shape_dic.get(shape_type)
+	shape_dic           = param_dic.get('shape_dic')
+	mat_restriction     = param_dic.get('mat')    #list of materials that will generate part
+	shape_type          = param_dic.get('shape')  #the shape that the particles will be aranged
+	argument_shape_func = param_dic.get('argum')  #arguments of the shape func
+	origin              = param_dic.get('origin') #origin of the shape
+	conditional         = shape_dic.get(shape_type)
 	
 	for index_mol in range(len(X)):
 
@@ -196,7 +196,6 @@ def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
 		y   = Y_cop[index_mol]
 		z   = Z_cop[index_mol]
 		mat = Mats_cop[index_mol]
-		
 		if conditional([x,y,z],origin,argument_shape_func):
 			if (mat in mat_restriction) or (mat_restriction[0] == None):
 				selection.append(index_mol)

@@ -64,7 +64,7 @@ lattice_func      = morphology.bilayer
 n_times           = 2   #number of duplications
 axis              = 'X' #axis of the junction
 displacement_vect = [ 5, 5, 0]
-num_sites         = 20
+num_sites         = 200
 distribu_vect     = [1]
 latt_param        = [num_sites,displacement_vect,distribu_vect]
 lattice_func_par  = [n_times,axis,latt_param]
@@ -86,6 +86,10 @@ num_ex             = 5     #number of particles
 #Type of particle
 gen_function        = morphology.gen_excitons
 
+#Choose the way that the particles will be distribuited
+sel_func    = morphology.filter_selection
+sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [0],
+ 'shape': "free", 'origin': None, 'argum' : None}
 #########################################################################################
 
 ##ANNIHILATION OPTIONS###################################################################

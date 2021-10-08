@@ -4,7 +4,7 @@ from kmc.kmc_classes import *
 ###BASIC PARAMETERS######################################################################
 identifier         = 'forster_singlet' #output identifier
 time_limit         = np.inf# in PS
-animation_mode     = False
+animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
@@ -63,7 +63,7 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 lattice_func      = morphology.lattice
 displacement_vect = [ 5, 5, 0] #vector of the unit cell
 num_sites         = 100        #number of sites of the lattice
-distribu_vect     = [0.5,0.5]  #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+distribu_vect     = [0.5,0.1]  #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
 lattice_func_par  = [num_sites,displacement_vect,distribu_vect]
 
 
@@ -83,6 +83,10 @@ num_ex              = 10     #number of particles
 #Type of particle
 gen_function        = morphology.gen_excitons
 
+#Choose the way that the particles will be distribuited
+sel_func    = morphology.filter_selection
+sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
+ 'shape': "free", 'origin': None, 'argum' : None}
 #########################################################################################
 
 ##ANNIHILATION OPTIONS###################################################################

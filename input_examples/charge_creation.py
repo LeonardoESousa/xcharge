@@ -112,7 +112,11 @@ num_ex             = 10     #number of particles
 #Type of particle
 gen_function       = morphology.gen_pair_elechole
 
-
+#Choose the way that the particles will be distribuited
+sel_func    = morphology.filter_selection
+sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
+ 'shape': "free", 'origin': None, 'argum' : None}
+ 
 #########################################################################################
 
 ##ANNIHILATION OPTIONS###################################################################

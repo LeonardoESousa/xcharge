@@ -213,9 +213,10 @@ def make_system(module_param):
     system.set_medium(module_param.relative_eps)
     
     #setting up particle generation
-    selection          = range(len(X))
+    #selection          = range(len(X))
+    selection          = module_param.sel_func(X,Y,Z,Mats,module_param.sel_params)
     parameters_genfunc = [module_param.num_ex,selection]
-    
+
     excitons = param.gen_function(parameters_genfunc)
     system.set_particles(excitons)
     
