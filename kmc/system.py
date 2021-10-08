@@ -1,9 +1,8 @@
 import numpy as np
-import random
 
 epsilon_vaccum = 8.85e-22        #Permitivity in C/VAngstrom
 e              = -1.60217662e-19 #Electron charge    
-kb             = 8.617e-5        # Boltzmann constant
+kb             = 8.617e-5        #Boltzmann constant
 hbar           = 6.582e-16       #Reduced Planck's constant
         
 
