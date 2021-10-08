@@ -56,8 +56,8 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 ##Morphology functions
 
 #Reading a file name that contains your lattice
-#lattice_func = morphology.read_lattice
-#lattice_func_par   = ["lattice.example"] # file name of the system's morphology
+#file = 'lattice.example'
+#lattice_func = morphology.ReadLattice(file)
 
 
 # Creating a new lattice at each new round

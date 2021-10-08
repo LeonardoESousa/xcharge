@@ -6,11 +6,6 @@ from kmc.particles import *
 # note: always define the function by list (param) that contains the things needed
 
 
-# reads the morphology
-def read_lattice(file_name):
-    data = np.loadtxt(file_name)
-    return  data[:,0], data[:,1], data[:,2], data[:,3]   
-
 
 #### CHOOSE A FUNC TO GENERATE EXCITONS
 def gen_electron(param):
@@ -270,7 +265,17 @@ def rectangle_conditional(pos,r0,COEF):
 shape_dic = {'sphere': sphere_conditional, 'plane':plane_conditional,'cone':cone_conditional,'cilinder':cilinder_conditional,'rectangle': rectangle_conditional,'free':no_conditional}				
 
 
-######################################################
+##LATTICE CLASSES####################################################################################
+class ReadLattice():
+    def __init__(self,file):
+        self.file = file 
+
+    def make(self):       
+        data = np.loadtxt(self.file)
+        return  data[:,0], data[:,1], data[:,2], data[:,3] 
+
+
+
 class Lattice():
     def __init__(self,num_sites,vector,disorder,composition):
         self.num_sites   = num_sites
@@ -305,51 +310,6 @@ class Lattice():
         Z = np.array(Z)
         Mats = np.array(Mats)    
         return X,Y,Z,Mats
-
-
-
-
-#Lattice funcs
-
-def lattice(param):
-    
-    num_molecs =  int(param[0]) #adjusting to user's input     
-    vector     =  [ float(x) for x in param[1] ]
-    ps         =  [ float(x)   for x in param[2] ]
-    
-    
-    X, Y, Z, Mats = [], [], [],[]
-    ps = [i/np.sum(ps) for i in ps]
-    ps = np.cumsum(ps)
-    
-    dx = vector[0]
-    dy = vector[1]
-    dz = vector[2]
-    dim = []
-    for elem in vector:
-        if elem != 0:
-            dim.append(1)
-        else:
-            dim.append(0)
-    numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
-    numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
-    numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
-      
-    #Se somar +1 vai aparecer duplicados no 2D
-    for nx in range(numx):
-        for ny in range(numy):
-            for nz in range(numz):
-                X.append(nx*dx)
-                Y.append(ny*dy)
-                Z.append(nz*dz)
-                sorte = random.uniform(0,1)
-                chosen = np.where(sorte < ps)[0][0]
-                Mats.append(chosen)
-    X = np.array(X)
-    Y = np.array(Y)
-    Z = np.array(Z)
-    Mats = np.array(Mats)    
-    return X,Y,Z,Mats
 
 
 #generates a bulk heterojunction conformation
@@ -471,6 +431,7 @@ def multiply_lattice(lattice,n_times_ar,delta):
                 new_lattice = np.vstack((new_lattice,new_cell))
         
     return np.unique(new_lattice,axis=0)
+
 def bilayer(par):
     n_times    = int(float(par[0]))
     axis       = par[1]
