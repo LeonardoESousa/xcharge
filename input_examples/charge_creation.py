@@ -66,7 +66,7 @@ miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
 
 ###PROCESSES#############################################################################
 
-processes = {'singlet':[forster], 'triplet':[], 'electron':[miller],'hole':[miller]}
+processes = {'singlet':[forster], 'triplet':[forster], 'electron':[miller],'hole':[miller]}
 monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #########################################################################################
 
@@ -90,18 +90,19 @@ lattice_func_par  = [num_sites,displacement_vect,distribu_vect]
 
 ##ENERGIES
 #Gaussian distribuitions
-s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), disperison (eV)
-t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # triplet energy, disperison (eV)
+s1s = {0:(-3.7,0.0), 1:(-3.7,0.0)} #(Peak emission energy (eV), disperison (eV)
+t1s = {0:(-6.1,0.0), 1:(-6.1,0.0)} # triplet energy, disperison (eV)
 
 ener_function      = morphology.homo_lumo
 parameters_enefunc = [s1s, t1s]  
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 10     #number of particles
+num_ex             = 1     #number of particles
 
 #Type of particle
 gen_function       = morphology.gen_pair_elechole
+#gen_function       = morphology.gen_electron
 
 
 #########################################################################################
@@ -109,7 +110,7 @@ gen_function       = morphology.gen_pair_elechole
 ##ANNIHILATION OPTIONS###################################################################
 anni               = True  # Turn on annihilation
 ##list of all annihi funcs that will be used
-annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing] 
+annihi_funcs_array = [morphology.anni_ele_hol]#,morphology.anni_sing] 
 #########################################################################################
 
    
