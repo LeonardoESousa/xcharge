@@ -929,7 +929,7 @@ def parametrize_mat(par):
 	return X,Y,Z,Mats
 	
 	
-def heterojunction(par):
+def bilayer(par):
 	cell_left  = par[0][0]
 	cell_right = par[1][0]
 	n_times    = int(float(par[2][0]))
@@ -1185,12 +1185,12 @@ func_list      = [latt_func,loadcif_func,BHJ_func] #list of functions to be incl
 
 #funcs option 3
 parametrize_dir    = ["filename for the first unit cell"]
-heterojunction_dir = ["name_left_cell","name_right_cell","number_of_reps","Joining axis (X,Y or Z)"]
+bilayer_dir = ["name_left_cell","name_right_cell","number_of_reps","Joining axis (X,Y or Z)"]
 
 paramet_func           = morphology_function("parametrized",parametrize_mat,parametrize_dir)
-heterojunction_func    = morphology_function("heterojunction",heterojunction,heterojunction_dir)
+bilayer_func    = morphology_function("bilayer",bilayer,bilayer_dir)
 
-func_opt3_list  = [paramet_func,heterojunction_func] #list of functions to be included in option 3
+func_opt3_list  = [paramet_func,bilayer_func] #list of functions to be included in option 3
 
 ##########################################################
 

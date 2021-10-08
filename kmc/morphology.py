@@ -33,7 +33,7 @@ def read_lattice(file_name):
 #### CHOOSE A FUNC TO GENERATE EXCITONS
 def gen_electron(param):
     #num: number of excitons
-    #X: one of the position vectors 
+    #selection: list of site's index to selected to create particles 
     
     num       = param[0] #relabeling the input parameters 
     selection = param[1]
@@ -45,7 +45,7 @@ def gen_electron(param):
     
 def gen_hole(param):
     #num: number of excitons
-    #X: one of the position vectors 
+    #selection: list of site's index to selected to create particles
     
     num       = param[0] #relabeling the input parameters 
     selection = param[1]
@@ -57,7 +57,7 @@ def gen_hole(param):
 
 def gen_pair_elechole(param):
     #num: number of excitons
-    #X: one of the position vectors 
+    #selection: list of site's index to selected to create particles 
     
     num       = param[0] #relabeling the input parameters 
     selection = param[1]
@@ -73,11 +73,14 @@ def gen_pair_elechole(param):
     return Ss
     
 def gen_excitons(param):
+    #num: number of excitons
+    #selection: list of site's index to selected to create particles
+    
     num       = param[0] #relabeling the input parameters 
     selection = param[1]
     
     part_sel = random.sample(selection,num)
-    Ss = [Exciton('singlet',number) for number in part_sel]    
+    Ss       = [Exciton('singlet',number) for number in part_sel]    
 
     return Ss
 
@@ -172,7 +175,7 @@ def anni_sing(system,tipos,Ss,indices,locs):
 # FUNCS TO SHAPE THE GENERATION OF PARTICLES
 
 #main function, regardless of the conditional, filters the sites according to it	
-def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
+def filter_selection(X,Y,Z,Mats,param_dic):
 
 	X_cop     = X.copy()
 	Y_cop     = Y.copy()
@@ -180,12 +183,12 @@ def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
 	Mats_cop  = Mats.copy()
 	selection = []
 	
-	
-	mat_restriction     = kwargs['mat']    #list of materials that will generate part
-	shape_type          = kwargs['shape']  #the shape that the particles will be aranged
-	argument_shape_func = kwargs['argum']  #arguments of the shape func
-	origin              = kwargs['origin'] #origin of the shape
-	conditional = shape_dic.get(shape_type)
+	shape_dic           = param_dic.get('shape_dic')
+	mat_restriction     = param_dic.get('mat')    #list of materials that will generate part
+	shape_type          = param_dic.get('shape')  #the shape that the particles will be aranged
+	argument_shape_func = param_dic.get('argum')  #arguments of the shape func
+	origin              = param_dic.get('origin') #origin of the shape
+	conditional         = shape_dic.get(shape_type)
 	
 	for index_mol in range(len(X)):
 
@@ -193,7 +196,6 @@ def filter_selection(X,Y,Z,Mats,shape_dic,**kwargs):
 		y   = Y_cop[index_mol]
 		z   = Z_cop[index_mol]
 		mat = Mats_cop[index_mol]
-		
 		if conditional([x,y,z],origin,argument_shape_func):
 			if (mat in mat_restriction) or (mat_restriction[0] == None):
 				selection.append(index_mol)
@@ -343,6 +345,7 @@ def lattice_BHJ(param):
 	X, Y, Z, Mats = [], [], [],[]
 	ps = [i/np.sum(ps) for i in ps]
 	ps = np.cumsum(ps)
+
 	dx = vector[0]
 	dy = vector[1]
 	dz = vector[2]
@@ -448,7 +451,7 @@ def multiply_lattice(lattice,n_times_ar,delta):
 				new_lattice = np.vstack((new_lattice,new_cell))
 		
 	return np.unique(new_lattice,axis=0)
-def heterojunction(par):
+def bilayer(par):
 	n_times    = int(float(par[0]))
 	axis       = par[1]
 	param_latt = par[2]

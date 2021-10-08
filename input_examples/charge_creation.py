@@ -20,7 +20,7 @@ r00   = 25   #Forster radius material 0 --> material 0 (Angstrom)
 r01   = 25   #material 0 --> material 1      
 r10   = 25       
 r11   = 25     
-raios = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
+radii = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
 ##FLUORESCENCE LIFETIMES (PS)
 f0 = 2900000 #lifetime of material 0
@@ -33,22 +33,33 @@ mu1 = 5.543
 mus       = {0:mu0,1:mu1}
 
 ##EXCITION TRANSFER RATES
-forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
+forster   = Forster(Rf=radii,life=lifetimes,mu=mus)
 
 ##FLUORESCENCE RATES
 fluor     = Fluor(life=lifetimes)
 
-
-##NONRADIATIVE DECAY RATES
-nonrad  = {0:0,1:0}
-nonradiative = Nonrad(rate=nonrad)
 
 ##DISSOCIATION RATE
 H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
 invrad = {0:0.1,1:0.1}
 dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
 
+###TRIPLET EXCITONS######################################################################
 
+##DEXTER RADII (Å)
+Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
+
+##PHOSPHORESCENCE LIFETIMES (PS)
+phlife = {0:5.29,1:5.29}
+
+##SUM OF VAN DER WALLS RADII (Å)
+Ls = {0:5.0,1:5.0}
+
+##TRIPLET TRANSFER RATES
+dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
+
+##PHOSPHORESCENCE RATE
+phosph = Phosph(life=phlife)
 ###CHARGES###############################################################################
 
 ##relative permitivity
@@ -62,12 +73,15 @@ invrad = {0:1.5,1:1.5}
 
 ##MILLER-ABRAHAMS RATE
 miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
-
-
 ###PROCESSES#############################################################################
 
+<<<<<<< HEAD
 processes = {'singlet':[forster], 'triplet':[forster], 'electron':[miller],'hole':[miller]}
 monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
+=======
+processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
+monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
+>>>>>>> 7cf3b75d9012ac8d29666ca9918efcbf220682cb
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
@@ -81,9 +95,9 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 
 # Creating a new lattice at each new round
 lattice_func      = morphology.lattice
-displacement_vect = [ 5, 5, 0]
-num_sites         = 100
-distribu_vect     = [0.5,0.5]
+displacement_vect = [ 5, 5, 0] #vector of the unit cell
+num_sites         = 100        #number of sites of the lattice
+distribu_vect     = [0.5,0.5]  #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
 lattice_func_par  = [num_sites,displacement_vect,distribu_vect]
 
 
@@ -104,7 +118,11 @@ num_ex             = 1     #number of particles
 gen_function       = morphology.gen_pair_elechole
 #gen_function       = morphology.gen_electron
 
-
+#Choose the way that the particles will be distribuited
+sel_func    = morphology.filter_selection
+sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
+ 'shape': "free", 'origin': None, 'argum' : None}
+ 
 #########################################################################################
 
 ##ANNIHILATION OPTIONS###################################################################

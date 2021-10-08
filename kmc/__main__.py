@@ -172,8 +172,8 @@ def animate(num,system,ax,marker_option):
     ax.set_zlabel('Z')     
 
     #pausing in the first frame
-    if system.pause:
-        ani.event_source.stop()
+    #if system.pause:
+    #    ani.event_source.stop()
     return ax,
 
 def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
@@ -213,44 +213,65 @@ def make_system(module_param):
     system.set_medium(module_param.relative_eps)
     
     #setting up particle generation
-    selection          = range(len(X))
+    #selection          = range(len(X))
+    selection          = module_param.sel_func(X,Y,Z,Mats,module_param.sel_params)
     parameters_genfunc = [module_param.num_ex,selection]
+
     excitons = param.gen_function(parameters_genfunc)
     system.set_particles(excitons)
     
     return system 
     
+#setting up the animation object and adding responses to events    
+def run_animation(param):
+    ani_running = True
+
+    def onClick(event): #if somenone clicks on the ani, this happens
+        nonlocal ani_running
+        if ani_running:
+            ani.event_source.stop()
+            ani_running = False
+        else:
+            ani.event_source.start()
+            ani_running = True
+
+    def pause_plot(event,pause): #if pause = true, this will happen
+        nonlocal ani_running
+        if pause:
+            ani.event_source.stop()
+            ani_running  = False
+
+    system = make_system(param)
+    pause           = param.pause # to freeze on the first frame
+    marker_type     = param.marker_type
+                    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    fig.canvas.mpl_connect('button_press_event', onClick) #pausing if clicking
+    fig.canvas.mpl_connect('draw_event', lambda event: pause_plot(event, pause)) #pausing if pause = True at the first frame
+   
+    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type],
+                                    interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)  
+                             
+                                       
+    return ani 
+    
+
     
 def main():
 
     n_proc          = param.n_proc
     identifier      = param.identifier 
     animation_mode  = param.animation_mode
-
     save_animation  = param.save_animation 
     animation_exten = param.animation_exten    
-    pause           = param.pause # to freeze on the first frame
-    marker_type     = param.marker_type
-    #getting parameters from
-    rounds           = param.rounds
-
-
+    rounds          = param.rounds
     
     if animation_mode:
-    
+        ani = run_animation(param)
         path=identifier+"_animation."+animation_exten
-            
-    
-        system = make_system(param)
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')         
-    
-        ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type],
-                                    interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)
-                                    
+                                                   
         if save_animation:                   
-            #ani.save('charges.avi', fps=20, dpi=300)
-            #os.system("C:\ffmpeg\ffmpeg.exe -i charges.avi charges.gif")
             
             #save .gif
             if animation_exten == 'gif':
@@ -262,8 +283,7 @@ def main():
                 ani.save(path, writer=writervideo)
         
         plt.show()
-        
-        
+                
     else:
     
         Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system(param)) for _ in range(rounds))
