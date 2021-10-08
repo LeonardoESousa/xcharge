@@ -81,15 +81,15 @@ parameters_enefunc = [s1s, t1s]
 
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 5     #number of particles
+num_ex             = 20     #number of particles
 
 #Type of particle
 gen_function        = morphology.gen_excitons
 
 #Choose the way that the particles will be distribuited
 sel_func    = morphology.filter_selection
-sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [0],
- 'shape': "free", 'origin': None, 'argum' : None}
+sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
+ 'shape': "rectangle", 'origin': None, 'argum' : [[130,150],[0,120],[0,1]]}
 #########################################################################################
 
 ##ANNIHILATION OPTIONS###################################################################
