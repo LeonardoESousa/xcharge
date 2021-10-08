@@ -1,5 +1,6 @@
 import kmc.morphology as morphology
-from kmc.kmc_classes import *
+from kmc.rates import *
+from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
 identifier         = 'charge_creation' #output identifier
@@ -108,7 +109,7 @@ ener_function      = [morphology.Gaussian_energy(s1s),morphology.Gaussian_energy
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 1     #number of particles
+num_ex             = 1    #number of particles
 
 #Type of particle
 gen_function       = morphology.gen_pair_elechole
@@ -121,10 +122,10 @@ sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
  
 #########################################################################################
 
-##ANNIHILATION OPTIONS###################################################################
-anni               = True  # Turn on annihilation
+##BIMOLECULAR OPTIONS###################################################################
+bimolec               = True  # Turn on annihilation
 ##list of all annihi funcs that will be used
-annihi_funcs_array = [morphology.anni_ele_hol]#,morphology.anni_sing] 
+bimolec_funcs_array = [morphology.ele_hol_recomb]#,morphology.anni_sing] 
 #########################################################################################
 
    

@@ -89,10 +89,10 @@ sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
  'shape': "free", 'origin': None, 'argum' : None}
 #########################################################################################
 
-##ANNIHILATION OPTIONS###################################################################
-anni               = True  # Turn on annihilation
+##BIMOLECULAR OPTIONS###################################################################
+bimolec               = True  # Turn on annihilation
 ##list of all annihi funcs that will be used
-annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing] 
+bimolec_funcs_array = [morphology.ele_hol_recomb,morphology.anni_sing] 
 #########################################################################################
 
    

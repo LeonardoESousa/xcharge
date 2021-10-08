@@ -100,8 +100,8 @@ def step(system):
         for i in range(len(Ss)):
             if fator <= time_step/DT[i]:
                 J[i].action(Ss[i],system,W[i])
-        if system.anni:
-            anni_general(system,Ss,system.anni_funcs_array)
+        if system.bimolec:
+            anni_general(system,Ss,system.bimolec_funcs_array)
         if system.animation_mode:
             return Ss       
     Ss = system.particles.copy()
@@ -202,7 +202,7 @@ def make_system(module_param):
     
     system.set_basic_info(module_param.monomolecular,module_param.processes,
     module_param.identifier,module_param.animation_mode,module_param.time_limit,module_param.pause,
-    module_param.anni,module_param.annihi_funcs_array) 
+    module_param.bimolec,module_param.bimolec_funcs_array) 
     
     #setting the system's energy levels
     for function in module_param.ener_function:

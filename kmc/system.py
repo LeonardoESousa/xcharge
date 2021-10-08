@@ -20,14 +20,14 @@ class System:
    
   
     def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,anni_funcs_array):
-    	self.processes        = processes
-    	self.monomolecular    = monomolecular
-    	self.identifier       = identifier
-    	self.animation_mode   = animation_mode
-    	self.time_limit       = time_limit
-    	self.pause            =   pause
-    	self.anni_funcs_array = anni_funcs_array
-    	self.anni             = anni
+    	self.processes           = processes
+    	self.monomolecular       = monomolecular
+    	self.identifier          = identifier
+    	self.animation_mode      = animation_mode
+    	self.time_limit          = time_limit
+    	self.pause               = pause
+    	self.bimolec_funcs_array = anni_funcs_array
+    	self.bimolec             = anni
     
     def set_particles(self,Ss):
         self.particles = Ss            

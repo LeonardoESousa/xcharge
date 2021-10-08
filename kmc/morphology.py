@@ -131,10 +131,10 @@ def homo_lumo_s1_distr(param):
     return s1_dist, homo_dist, lumo_dist  
    
 ############################################
-# ANNI FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
+# BIMOLEC FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
 
 #annihilation electron-hole pair
-def anni_ele_hol(system,tipos,Ss,indices,locs):
+def ele_hol_recomb(system,tipos,Ss,indices,locs):
     if 'electron' in tipos and 'hole' in tipos:        
         id1 = Ss[indices[0][tipos.index('electron')]].identity
         id2 = Ss[indices[0][tipos.index('hole')]].identity

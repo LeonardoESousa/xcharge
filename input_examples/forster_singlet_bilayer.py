@@ -1,5 +1,6 @@
 import kmc.morphology as morphology
-from kmc.kmc_classes import *
+from kmc.rates import *
+from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
 identifier         = 'forster_singlet' #output identifier
@@ -91,10 +92,10 @@ sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
  'shape': "rectangle", 'origin': None, 'argum' : [[130,150],[0,120],[0,1]]}
 #########################################################################################
 
-##ANNIHILATION OPTIONS###################################################################
-anni               = True  # Turn on annihilation
+##BIMOLECULAR OPTIONS###################################################################
+bimolec               = True  # Turn on annihilation
 ##list of all annihi funcs that will be used
-annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing] 
+bimolec_funcs_array = [morphology.ele_hol_recomb,morphology.anni_sing] 
 #########################################################################################
 
    
