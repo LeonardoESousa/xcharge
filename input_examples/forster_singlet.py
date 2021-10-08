@@ -1,5 +1,6 @@
 import kmc.morphology as morphology
-from kmc.kmc_classes import *
+from kmc.rates import *
+from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
 identifier         = 'forster_singlet' #output identifier

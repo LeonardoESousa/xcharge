@@ -1,6 +1,8 @@
 import numpy as np
 import random
-from kmc.kmc_classes import *
+from kmc.rates import *
+from kmc.particles import *
+from kmc.system import System
 import sys
 import warnings
 import os
@@ -191,7 +193,7 @@ def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
 def RUN(system):
     step(system)
     spectra(system)
-#n_rounds_runned = 0   
+
 def make_system(module_param):
 
     #getting the lattice for this particular round (can be a fresh one or not, depending on the user's choice)
@@ -202,14 +204,12 @@ def make_system(module_param):
     module_param.identifier,module_param.animation_mode,module_param.time_limit,module_param.pause,
     module_param.anni,module_param.annihi_funcs_array) 
     
-    #getting the s1, t1, HOMO, and LUMO and then adding to the system
+    #setting the system's energy levels
     for function in module_param.ener_function:
         energies, level = function.assign_energy(Mats)
         system.set_energies(energies, level)    
 
-    #s1,t1,HOMO,LUMO = module_param.ener_function(module_param.parameters_enefunc,Mats)
-    #system.set_energies(s1,t1,HOMO,LUMO)
-    
+
     try:
         system.set_dipoles(module_param.dipoles)
     except:
@@ -217,7 +217,6 @@ def make_system(module_param):
     system.set_medium(module_param.relative_eps)
     
     #setting up particle generation
-    #selection          = range(len(X))
     selection          = module_param.sel_func(X,Y,Z,Mats,module_param.sel_params)
     parameters_genfunc = [module_param.num_ex,selection]
 

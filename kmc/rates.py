@@ -1,144 +1,14 @@
+
 import numpy as np
 import random
+from kmc.particles import *
 
 epsilon_vaccum = 8.85e-22        #Permitivity in C/VAngstrom
 e              = -1.60217662e-19 #Electron charge    
 kb             = 8.617e-5        # Boltzmann constant
 hbar           = 6.582e-16       #Reduced Planck's constant
-        
 
 
-class System:
-    def __init__(self,X,Y,Z,Mats):
-        self.X = X
-        self.Y = Y
-        self.Z = Z
-        self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
-        self.mats = Mats
-        self.dead = []
-        self.time = 0
-        self.potential_time = -1
-   
-  
-    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,anni_funcs_array):
-    	self.processes        = processes
-    	self.monomolecular    = monomolecular
-    	self.identifier       = identifier
-    	self.animation_mode   = animation_mode
-    	self.time_limit       = time_limit
-    	self.pause            =   pause
-    	self.anni_funcs_array = anni_funcs_array
-    	self.anni             = anni
-    
-    def set_particles(self,Ss):
-        self.particles = Ss            
-    
-    def set_dipoles(self,mus):
-        if mus: #in case you dont have the dipoles
-            self.mu = mus
-            self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
-            self.mu /= self.norma_mu[:,np.newaxis]
-
-    def add_particle(self,s):
-        self.particles.append(s)
-    
-    def count_particles(self):
-        return len(self.particles)
-    
-    def set_medium(self,eps_rel):
-    	self.eps_rel = eps_rel
-    	self.epsilon = eps_rel*epsilon_vaccum
-        
-    def get_num(self):
-        return len(self.X)
-           
-    def set_energies(self,energy, kind):
-        if kind.lower() == 's1':
-            self.s1   = energy 
-        elif kind.lower() == 't1':
-            self.t1   = energy
-        elif kind.lower() == 'homo':
-            self.HOMO = energy
-        elif kind.lower() == 'lumo':
-            self.LUMO = energy
-        
-    def remove(self,particle):
-        self.particles.remove(particle)
-        self.dead.append(particle) 
-
-    def electrostatic(self):
-        if self.time > self.potential_time:
-            potential = np.zeros(len(self.X))
-            for s in self.particles:
-                if s.charge != 0:
-                    dx = np.nan_to_num(self.X - self.X[s.position])
-                    dy = np.nan_to_num(self.Y - self.Y[s.position])
-                    dz = np.nan_to_num(self.Z - self.Z[s.position])
-                    r  = np.sqrt(dx**2+dy**2+dz**2)
-                    r[r == 0] = np.inf
-                    potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
-            self.potential = potential
-            self.potential_time = self.time
-        else:
-            pass   
-        return self.potential
-            
-   
-class Particles:
-    def __init__(self,species,initial):
-        self.species = species
-        self.initial = initial
-        self.position = initial
-        self.status = 'alive'
-        self.identity = random.uniform(0,5)
-        self.report = ''
-    
-    def move(self,local):
-        self.position = local
-
-    
-    def make_text(self,system,energies,causamortis):
-        time = system.time   
-        X,Y,Z = system.X, system.Y, system.Z  
-        Mats  = system.mats 
-        x0,y0,z0 = X[self.initial],Y[self.initial],Z[self.initial]
-        x, y, z  = X[self.position],Y[self.position],Z[self.position]
-        dx = np.nan_to_num(x-x0)
-        dy = np.nan_to_num(y-y0)
-        dz = np.nan_to_num(z-z0)
-        mat = Mats[self.position]
-        energy = energies[self.position]
-        texto = '{0:5.6e}    {1: 6.2f} {2: 6.2f} {3: 6.2f} {4:4} {5: 4.4f} {6:9} {7: 6.2f} {8: 6.2f} {9: 6.2f} {10:4}'.format(
-                       time,dx,dy,dz,self.species,energy,mat,x,y,z,causamortis)
-        self.report += texto+'\n'
-    
-    def kill(self,causamortis,system,energies):
-        self.status = 'dead'
-        self.make_text(system,energies,causamortis)
-        system.remove(self)
-    
-    def convert(self,system,energies,causamortis,newkind):
-        self.make_text(system,energies,causamortis)
-        self.species = newkind
-
-    def write(self):
-        return self.report
-        
- 
-class Electron(Particles):
-    def __init__(self,initial):
-        Particles.__init__(self,'electron',initial) 
-        self.charge = -1
-
-class Exciton(Particles):
-    def __init__(self,kind,initial):
-        Particles.__init__(self,kind,initial) 
-        self.charge = 0
-
-class Hole(Particles):
-    def __init__(self,initial):
-        Particles.__init__(self,'hole',initial) 
-        self.charge = 1
 
 ###TAXAS#################################################################################    
 def raios(num,Rf,mat,lifetime,mats):

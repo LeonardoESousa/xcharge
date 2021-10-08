@@ -1,33 +1,15 @@
 import numpy as np
 import random
-from kmc.kmc_classes import *
+from kmc.particles import *
+
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
 
 
 # reads the morphology
 def read_lattice(file_name):
-	X,Y,Z,Mats = [], [], [], []
-	
-	with open(file_name, 'r') as f:
-		for line in f:
-			if '#' not in line:		
-				line = line.split()
-				x    = float(line[0])
-				y    = float(line[1])
-				z    = float(line[2])
-				mat  = int(float(line[3]))
-			
-			
-				X.append(x)
-				Y.append(y)
-				Z.append(z)
-				Mats.append(mat)
-	X = np.array(X)
-	Y = np.array(Y)	
-	Z = np.array(Z)	
-	Mats = np.array(Mats)
-	return X,Y,Z,Mats
+	data = np.loadtxt(file_name)
+	return  data[:,0], data[:,1], data[:,2], data[:,3]   
 
 
 #### CHOOSE A FUNC TO GENERATE EXCITONS
@@ -87,29 +69,8 @@ def gen_excitons(param):
 
 
 ##########################################
-# FUNC TO GIVE S1 AND TRIPLET ENERGIES	
-def homo_lumo(param,mats):
 
-    s1s    = param[0] #relabeling the input parameters 
-    t1s    = param[1]
-    
-    s1 = []
-    t1 = []
-    for i in mats:
-        s1.append(np.random.normal(s1s.get(i)[0],s1s.get(i)[1]))
-        t1.append(np.random.normal(t1s.get(i)[0],t1s.get(i)[1]))
-    return s1,t1,t1,s1 #here we assume HOMO = t1, LUMO = s1
-
-# FUNC TO GIVE S1 AND TRIPLET ENERGIES	
-#def gaussian_energy(s1s,mats):
-#    tipo = s1s['level']
-#    s1 = []
-#    for i in mats:
-#        s1.append(np.random.normal(s1s[i][0],s1s[i][1]))
-#    return s1, tipo
-
-
-# FUNC TO GIVE S1 AND TRIPLET ENERGIES	
+#CLASS TO ASSIGN ENERGIES TO LATTICE	
 class Gaussian_energy():
 	def __init__(self,s1s):
 		self.s1s = s1s
@@ -120,9 +81,6 @@ class Gaussian_energy():
 		for i in mats:
 			s1.append(np.random.normal(self.s1s[i][0],self.s1s[i][1]))
 		return s1, tipo
-
-
-
 
 
 #energy functions when you have the distribuitions of t1 and s1 energies    
