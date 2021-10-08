@@ -99,8 +99,32 @@ def homo_lumo(param,mats):
         s1.append(np.random.normal(s1s.get(i)[0],s1s.get(i)[1]))
         t1.append(np.random.normal(t1s.get(i)[0],t1s.get(i)[1]))
     return s1,t1,t1,s1 #here we assume HOMO = t1, LUMO = s1
-   
-   
+
+# FUNC TO GIVE S1 AND TRIPLET ENERGIES	
+#def gaussian_energy(s1s,mats):
+#    tipo = s1s['level']
+#    s1 = []
+#    for i in mats:
+#        s1.append(np.random.normal(s1s[i][0],s1s[i][1]))
+#    return s1, tipo
+
+
+# FUNC TO GIVE S1 AND TRIPLET ENERGIES	
+class Gaussian_energy():
+	def __init__(self,s1s):
+		self.s1s = s1s
+
+	def assign_energy(self,mats):	
+		s1 = []
+		tipo = self.s1s['level']
+		for i in mats:
+			s1.append(np.random.normal(self.s1s[i][0],self.s1s[i][1]))
+		return s1, tipo
+
+
+
+
+
 #energy functions when you have the distribuitions of t1 and s1 energies    
 def s1_t1_distr(param,mats):
     #s1_dic = {0: 'dist_s1_mat0.txt, 1:'dist_s1_mat1.txt' ...}

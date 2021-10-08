@@ -52,11 +52,15 @@ class System:
     def get_num(self):
         return len(self.X)
            
-    def set_energies(self,s1, t1, HOMO, LUMO):
-        self.s1   = s1 
-        self.t1   = t1
-        self.HOMO = HOMO
-        self.LUMO = LUMO
+    def set_energies(self,energy, kind):
+        if kind.lower() == 's1':
+            self.s1   = energy 
+        elif kind.lower() == 't1':
+            self.t1   = energy
+        elif kind.lower() == 'homo':
+            self.HOMO = energy
+        elif kind.lower() == 'lumo':
+            self.LUMO = energy
         
     def remove(self,particle):
         self.particles.remove(particle)

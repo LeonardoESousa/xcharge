@@ -203,8 +203,12 @@ def make_system(module_param):
     module_param.anni,module_param.annihi_funcs_array) 
     
     #getting the s1, t1, HOMO, and LUMO and then adding to the system
-    s1,t1,HOMO,LUMO = module_param.ener_function(module_param.parameters_enefunc,Mats)
-    system.set_energies(s1,t1,HOMO,LUMO)
+    for function in module_param.ener_function:
+        energies, level = function.assign_energy(Mats)
+        system.set_energies(energies, level)    
+
+    #s1,t1,HOMO,LUMO = module_param.ener_function(module_param.parameters_enefunc,Mats)
+    #system.set_energies(s1,t1,HOMO,LUMO)
     
     try:
         system.set_dipoles(module_param.dipoles)
