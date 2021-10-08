@@ -197,7 +197,7 @@ def RUN(system):
 def make_system(module_param):
 
     #getting the lattice for this particular round (can be a fresh one or not, depending on the user's choice)
-    X,Y,Z,Mats = module_param.lattice_func(module_param.lattice_func_par)
+    X,Y,Z,Mats = module_param.lattice_func.make()
     system = System(X,Y,Z,Mats)   
     
     system.set_basic_info(module_param.monomolecular,module_param.processes,

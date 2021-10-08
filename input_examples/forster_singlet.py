@@ -61,12 +61,11 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-lattice_func      = morphology.lattice
-displacement_vect = [ 5, 5, 0] #vector of the unit cell
-num_sites         = 100        #number of sites of the lattice
-distribu_vect     = [0.5,0.1]  #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
-lattice_func_par  = [num_sites,displacement_vect,distribu_vect]
-
+num_sites         = 100             #number of sites of the lattice
+displacement      = [5, 5, 0]       #vector of the unit cell
+disorder          = [0.5,0.5,0.5]   #std deviation from avg position
+composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
 
 #ENERGIES
 #Gaussian distribuitions
