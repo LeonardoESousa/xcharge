@@ -3,12 +3,12 @@ import random
 
 class Particles:
     def __init__(self,species,initial):
-        self.species = species
-        self.initial = initial
+        self.species  = species
+        self.initial  = initial
         self.position = initial
-        self.status = 'alive'
+        self.status   = 'alive'
         self.identity = random.uniform(0,5)
-        self.report = ''
+        self.report   = ''
     
     def move(self,local):
         self.position = local

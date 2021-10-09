@@ -9,7 +9,7 @@ animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = False # if you want that the annimation stops in the first frame (debug purposes)
+pause              = True # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
@@ -59,13 +59,14 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #lattice_filename   = "lattice_bilayer.example" # file name of the system's morphology
 #lattice_func = morphology.ReadLattice(lattice_filename)
 
-# Creating a new bilayer lattice at each new round
-axis              = 'X'             #axis of the junction
-num_sites         = 100            #number of sites of the lattice
+# Creating a new BHJ lattice at each new round
+n_loops           = 2             #axis of the junction
+cutoff            = 6
+num_sites         = 1000            #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
 disorder          = [0.5,0.5,0]     #std deviation from avg position
-composition       = [1]             #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
-lattice_func      = morphology.Bilayer(axis,num_sites,displacement,disorder,composition)
+composition       = [0.5,0.5]             #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+lattice_func      = morphology.Lattice_BHJ(n_loops,cutoff,num_sites,displacement,disorder,composition)
 
 ##ENERGIES
 #Gaussian distribuitions
@@ -85,8 +86,7 @@ gen_function        = morphology.gen_excitons
 #Choose the way that the particles will be distribuited
 sel_func    = morphology.filter_selection
 sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
- 'shape': "rectangle", 'origin': None, 'argum' : [[40,60],[0,40],[0,1]]} #confining into a rectangle that has X Width of 40-60, Y 0-40 ... 
-
+ 'shape': "free", 'origin': None, 'argum' : None}
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################

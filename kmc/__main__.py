@@ -173,9 +173,6 @@ def animate(num,system,ax,marker_option):
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')     
 
-    #pausing in the first frame
-    #if system.pause:
-    #    ani.event_source.stop()
     return ax,
 
 def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):

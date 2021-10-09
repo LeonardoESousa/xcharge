@@ -85,17 +85,17 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 ##Morphology functions
 
 #Reading a file name that contains your lattice
-file = 'lattice.example'
-lattice_func = morphology.ReadLattice(file)
+#file = 'lattice.example'
+#lattice_func = morphology.ReadLattice(file)
 
 
 
 # Creating a new lattice at each new round
-#num_sites         = 100             #number of sites of the lattice
-#displacement      = [5, 5, 0]       #vector of the unit cell
-#disorder          = [0.5,0.5,0.5]   #std deviation from avg position
-#composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
-#lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
+num_sites         = 100             #number of sites of the lattice
+displacement      = [5, 0, 0]       #vector of the unit cell
+disorder          = [0,0,0]   #std deviation from avg position
+composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
 
 
 
@@ -110,7 +110,7 @@ ener_function      = [morphology.Gaussian_energy(s1s),morphology.Gaussian_energy
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 1    #number of particles
+num_ex             = 12    #number of particles
 
 #Type of particle
 gen_function       = morphology.gen_pair_elechole
