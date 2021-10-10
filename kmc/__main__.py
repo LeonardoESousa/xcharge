@@ -20,7 +20,14 @@ working_dir = os.getcwd()+'/'
 spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
 param = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(param)
-  
+
+argumentos = []  
+for name, value in vars(param).items():
+    if hasattr(value, 'assign_to_system'):        
+        argumentos.append(value)
+        #print(name,hasattr(value, 'make'))
+
+
 
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
@@ -37,7 +44,7 @@ def anni_general(system,Ss,anni_funcs_array):
                 #running all the choosen annifuncs from morphology.py
                 for anni_func in anni_funcs_array:
                     anni_func(system,tipos,Ss,indices,locs)
-              	
+                  
 
 
 def decision(s,system):
@@ -76,12 +83,12 @@ def decision(s,system):
     sorte = random.uniform(0,1)
 
     try:
-    	jump = np.where(sorte < probs)[0][0]
-    	dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
+        jump = np.where(sorte < probs)[0][0]
+        dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
     #If no option is available, particle stands still
     except:
-    	jump = 0
-    	dt = np.inf
+        jump = 0
+        dt = np.inf
     
     return labels[jump], chosen[jump], dt
 
@@ -166,8 +173,7 @@ def animate(num,system,ax,marker_option):
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys())
     ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
-    ax.text2D(0.03, 0.94, "eps  = %.2f"    % (system.eps_rel), transform=ax.transAxes) #eps
-    ax.text2D(0.03, 0.90, "npart  = %.0f"  % (len(system.particles)), transform=ax.transAxes) #npart
+    ax.text2D(0.03, 0.94, "npart  = %.0f"  % (len(system.particles)), transform=ax.transAxes) #npart
     
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -192,29 +198,18 @@ def RUN(system):
     spectra(system)
 
 def make_system(module_param):
+    #Create instance of system
+    system = System()
+    #Sets system properties  
+    for argumento in argumentos:
+        argumento.assign_to_system(system)
 
-    #getting the lattice for this particular round (can be a fresh one or not, depending on the user's choice)
-    X,Y,Z,Mats = module_param.lattice_func.make()
-    system = System(X,Y,Z,Mats)   
-    
     system.set_basic_info(module_param.monomolecular,module_param.processes,
     module_param.identifier,module_param.animation_mode,module_param.time_limit,module_param.pause,
     module_param.bimolec,module_param.bimolec_funcs_array) 
-    
-    #setting the system's energy levels
-    for function in module_param.ener_function:
-        energies, level = function.assign_energy(Mats)
-        system.set_energies(energies, level)    
 
-
-    try:
-        system.set_dipoles(module_param.dipoles)
-    except:
-        pass
-    system.set_medium(module_param.relative_eps)
-    
     #setting up particle generation
-    selection          = module_param.sel_func(X,Y,Z,Mats,module_param.sel_params)
+    selection          = module_param.sel_func(system.X,system.Y,system.Z,system.mats,module_param.sel_params)
     parameters_genfunc = [module_param.num_ex,selection]
 
     excitons = param.gen_function(parameters_genfunc)

@@ -70,23 +70,24 @@ class Gaussian_energy():
     def __init__(self,s1s):
         self.s1s = s1s
 
-    def assign_energy(self,mats):	
+    def assign_to_system(self,system):	
         s1 = []
         tipo = self.s1s['level']
-        for i in mats:
+        for i in system.mats:
             s1.append(np.random.normal(self.s1s[i][0],self.s1s[i][1]))
-        return s1, tipo
+        system.set_energies(s1,tipo)
 
 class Distribuition_energy():
     def __init__(self,s1s):
         self.s1s    = s1s
-	self.distr  = np.loadtxt(self.en_dictionary['file_name'])
-    def assign_energy(self,mats):	
+        self.distr  = np.loadtxt(self.en_dictionary['file_name'])
+    def assign_energy(self,system):	
         s1 = []
         tipo = self.en_dictionary['level']
-        for i in mats:
+        for i in system.mats:
             s1.append(random.choice(self.distr[i]))
-        return s1, tipo
+        system.set_energies(s1,tipo)    
+
 ############################################
 # BIMOLEC FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
 
@@ -232,10 +233,9 @@ class ReadLattice():
     def __init__(self,file):
         self.file = file 
 
-    def make(self):       
+    def assign_to_system(self,system):       
         data = np.loadtxt(self.file,comments='#')
-        return  data[:,0], data[:,1], data[:,2], data[:,3] 
-
+        system.set_morph(data[:,0],data[:,1],data[:,2],data[:,3]) 
 
 
 class Lattice():
@@ -245,7 +245,7 @@ class Lattice():
         self.disorder    = disorder
         self.composition = np.cumsum([i/np.sum(composition) for i in composition])
         
-    def make(self):
+    def assign_to_system(self, system):
         X, Y, Z, Mats = [], [], [],[]
         dim = []
         for elem in self.vector:
@@ -270,26 +270,28 @@ class Lattice():
         X = np.array(X)
         Y = np.array(Y)
         Z = np.array(Z)
-        Mats = np.array(Mats)    
-        return X,Y,Z,Mats
+        Mats = np.array(Mats)
+        system.set_morph(X,Y,Z,Mats)    
+
         
 #list sites' indexes of all neighbors of one given position
 def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
-	x = r[0]
-	y = r[1]
-	z = r[2]
-	neighbors = []
-	
-	for n in range(len(X)):
-	
-		dx   = (x - X[n])
-		dy   = (y - Y[n])
-		dz   = (z - Z[n])
-		dist = np.sqrt(dx**2+dy**2+dz**2)
-		if(dist <= cutoff and r_index != n):
-			neighbors.append(n)
-	#return np.array(neighbors)
-	return neighbors        
+    x = r[0]
+    y = r[1]
+    z = r[2]
+    neighbors = []
+    
+    for n in range(len(X)):
+    
+        dx   = (x - X[n])
+        dy   = (y - Y[n])
+        dz   = (z - Z[n])
+        dist = np.sqrt(dx**2+dy**2+dz**2)
+        if(dist <= cutoff and r_index != n):
+            neighbors.append(n)
+    #return np.array(neighbors)
+    return neighbors        
+
 class Lattice_BHJ():
     def __init__(self,n_loops,cutoff,num_sites,vector,disorder,composition):
         self.n_loops     = n_loops
@@ -299,6 +301,7 @@ class Lattice_BHJ():
         self.disorder    = disorder
         self.composition = composition #np.cumsum([i/np.sum(composition) for i in composition])
         self.lattice     = Lattice(self.num_sites,self.vector,self.disorder,self.composition)
+    
     def make(self):
         X,Y,Z,Mats = self.lattice.make()
         
@@ -346,6 +349,7 @@ class Lattice_BHJ():
         mat_dict = dict(zip(unique, counts))
 
         return X,Y,Z,Mats            
+
 def multiply_lattice(lattice,n_times_ar,delta):
         
     X_lenght = delta[0] #Increments
@@ -480,3 +484,12 @@ class Bilayer():
         Mats = hetero_lattice[:,3]
         
         return 	X,Y,Z,Mats        
+
+class Electric():
+    def __init__(self,**kwargs):
+        self.eps   = kwargs['eps']
+        self.field = kwargs['field']
+
+    def assign_to_system(self,system):
+        system.set_medium(self.eps)    
+        system.set_electric_field(self.field)

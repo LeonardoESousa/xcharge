@@ -8,17 +8,20 @@ hbar           = 6.582e-16       #Reduced Planck's constant
 
 
 class System:
-    def __init__(self,X,Y,Z,Mats):
+    def __init__(self):
+        self.dead = []
+        self.time = 0
+        self.potential_time = -1
+   
+    def set_morph(self,X,Y,Z,Mats):
         self.X = X
         self.Y = Y
         self.Z = Z
         self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
         self.mats = Mats
-        self.dead = []
-        self.time = 0
-        self.potential_time = -1
-   
-  
+        
+
+
     def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,anni_funcs_array):
     	self.processes           = processes
     	self.monomolecular       = monomolecular
@@ -33,10 +36,9 @@ class System:
         self.particles = Ss            
     
     def set_dipoles(self,mus):
-        if mus: #in case you dont have the dipoles
-            self.mu = mus
-            self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
-            self.mu /= self.norma_mu[:,np.newaxis]
+        self.mu = mus
+        self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
+        self.mu /= self.norma_mu[:,np.newaxis]
 
     def add_particle(self,s):
         self.particles.append(s)
@@ -65,9 +67,17 @@ class System:
         self.particles.remove(particle)
         self.dead.append(particle) 
 
+    def set_electric_field(self, field):
+        field = field/(abs(e)*1e8)
+        comp_x = -1*field[0]*self.X
+        comp_y = -1*field[1]*self.Y
+        comp_z = -1*field[2]*self.Z
+        self.electric_potential = comp_x + comp_y + comp_z
+        
+
     def electrostatic(self):
         if self.time > self.potential_time:
-            potential = np.zeros(len(self.X))
+            potential = self.electric_potential
             for s in self.particles:
                 if s.charge != 0:
                     dx = np.nan_to_num(self.X - self.X[s.position])
