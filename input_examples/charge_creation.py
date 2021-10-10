@@ -63,9 +63,6 @@ dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
 phosph = Phosph(life=phlife)
 ###CHARGES###############################################################################
 
-##relative permitivity
-relative_eps       = 3.5   
-
 ##ATTEMPT-TO-HOP FREQUENCY (?)
 H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
 
@@ -74,6 +71,10 @@ invrad = {0:1.5,1:1.5}
 
 ##MILLER-ABRAHAMS RATE
 miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
+
+#ELECTRIC FIELD:
+#field = 
+
 ###PROCESSES#############################################################################
 
 processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
@@ -91,12 +92,15 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-num_sites         = 100             #number of sites of the lattice
-displacement      = [5, 0, 0]       #vector of the unit cell
-disorder          = [0,0,0]   #std deviation from avg position
+displacement      = [10, 10, 0]       #vector of the unit cell
+num_sites         = 400             #number of sites of the lattice
+disorder          = [0.0,0.0, 0.0]   #std deviation from avg position
 composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
 lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
 
+
+#Electric Field and Dielectric constant
+relative_eps       = morphology.Electric(eps=3.5,field=np.array([-1000000,0,0]))   
 
 
 ##ENERGIES
@@ -106,11 +110,15 @@ homos = {0:(-6.1,0.0), 1:(-6.1,0.0), 'level':'homo'} # triplet energy, disperiso
 t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
 s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-ener_function      = [morphology.Gaussian_energy(s1s),morphology.Gaussian_energy(t1s),morphology.Gaussian_energy(homos),morphology.Gaussian_energy(lumos)]  
+#ener_function      = [morphology.Gaussian_energy(s1s),morphology.Gaussian_energy(t1s),morphology.Gaussian_energy(homos),morphology.Gaussian_energy(lumos)]  
+a1 = morphology.Gaussian_energy(s1s)
+a2 = morphology.Gaussian_energy(t1s)
+a3 = morphology.Gaussian_energy(homos)
+a4 = morphology.Gaussian_energy(lumos)
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 12    #number of particles
+num_ex             = 1    #number of particles
 
 #Type of particle
 gen_function       = morphology.gen_pair_elechole

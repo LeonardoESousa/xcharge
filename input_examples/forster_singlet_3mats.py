@@ -27,7 +27,7 @@ r20   = 25
 r12   = 25
 r02   = 25
      
-radii = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11, (0,2):r02, (2,0):r10, (2,1):r21, (1,2):r12, (2,2):r22}
+raios = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11, (0,2):r02, (2,0):r10, (2,1):r21, (1,2):r12, (2,2):r22}
 
 ##FLUORESCENCE LIFETIMES (PS)
 f0 = 2900000 #lifetime of material 0
@@ -42,17 +42,10 @@ mu2 = 3
 mus       = {0:mu0,1:mu1,2:mu2}
 
 ##EXCITION TRANSFER RATES
-forster   = Forster(Rf=radii,life=lifetimes,mu=mus)
+forster   = Forster(Rf=raios,life=lifetimes,mu=mus)
 
 ##FLUORESCENCE RATES
 fluor     = Fluor(life=lifetimes)
-
-
-##relative permitivity
-relative_eps       = 3.5   
-
-
-
 
 ###PROCESSES#############################################################################
 
@@ -65,8 +58,8 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 ##Morphology functions
 
 #Reading a file name that contains your lattice
-#lattice_filename   = "lattice_3mat.example" # file name of the system's morphology
-#lattice_func = morphology.ReadLattice(lattice_filename)
+#file = 'lattice_3mat.example'
+#lattice_func = morphology.ReadLattice(file)
 
 
 # Creating a new lattice at each new round
@@ -82,7 +75,8 @@ lattice_func      = morphology.Lattice(num_sites,displacement,disorder,compositi
 t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 2:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
 s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 2:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-ener_function      = [morphology.Gaussian_energy(s1s),morphology.Gaussian_energy(t1s)]  
+a1 = morphology.Gaussian_energy(s1s)
+a2 = morphology.Gaussian_energy(t1s)  
 #########################################################################################
 
 
