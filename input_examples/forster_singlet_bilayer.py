@@ -9,7 +9,7 @@ animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
+pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
@@ -55,15 +55,12 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #lattice_func = morphology.ReadLattice(file)
 
 # Creating a new lattice at each new round
-lattice_func      = morphology.bilayer
-n_times           = 2   #number of duplications
 axis              = 'X' #axis of the junction
-displacement_vect = [ 5, 5, 0]
-num_sites         = 200
-distribu_vect     = [1]
-latt_param        = [num_sites,displacement_vect,distribu_vect]
-lattice_func_par  = [n_times,axis,latt_param]
-
+num_sites         = 300             #number of sites of the lattice
+displacement      = [5, 5, 0]       #vector of the unit cell
+disorder          = [0.,0.,0.]   #std deviation from avg position
+composition       = [1]        #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+lattice_func      = morphology.Bilayer(axis,num_sites,displacement,disorder,composition)
 
 ##ENERGIES
 #Gaussian distribuitions
@@ -84,7 +81,7 @@ gen_function        = morphology.gen_excitons
 #Choose the way that the particles will be distribuited
 sel_func    = morphology.filter_selection
 sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
- 'shape': "rectangle", 'origin': None, 'argum' : [[130,150],[0,120],[0,1]]}
+ 'shape': "rectangle", 'origin': None, 'argum' : [[80,90],[0,80],[0,1]]}
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################

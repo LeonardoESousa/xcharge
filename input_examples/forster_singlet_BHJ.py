@@ -54,21 +54,21 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #lattice_func = morphology.ReadLattice(lattice_filename)
 
 # Creating a new BHJ lattice at each new round
-n_loops           = 2             #axis of the junction
-cutoff            = 6
+n_loops           = 4               #algorithm's iteration number
+cutoff            = 6		    # cutoff distance to consider clustering of mat
 num_sites         = 1000            #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
 disorder          = [0.5,0.5,0]     #std deviation from avg position
-composition       = [0.5,0.5]             #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
 lattice_func      = morphology.Lattice_BHJ(n_loops,cutoff,num_sites,displacement,disorder,composition)
 
 ##ENERGIES
 #Gaussian distribuitions
-t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
+t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} # Peak emission energy (eV), disperison (eV)
 s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-a1 = morphology.Gaussian_energy(s1s)
-a2 = morphology.Gaussian_energy(t1s)
+s1 = morphology.Gaussian_energy(s1s)
+t1 = morphology.Gaussian_energy(t1s)
 #########################################################################################
 
 

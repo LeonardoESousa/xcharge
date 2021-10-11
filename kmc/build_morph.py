@@ -75,7 +75,108 @@ def lattice(param):
     Z = np.array(Z)
     Mats = np.array(Mats)    
     return X,Y,Z,Mats
+    
+def lattice_saw(param):
+	
+    num_molecs =  int(param[0][0]) #adjusting to user's input     
+    vector     =  [ float(x) for x in param[1] ]
+    ps         =  [ float(x)   for x in param[2] ]
+    disorder   =  [ float(x)   for x in param[3] ]
+    
+    X, Y, Z, Mats = [], [], [],[]
+    ps = [i/np.sum(ps) for i in ps]
+    ps = np.cumsum(ps)
+    
+    dx = vector[0]
+    dy = vector[1]
+    dz = vector[2]
+    dim = []
+    for elem in vector:
+        if elem != 0:
+            dim.append(1)
+        else:
+            dim.append(0)
+    numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
+    numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
+    numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
+	  
+    #Se somar +1 vai aparecer duplicados no 2D
+    for nx in range(numx):
+        for ny in range(numy):
+            for nz in range(numz):
+                X.append(nx*vector[0])
+                Y.append(ny*vector[1])
+                Z.append(nz*vector[2])
+                sorte = random.uniform(0,1)
+                chosen = np.where(sorte < ps)[0][0]
+                Mats.append(chosen)
+   
+    
+    
+    
+    size_saw = 6
+    s = 3 #number of blocks to form the saw
+    list_set = [[s*x,s*x+s-1] for x in range(int(numy/s)) if x%2==0]
 
+    def is_in(list_set,n):    
+    	for set_indx in list_set:
+    		x = set_indx[0]
+    		y = set_indx[1]
+    		print(n,x,y,n >= x,n <=y)
+    		if n >= x and n <=y:
+    			return True   		
+    	return False
+    	
+
+    size_saw = 6    
+    
+    if dx != 0:
+    	numx_f = numx+size_saw
+    	numx_i = numx 
+
+    if dy != 0:
+    	numy_f = numy
+    	numy_i = 0 
+    else:
+    	numy_f = 1
+    	numy_i = 0    		
+    if dz != 0:
+
+    	numz_f = numx
+    	numz_i = 0 
+    else:
+    	numz_f = 1
+    	numz_i = 0 
+    	  
+    s = 3 #number of blocks to form the saw
+    list_set = [[s*x,s*x+s-1] for x in range(int(numy/s)) if x%2==0]    	 	   
+    	   
+    for nnx in range(numx_i,numx_f):
+    	for nny in range(numy_i,numy_f):
+    	    for nnz in range(numz_i,numz_f):    	
+ 
+                if is_in(list_set,nny):
+                    pass
+                else:           
+                    continue 
+                X.append(nnx*vector[0])
+                Y.append(nny*vector[1])
+                Z.append(nnz*vector[2])
+                  
+                sorte = random.uniform(0,1)
+                chosen = np.where(sorte < ps)[0][0]
+                Mats.append(chosen)    
+    	    #print(k,range(0,numy))
+                         
+    X = np.array(X)
+    Y = np.array(Y)
+    Z = np.array(Z)
+    Mats = np.array(Mats)                   	
+    return X,Y,Z,Mats
+    
+    
+    
+    
 #generates a bulk heterojunction conformation
 def lattice_BHJ(param):
 	
@@ -1170,7 +1271,19 @@ class morphology_function:
     	self.param_list = param_list
     def __call__(self,param):
     	return self.func(param)	
-
+    	
+    	
+    	
+X,Y,Z,Mats = lattice_saw([[500],[5,5,0],[0.5,0.5],[0,0,0]])
+colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+ax.scatter3D(X, Y, Z,c=colors,marker='^');
+plt.show()
+#input() 
+import sys  
+sys.exit()
 ################## END FUNCS #############################
 
 #funcs option 2

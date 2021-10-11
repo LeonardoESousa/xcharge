@@ -168,7 +168,7 @@ def plane_conditional(pos,r0,COEF):
     
     return cond
     
-def cone_conditional(pos,r0,COEF): #hallow cone
+def cone_conditional(pos,r0,COEF): #hollow cone
 
     #Equation of plane is defined as 
     # A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
@@ -239,13 +239,13 @@ class ReadLattice():
 
 
 class Lattice():
-    def __init__(self,num_sites,vector,disorder,composition):
+    def __init__(self,num_sites,vector,disorder,composition): #initializing the lattice class with some basic info given by the user
         self.num_sites   = num_sites
         self.vector      = vector
         self.disorder    = disorder
         self.composition = np.cumsum([i/np.sum(composition) for i in composition])
         
-    def assign_to_system(self, system):
+    def make(self): #Generating the set X,Y,Z,Mats
         X, Y, Z, Mats = [], [], [],[]
         dim = []
         for elem in self.vector:
@@ -270,7 +270,12 @@ class Lattice():
         X = np.array(X)
         Y = np.array(Y)
         Z = np.array(Z)
-        Mats = np.array(Mats)
+        Mats = np.array(Mats)    
+        return X,Y,Z,Mats    
+    
+        
+    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
+        X, Y, Z, Mats = self.make()
         system.set_morph(X,Y,Z,Mats)    
 
         
@@ -348,8 +353,12 @@ class Lattice_BHJ():
         unique, counts = np.unique(Mats, return_counts=True)
         mat_dict = dict(zip(unique, counts))
 
-        return X,Y,Z,Mats            
-
+        return X,Y,Z,Mats
+                    
+    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
+        X, Y, Z, Mats = self.make()
+        system.set_morph(X,Y,Z,Mats)
+         
 def multiply_lattice(lattice,n_times_ar,delta):
         
     X_lenght = delta[0] #Increments
@@ -483,8 +492,12 @@ class Bilayer():
         Z    = hetero_lattice[:,2]
         Mats = hetero_lattice[:,3]
         
-        return 	X,Y,Z,Mats        
-
+        return 	X,Y,Z,Mats       
+         
+    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
+        X, Y, Z, Mats = self.make()
+        system.set_morph(X,Y,Z,Mats)
+        
 class Electric():
     def __init__(self,**kwargs):
         self.eps   = kwargs['eps']

@@ -100,8 +100,7 @@ lattice_func      = morphology.Lattice(num_sites,displacement,disorder,compositi
 
 
 #Electric Field and Dielectric constant
-relative_eps       = morphology.Electric(eps=3.5,field=np.array([-1000000,0,0]))   
-
+Electric_class    = morphology.Electric(eps=3.5,field=np.array([-1000000,0,0]))   
 
 ##ENERGIES
 #Gaussian distribuitions
@@ -118,7 +117,7 @@ a4 = morphology.Gaussian_energy(lumos)
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 1    #number of particles
+num_ex             = 10    #number of particles
 
 #Type of particle
 gen_function       = morphology.gen_pair_elechole

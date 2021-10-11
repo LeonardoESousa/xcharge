@@ -14,9 +14,9 @@ import importlib
 warnings.filterwarnings("ignore")   
 
 
-working_dir = os.getcwd()+'/'
-#importing param module
 
+#importing param module
+working_dir = os.getcwd()+'/'
 spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
 param = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(param)
@@ -27,7 +27,25 @@ for name, value in vars(param).items():
         argumentos.append(value)
         #print(name,hasattr(value, 'make'))
 
+#getting all essential info from user's input
+n_proc          = param.n_proc
+identifier      = param.identifier 
+animation_mode  = param.animation_mode
+save_animation  = param.save_animation 
+animation_exten = param.animation_exten    
+rounds          = param.rounds
+time_limit      = param.time_limit  
+pause           = param.pause
+marker_type     = param.marker_type
 
+monomolecular       = param.monomolecular
+processes           = param.processes
+bimolec             = param.bimolec
+bimolec_funcs_array = param.bimolec_funcs_array
+sel_func            = param.sel_func
+sel_params          = param.sel_params
+num_ex              = param.num_ex
+gen_function        = param.gen_function
 
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
@@ -197,28 +215,25 @@ def RUN(system):
     step(system)
     spectra(system)
 
-def make_system(module_param):
+def make_system():
     #Create instance of system
     system = System()
     #Sets system properties  
     for argumento in argumentos:
         argumento.assign_to_system(system)
 
-    system.set_basic_info(module_param.monomolecular,module_param.processes,
-    module_param.identifier,module_param.animation_mode,module_param.time_limit,module_param.pause,
-    module_param.bimolec,module_param.bimolec_funcs_array) 
-
+    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,bimolec_funcs_array) 
+ 
     #setting up particle generation
-    selection          = module_param.sel_func(system.X,system.Y,system.Z,system.mats,module_param.sel_params)
-    parameters_genfunc = [module_param.num_ex,selection]
+    selection          = sel_func(system.X,system.Y,system.Z,system.mats,sel_params)
+    parameters_genfunc = [num_ex,selection]
 
-    excitons = param.gen_function(parameters_genfunc)
-    system.set_particles(excitons)
-    
+    excitons = gen_function(parameters_genfunc)
+    system.set_particles(excitons)    
     return system 
     
 #setting up the animation object and adding responses to events    
-def run_animation(param):
+def run_animation():
     ani_running = True
 
     def onClick(event): #if somenone clicks on the ani, this happens
@@ -236,9 +251,7 @@ def run_animation(param):
             ani.event_source.stop()
             ani_running  = False
 
-    system = make_system(param)
-    pause           = param.pause # to freeze on the first frame
-    marker_type     = param.marker_type
+    system = make_system()
                     
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -254,16 +267,9 @@ def run_animation(param):
 
     
 def main():
-
-    n_proc          = param.n_proc
-    identifier      = param.identifier 
-    animation_mode  = param.animation_mode
-    save_animation  = param.save_animation 
-    animation_exten = param.animation_exten    
-    rounds          = param.rounds
-    
+        
     if animation_mode:
-        ani = run_animation(param)
+        ani = run_animation()
         path=identifier+"_animation."+animation_exten
                                                    
         if save_animation:                   
@@ -281,7 +287,7 @@ def main():
                 
     else:
     
-        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system(param)) for _ in range(rounds))
+        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system()) for _ in range(rounds))
                 
 if __name__ == "__main__":
     sys.exit(main())        
