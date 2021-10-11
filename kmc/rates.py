@@ -299,9 +299,9 @@ class MillerAbrahams:
                 
             for m in indices_h:
                 potential[m] = 0
-                engs[m] = +np.inf 
+                engs[m] = -np.inf 
                  
-            engs += +1*potential
+            engs += -1*potential
             DE = (engs[local] - engs) + abs(engs[local] - engs)
             
 
@@ -358,7 +358,7 @@ class Dissociation:
         
 
         taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEe+abs(DEe))/(2*kb*self.T))
-        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(+1*(DEh+abs(DEh))/(2*kb*self.T))
+        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEh+abs(DEh))/(2*kb*self.T))
         taxae[r == 0] = 0
         taxah[r == 0] = 0
         taxae = np.nan_to_num(taxae)

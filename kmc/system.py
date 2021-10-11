@@ -80,7 +80,7 @@ class System:
 
     def electrostatic(self):
         if self.time > self.potential_time:
-            potential = self.electric_potential
+            potential = np.copy(self.electric_potential)
             for s in self.particles:
                 if s.charge != 0:
                     dx = np.nan_to_num(self.X - self.X[s.position])
