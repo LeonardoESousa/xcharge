@@ -72,15 +72,9 @@ a2 = morphology.Gaussian_energy(t1s)
 
 
 ##GENERATE PARTICLES#####################################################################
-num_ex              = 10     #number of particles
+method    = morphology.randomized
+exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
 
-#Type of particle
-gen_function        = morphology.gen_excitons
-
-#Choose the way that the particles will be distribuited
-sel_func    = morphology.filter_selection
-sel_params  = {'shape_dic': morphology.shape_dic, 'mat' : [None],
- 'shape': "free", 'origin': None, 'argum' : None}
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################

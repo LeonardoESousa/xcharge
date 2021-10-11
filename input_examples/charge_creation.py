@@ -91,7 +91,7 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-num_sites         = 400             #number of sites of the lattice
+num_sites         = 100             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
 disorder          = [0, 0, 0]       #std deviation from avg position
 composition       = [1.0,0.0]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
@@ -115,10 +115,9 @@ lumo = morphology.Gaussian_energy(lumos)
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-#method    = morphology.randomized
 method    = morphology.randomized
-electron  = morphology.Create_Particles('electron', 2, method, mat=[0,1])
-holes     = morphology.Create_Particles('hole', 2, method, mat=[0,1])
+electron  = morphology.Create_Particles('electron', 1, method, mat=[0,1])
+holes     = morphology.Create_Particles('hole', 1, method, mat=[0,1])
 
 #########################################################################################
 

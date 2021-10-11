@@ -113,9 +113,8 @@ lumo = morphology.Gaussian_energy(lumos)
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-#method    = morphology.randomized
-method    = morphology.restrict_material
-exciton   = morphology.Create_Particles('singlet', 2, method)
+method    = morphology.randomized
+exciton   = morphology.Create_Particles('singlet', 2, method, mat=[0,1])
 
 #########################################################################################
 
