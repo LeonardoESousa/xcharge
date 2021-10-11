@@ -1,6 +1,6 @@
 import numpy as np
 
-epsilon_vaccum = 8.85e-22        #Permitivity in C/VAngstrom
+epsilon_vaccum =  8.854187e-12   #  8.85e-22        #Permitivity in C/VAngstrom
 e              = -1.60217662e-19 #Electron charge    
 kb             = 8.617e-5        #Boltzmann constant
 hbar           = 6.582e-16       #Reduced Planck's constant
@@ -33,7 +33,10 @@ class System:
     	self.bimolec             = anni
     
     def set_particles(self,Ss):
-        self.particles = Ss            
+        try:
+            self.particles.extend(Ss)
+        except:    
+            self.particles = Ss            
     
     def set_dipoles(self,mus):
         self.mu = mus
@@ -68,7 +71,7 @@ class System:
         self.dead.append(particle) 
 
     def set_electric_field(self, field):
-        field = field/(abs(e)*1e8)
+        field = field/(1e8)
         comp_x = -1*field[0]*self.X
         comp_y = -1*field[1]*self.Y
         comp_z = -1*field[2]*self.Z
@@ -83,7 +86,7 @@ class System:
                     dx = np.nan_to_num(self.X - self.X[s.position])
                     dy = np.nan_to_num(self.Y - self.Y[s.position])
                     dz = np.nan_to_num(self.Z - self.Z[s.position])
-                    r  = np.sqrt(dx**2+dy**2+dz**2)
+                    r  = np.sqrt(dx**2+dy**2+dz**2)*(1e-10)
                     r[r == 0] = np.inf
                     potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential

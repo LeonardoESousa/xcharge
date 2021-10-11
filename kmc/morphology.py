@@ -7,61 +7,36 @@ from kmc.particles import *
 
 
 
-#### CHOOSE A FUNC TO GENERATE EXCITONS
-def gen_electron(param):
-    #num: number of excitons
-    #selection: list of site's index to selected to create particles 
-    
-    num       = param[0] #relabeling the input parameters 
-    selection = param[1]
+#### CHOOSE A FUNC TO GENERATE PARTICLES
 
-    part_sel = random.sample(selection,num)
-    Ss = [Electron(number) for number in part_sel]
-    
-    return Ss
-    
-def gen_hole(param):
-    #num: number of excitons
-    #selection: list of site's index to selected to create particles
-    
-    num       = param[0] #relabeling the input parameters 
-    selection = param[1]
+def randomized(available, number, system, kwargs):
+    selected = []
+    mat = kwargs['mat']
+    while len(selected) < number: 
+        choice = random.sample(available,1)[0]
+        if system.mats[choice] in mat and choice not in selected:
+            selected.append(choice)
+    return selected            
 
-    part_sel = random.sample(selection,num)
-    Ss = [Hole(number) for number in part_sel]
-    
-    return Ss
+class Create_Particles():
+    def __init__(self,kind, num, method, **kwargs):
+        self.kind   = kind
+        self.num    = num
+        self.method = method
+        self.argv   = kwargs
 
-def gen_pair_elechole(param):
-    #num: number of excitons
-    #selection: list of site's index to selected to create particles 
-    
-    num       = param[0] #relabeling the input parameters 
-    selection = param[1]
-    
-    part_sel = random.sample(selection,int(2*num))
-    part_sel_ele = part_sel[:num]
-    part_sel_hol = part_sel[num:]
-    
-    Ss_ele = [Electron(number) for number in part_sel_ele]
-    Ss_hol = [Hole(number) for number in part_sel_hol]
-    
-    Ss = Ss_ele + Ss_hol
-    return Ss
-    
-def gen_excitons(param):
-    #num: number of excitons
-    #selection: list of site's index to selected to create particles
-    
-    num       = param[0] #relabeling the input parameters 
-    selection = param[1]
-    
-    part_sel = random.sample(selection,num)
-    Ss       = [Exciton('singlet',number) for number in part_sel]    
+    def assign_to_system(self,system):
+        selected = self.method(range(len(system.X)),self.num, system, self.argv)
+        if self.kind.lower() == 'electron':
+            particles = [Electron(number) for number in selected]
+        elif self.kind.lower() == 'hole':
+            particles = [Hole(number) for number in selected]
+        elif self.kind.lower() == 'singlet':
+            particles = [Exciton('singlet',number) for number in selected]
+        elif self.kind.lower() == 'electron':
+            particles = [Exciton('triplet',number) for number in selected]        
 
-    return Ss
-
-
+        system.set_particles(particles)
 
 ##########################################
 
@@ -81,7 +56,8 @@ class Distribuition_energy():
     def __init__(self,s1s):
         self.s1s    = s1s
         self.distr  = np.loadtxt(self.en_dictionary['file_name'])
-    def assign_energy(self,system):	
+    
+    def assign_to_system(self,system):	
         s1 = []
         tipo = self.en_dictionary['level']
         for i in system.mats:
@@ -91,7 +67,7 @@ class Distribuition_energy():
 ############################################
 # BIMOLEC FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
 
-#annihilation electron-hole pair
+#recombination electron-hole pair
 def ele_hol_recomb(system,tipos,Ss,indices,locs):
     if 'electron' in tipos and 'hole' in tipos:        
         id1 = Ss[indices[0][tipos.index('electron')]].identity
@@ -168,7 +144,7 @@ def plane_conditional(pos,r0,COEF):
     
     return cond
     
-def cone_conditional(pos,r0,COEF): #hollow cone
+def cone_conditional(pos,r0,COEF): #hallow cone
 
     #Equation of plane is defined as 
     # A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
@@ -239,13 +215,13 @@ class ReadLattice():
 
 
 class Lattice():
-    def __init__(self,num_sites,vector,disorder,composition): #initializing the lattice class with some basic info given by the user
+    def __init__(self,num_sites,vector,disorder,composition):
         self.num_sites   = num_sites
         self.vector      = vector
         self.disorder    = disorder
         self.composition = np.cumsum([i/np.sum(composition) for i in composition])
         
-    def make(self): #Generating the set X,Y,Z,Mats
+    def assign_to_system(self, system):
         X, Y, Z, Mats = [], [], [],[]
         dim = []
         for elem in self.vector:
@@ -270,12 +246,7 @@ class Lattice():
         X = np.array(X)
         Y = np.array(Y)
         Z = np.array(Z)
-        Mats = np.array(Mats)    
-        return X,Y,Z,Mats    
-    
-        
-    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
-        X, Y, Z, Mats = self.make()
+        Mats = np.array(Mats)
         system.set_morph(X,Y,Z,Mats)    
 
         
@@ -307,7 +278,7 @@ class Lattice_BHJ():
         self.composition = composition #np.cumsum([i/np.sum(composition) for i in composition])
         self.lattice     = Lattice(self.num_sites,self.vector,self.disorder,self.composition)
     
-    def make(self):
+    def assign_to_system(self, system):
         X,Y,Z,Mats = self.lattice.make()
         
         #finding the neighbors around each site based on a cutoff distance
@@ -353,12 +324,8 @@ class Lattice_BHJ():
         unique, counts = np.unique(Mats, return_counts=True)
         mat_dict = dict(zip(unique, counts))
 
-        return X,Y,Z,Mats
-                    
-    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
-        X, Y, Z, Mats = self.make()
-        system.set_morph(X,Y,Z,Mats)
-         
+        return X,Y,Z,Mats            
+
 def multiply_lattice(lattice,n_times_ar,delta):
         
     X_lenght = delta[0] #Increments
@@ -492,12 +459,8 @@ class Bilayer():
         Z    = hetero_lattice[:,2]
         Mats = hetero_lattice[:,3]
         
-        return 	X,Y,Z,Mats       
-         
-    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
-        X, Y, Z, Mats = self.make()
-        system.set_morph(X,Y,Z,Mats)
-        
+        return 	X,Y,Z,Mats        
+
 class Electric():
     def __init__(self,**kwargs):
         self.eps   = kwargs['eps']

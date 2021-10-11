@@ -3,7 +3,7 @@ import numpy as np
 import random
 from kmc.particles import *
 
-epsilon_vaccum = 8.85e-22        #Permitivity in C/VAngstrom
+epsilon_vaccum = 8.854187e-12  #8.85e-22        #Permitivity in C/VAngstrom
 e              = -1.60217662e-19 #Electron charge    
 kb             = 8.617e-5        #Boltzmann constant
 hbar           = 6.582e-16       #Reduced Planck's constant
@@ -270,7 +270,7 @@ class MillerAbrahams:
         #case where two electrons or holes overlap
         duplicate  = [ x.charge for x in system.particles if x.position == local]
         for charge in duplicate:
-            potential -= charge*abs(e)/(4*np.pi*system.epsilon*r)
+            potential -= charge*abs(e)/(4*np.pi*system.epsilon*r*1e-10)
          
         indices_e  = [ x.position for x in system.particles if x.charge == -1 and x.position != local ]
         indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
@@ -287,7 +287,7 @@ class MillerAbrahams:
                 potential[m] = 0
                 engs[m] = -np.inf             
                 
-            engs += -1*abs(e)*potential
+            engs += -1*potential
             DE = (engs - engs[local]) + abs(engs - engs[local])
         elif particle.species == 'hole':
             engs  = np.copy(system.HOMO)
@@ -301,18 +301,14 @@ class MillerAbrahams:
                 potential[m] = 0
                 engs[m] = +np.inf 
                  
-            engs += 1*abs(e)*potential
-            DE = (engs - engs[local]) + abs(engs - engs[local])
-            DE *= -1
+            engs += +1*potential
+            DE = (engs[local] - engs) + abs(engs[local] - engs)
             
-        #taxa = (1e-12)*(2*np.pi/hbar)*(H**2)*(1/np.sqrt(4*np.pi*reorg*kb*self.T))*np.exp(
-        #                       -2*in_loc_rad*r)*np.exp(-((DE + reorg)**2)/(4*reorg*kb*self.T))
-        #
+
         taxa = (1e-12)*(AtH)*np.exp(
-                               -2*in_loc_rad*r)*np.exp(charge*DE/(2*kb*self.T))
+                               -2*in_loc_rad*r)*np.exp(-1*DE/(2*kb*self.T))
                                    	               
         taxa[r == 0] = 0
-
         taxa = np.nan_to_num(taxa)
         return taxa
 
@@ -347,7 +343,10 @@ class Dissociation:
 
         lumos = np.copy(system.LUMO)
         homos = np.copy(system.HOMO)
-        s1s   = np.copy(system.s1) 
+        if particle.species   == 'singlet':
+            s1s   = np.copy(system.s1) 
+        elif particle.species == 'triplet':
+            s1s   = np.copy(system.t1)
 
         AtH        = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
@@ -358,8 +357,8 @@ class Dissociation:
         DEh = (lumos[local] - s1s[local]) - homos  
         
 
-        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp((DEe+abs(DEe))/(2*kb*self.T))
-        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp((DEh+abs(DEh))/(2*kb*self.T))
+        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEe+abs(DEe))/(2*kb*self.T))
+        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(+1*(DEh+abs(DEh))/(2*kb*self.T))
         taxae[r == 0] = 0
         taxah[r == 0] = 0
         taxae = np.nan_to_num(taxae)

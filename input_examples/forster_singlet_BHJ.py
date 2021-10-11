@@ -9,7 +9,7 @@ animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = True # if you want that the annimation stops in the first frame (debug purposes)
+pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
@@ -73,10 +73,10 @@ t1 = morphology.Gaussian_energy(t1s)
 
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 20     #number of particles
+num_ex = 20     #number of particles
 
 #Type of particle
-gen_function        = morphology.gen_excitons
+gen_function = morphology.gen_excitons
 
 #Choose the way that the particles will be distribuited
 sel_func    = morphology.filter_selection

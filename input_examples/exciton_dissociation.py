@@ -41,7 +41,7 @@ fluor     = Fluor(life=lifetimes)
 
 
 ##DISSOCIATION RATE
-H = {(0,0):1e10,(0,1):1e10,(1,0):1e10,(1,1):1e10}
+H = {(0,0):1e9,(0,1):1e9,(1,0):1e9,(1,1):1e9}
 invrad = {0:0.1,1:0.1}
 dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
 
@@ -68,7 +68,7 @@ phosph = Phosph(life=phlife)
 H = {(0,0):1e12,(0,1):1e12,(1,0):1e12,(1,1):1e12}
 
 ##INVERSE LOCALIZATION RADIUS (Å^-1)
-invrad = {0:0.1,1:0.1}
+invrad = {0:1.5,1:1.5}
 
 ##MILLER-ABRAHAMS RATE
 miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
@@ -88,18 +88,16 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 #file = 'lattice.example'
 #lattice_func = morphology.ReadLattice(file)
 
-
-
 # Creating a new lattice at each new round
 num_sites         = 400             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
 disorder          = [0, 0, 0]       #std deviation from avg position
-composition       = [1.0,0.0]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
 lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
 
 
 #Electric Field and Dielectric constant
-Electric_class    = morphology.Electric(eps=3.5,field=np.array([0,0,0]))   
+Electric_class    = morphology.Electric(eps=1.5,field=np.array([0,100000,0]))   
 
 ##ENERGIES
 #Gaussian distribuitions
@@ -116,9 +114,8 @@ lumo = morphology.Gaussian_energy(lumos)
 
 ##GENERATE PARTICLES#####################################################################
 #method    = morphology.randomized
-method    = morphology.randomized
-electron  = morphology.Create_Particles('electron', 2, method, mat=[0,1])
-holes     = morphology.Create_Particles('hole', 2, method, mat=[0,1])
+method    = morphology.restrict_material
+exciton   = morphology.Create_Particles('singlet', 2, method)
 
 #########################################################################################
 

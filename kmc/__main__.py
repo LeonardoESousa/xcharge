@@ -42,10 +42,6 @@ monomolecular       = param.monomolecular
 processes           = param.processes
 bimolec             = param.bimolec
 bimolec_funcs_array = param.bimolec_funcs_array
-sel_func            = param.sel_func
-sel_params          = param.sel_params
-num_ex              = param.num_ex
-gen_function        = param.gen_function
 
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
@@ -224,12 +220,6 @@ def make_system():
 
     system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,bimolec_funcs_array) 
  
-    #setting up particle generation
-    selection          = sel_func(system.X,system.Y,system.Z,system.mats,sel_params)
-    parameters_genfunc = [num_ex,selection]
-
-    excitons = gen_function(parameters_genfunc)
-    system.set_particles(excitons)    
     return system 
     
 #setting up the animation object and adding responses to events    
