@@ -10,14 +10,12 @@ from kmc.particles import *
 #### CHOOSE A FUNC TO GENERATE PARTICLES
 
 def randomized(available, number, system, kwargs):
-    selected = []
     mat = kwargs['mat']
     available = [i for i in available if system.mats[i] in mat]
     selected = random.sample(available,number)
     return selected            
 
 def interface(available, number, system, kwargs):
-    selected = []
     mat = kwargs['mat']
     neighbors = kwargs['neigh']
     available = [i for i in available if system.mats[i] in mat]
@@ -35,7 +33,7 @@ def interface(available, number, system, kwargs):
 
 
 
-
+##CLASS FOR GENERATING PARTICLES IN THE SYSTEM###########################################
 class Create_Particles():
     def __init__(self,kind, num, method, **kwargs):
         self.kind   = kind
@@ -55,10 +53,9 @@ class Create_Particles():
             particles = [Exciton('triplet',number) for number in selected]        
 
         system.set_particles(particles)
+#########################################################################################
 
-##########################################
-
-#CLASS TO ASSIGN ENERGIES TO LATTICE	
+##CLASSES TO ASSIGN ENERGIES TO LATTICE##################################################	
 class Gaussian_energy():
     def __init__(self,s1s):
         self.s1s = s1s
@@ -82,7 +79,8 @@ class Distribuition_energy():
             s1.append(random.choice(self.distr[i]))
         system.set_energies(s1,tipo)    
 
-############################################
+#########################################################################################
+
 # BIMOLEC FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
 
 #recombination electron-hole pair
