@@ -221,15 +221,14 @@ class Dexter:
 #        lcc  = self.lcc #C-C distances in Angstrom
 #        t    = self.t   #Hopping integral in graphene in eV
 #        mu   = self.mu[mat]
-#        eps  = self.eps
 #        
 #        switch = raios(num,self.switch,mat,self.mu,mats)
 #        
-#        epsilon = system.epsilon #Permitivity in C/VAngstrom    
+#        epsilon = system.epsilon     
 #        vf = t*(3/2)*lcc
 #        q  = np.linspace(0,hw/vf,1000)
 #        q  = q[:-1]
-#        funcao =  np.array([np.trapz(np.exp(-2*q*R)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2))) for R in r])  
+#        funcao =  np.array([np.trapz(np.exp(-2*q*R)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2)),q) for R in r])  
 #        taxa = switch*1e-12*((mu*0.53)**2)*(1/48)*(e**2)/((2*np.pi*hbar)*(epsilon**2))*funcao
 #        taxa = np.nan_to_num(taxa)
 #        return taxa
