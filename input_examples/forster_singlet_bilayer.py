@@ -17,10 +17,10 @@ n_proc             = 1     # Number of cores to be used
 ###SINGLET EXCITONS######################################################################
 
 ##FORSTER RADII (Å)
-r00   = 25   #Forster radius material 0 --> material 0 (Angstrom)    
-r01   = 25   #material 0 --> material 1      
-r10   = 25       
-r11   = 25     
+r00   = 0   #Forster radius material 0 --> material 0 (Angstrom)    
+r01   = 250   #material 0 --> material 1      
+r10   = 0       
+r11   = 250     
 raios = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
 ##FLUORESCENCE LIFETIMES (PS)
@@ -73,9 +73,10 @@ t1 = morphology.Gaussian_energy(t1s)
 
 
 ##GENERATE PARTICLES#####################################################################
-method    = morphology.conditional_selection
-exciton   = morphology.Create_Particles('singlet', 10, method, mat=[0,1],
- type_cond='rectangle',limits=[[45,55],[0,40],[0,1]])
+method    = morphology.interface #conditional_selection
+exciton   = morphology.Create_Particles('singlet', 2, method, mat=[0], neigh=1)
+#exciton   = morphology.Create_Particles('singlet', 10, method, mat=[0,1],
+# type_cond='rectangle',limits=[[45,55],[0,40],[0,1]])
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################
