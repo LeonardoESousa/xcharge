@@ -12,11 +12,29 @@ from kmc.particles import *
 def randomized(available, number, system, kwargs):
     selected = []
     mat = kwargs['mat']
-    while len(selected) < number: 
-        choice = random.sample(available,1)[0]
-        if system.mats[choice] in mat and choice not in selected:
-            selected.append(choice)
+    available = [i for i in available if system.mats[i] in mat]
+    selected = random.sample(available,number)
     return selected            
+
+def interface(available, number, system, kwargs):
+    selected = []
+    mat = kwargs['mat']
+    neighbors = kwargs['neigh']
+    available = [i for i in available if system.mats[i] in mat]
+    new_available = []
+    for i in range(len(available)):
+        R = np.copy(system.R) 
+        dR = R - R[i,:]
+        modulo = np.sqrt(np.sum(dR**2,axis=1))
+        indices = np.argsort(modulo)[1:neighbors+1]
+        if np.any(system.mats[indices] != system.mats[i]):
+            new_available.append(i)
+        
+    selected = random.sample(new_available,number)        
+    return selected            
+
+
+
 
 class Create_Particles():
     def __init__(self,kind, num, method, **kwargs):
