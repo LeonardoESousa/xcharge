@@ -159,8 +159,8 @@ class ForsterRedShift:
         lifetime = self.lifetime[mat]
         mu       = self.mu[mat]
         s1s   = np.copy(system.s1)
-        s1s  -= s1s[local] 
-        boltz = np.exp(-1*s1s/(kb*self.T)) 
+        s1s   = (s1s - s1s[local]) + abs(s1s - s1s[local]) 
+        boltz = np.exp(-1*s1s/(2*kb*self.T)) 
         taxa  = (1/lifetime)*((Rfs/(self.alpha*mu + r))**6)*boltz
         taxa  = np.nan_to_num(taxa)
         return taxa
