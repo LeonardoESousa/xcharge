@@ -9,8 +9,8 @@ animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 100   # Number of rounds
+pause              = True # if you want that the annimation stops in the first frame (debug purposes)
+rounds             = 1     # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
 
@@ -50,31 +50,31 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 ##Morphology functions
 
 #Reading a file name that contains your lattice
-#lattice_filename   = "lattice_bilayer.example" # file name of the system's morphology
-#lattice_func = morphology.ReadLattice(lattice_filename)
+#file = 'lattice.example'
+#lattice_func = morphology.ReadLattice(file)
 
-# Creating a new BHJ lattice at each new round
-n_loops           = 4               #algorithm's iteration number
-cutoff            = 6		    # cutoff distance to consider clustering of mat
-num_sites         = 400            #number of sites of the lattice
-displacement      = [5, 5, 0]       #vector of the unit cell
-disorder          = [0.5,0.5,0]     #std deviation from avg position
+
+# Creating a new lattice at each new round
+num_sites         = 1000            #number of sites of the lattice
+displacement      = [5, 5, 5]       #vector of the unit cell
+disorder          = [0.,0.,0.]      #std deviation from avg position
 composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
-lattice_func      = morphology.Lattice_BHJ(n_loops,cutoff,num_sites,displacement,disorder,composition)
+lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
 
-##ENERGIES
+#ENERGIES
 #Gaussian distribuitions
-t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} # Peak emission energy (eV), disperison (eV)
+t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
 s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-s1 = morphology.Gaussian_energy(s1s)
-t1 = morphology.Gaussian_energy(t1s)
+a1 = morphology.Gaussian_energy(s1s)
+a2 = morphology.Gaussian_energy(t1s) 
 #########################################################################################
 
 
 ##GENERATE PARTICLES#####################################################################
-method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 10, method, mat=[0,1])
+method    = morphology.conditional_selection
+exciton   = morphology.Create_Particles('singlet', 25, method, mat=[0,1],
+ type_cond='sphere',origin=[20,20,20],radius_min=10)
 
 #########################################################################################
 

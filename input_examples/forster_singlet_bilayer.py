@@ -9,7 +9,7 @@ animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = False # if you want that the annimation stops in the first frame (debug purposes)
+pause              = True # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
@@ -56,7 +56,7 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 
 # Creating a new lattice at each new round
 axis              = 'X' #axis of the junction
-num_sites         = 300             #number of sites of the lattice
+num_sites         = 100             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
 disorder          = [0.,0.,0.]   #std deviation from avg position
 composition       = [1]        #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
@@ -67,15 +67,15 @@ lattice_func      = morphology.Bilayer(axis,num_sites,displacement,disorder,comp
 t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
 s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-a1 = morphology.Gaussian_energy(s1s)
-a2 = morphology.Gaussian_energy(t1s) 
+s1 = morphology.Gaussian_energy(s1s)
+t1 = morphology.Gaussian_energy(t1s) 
 #########################################################################################
 
 
 ##GENERATE PARTICLES#####################################################################
-method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
-
+method    = morphology.conditional_selection
+exciton   = morphology.Create_Particles('singlet', 10, method, mat=[0,1],
+ type_cond='rectangle',limits=[[45,55],[0,40],[0,1]])
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################

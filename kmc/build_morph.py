@@ -167,12 +167,35 @@ def lattice_saw(param):
                 chosen = np.where(sorte < ps)[0][0]
                 Mats.append(chosen)    
     	    #print(k,range(0,numy))
-                         
+    
+
+    
+    
+    
     X = np.array(X)
     Y = np.array(Y)
     Z = np.array(Z)
-    Mats = np.array(Mats)                   	
-    return X,Y,Z,Mats
+    Mats = np.array(Mats)
+    cell_left = [[X[i],Y[i],Z[i],Mats[i]] for i in range(len(X)) ]
+    
+    
+    X_right    = X.copy()
+    Y_right    = Y.copy()
+    Z_right    = Z.copy()
+    Mats_right = Mats.copy()    
+
+    
+    
+    X_max = np.amax(X_right)
+    X_right = -X_right +2*X_max
+    
+    
+    cell_right = [[X_right[i],Y_right[i],Z_right[i],Mats_right[i]] for i in range(len(X_right)) ]
+    cell = np.vstack((cell_left,cell_right))    
+ 
+    
+                       	
+    return cell[:,0],cell[:,1],cell[:,2],cell[:,3]
     
     
     

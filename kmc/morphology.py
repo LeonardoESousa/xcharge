@@ -90,118 +90,136 @@ def anni_sing(system,tipos,Ss,indices,locs):
 ############################################           
 # FUNCS TO SHAPE THE GENERATION OF PARTICLES
 
-#main function, regardless of the conditional, filters the sites according to it	
-def filter_selection(X,Y,Z,Mats,param_dic):
-
-    X_cop     = X.copy()
-    Y_cop     = Y.copy()
-    Z_cop     = Z.copy()
-    Mats_cop  = Mats.copy()
-    selection = []
-    
-    shape_dic           = param_dic.get('shape_dic')
-    mat_restriction     = param_dic.get('mat')    #list of materials that will generate part
-    shape_type          = param_dic.get('shape')  #the shape that the particles will be aranged
-    argument_shape_func = param_dic.get('argum')  #arguments of the shape func
-    origin              = param_dic.get('origin') #origin of the shape
-    conditional         = shape_dic.get(shape_type)
-    
-    for index_mol in range(len(X)):
-
-        x   = X_cop[index_mol]
-        y   = Y_cop[index_mol]
-        z   = Z_cop[index_mol]
-        mat = Mats_cop[index_mol]
-        if conditional([x,y,z],origin,argument_shape_func):
-            if (mat in mat_restriction) or (mat_restriction[0] == None):
-                selection.append(index_mol)
-    return selection               
-
 
 #funcs that define the filtering, like inside a sphere, plane etc
-def sphere_conditional(pos,r0,r_min):
-    x  = pos[0] - r0[0]
-    y  = pos[1] - r0[1]
-    z  = pos[2] - r0[2]
+class sphere_conditional():
+	def __init__(self):
+		self.args = ['origin','radius_min']
+	def test_cond(self,pos,args):
+		r0      = args.get('origin')
+		r_min   = args.get('radius_min')
+		x  = pos[0] - r0[0]
+		y  = pos[1] - r0[1]
+		z  = pos[2] - r0[2]
+		r_pos = np.sqrt(x**2 + y**2 + z**2)
+		return r_pos <= r_min #condition to be inside the sphere
     
-    r_pos = np.sqrt(x**2 + y**2 + z**2)
-    
-    return r_pos <= r_min #condition to be inside the sphere
-    
-def plane_conditional(pos,r0,COEF):
+class plane_conditional():
+	def __init__(self):
+		self.args = ['origin','coefs']
+	def test_cond(self,pos,args):
+		r0      = args.get('origin')
+		coefs   = args.get('coefs')		
+		#Equation of plane is defined as 
+		# A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
+		x  = pos[0] - r0[0]
+		y  = pos[1] - r0[1]
+		z  = pos[2] - r0[2]
 
-    #Equation of plane is defined as 
-    # A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
-    x  = pos[0] - r0[0]
-    y  = pos[1] - r0[1]
-    z  = pos[2] - r0[2]
+		A,B,C = coefs
+		cond = A*x + B*y + C*z == 0 #condition to be in the plane
+		
+		return cond
     
-    A = COEF[0]
-    B = COEF[1]
-    C = COEF[2]
-    
-    cond = A*x + B*y + C*z == 0 #condition to be in the plane
-    
-    return cond
-    
-def cone_conditional(pos,r0,COEF): #hallow cone
+class cone_conditional(): #hollow cone
+	def __init__(self):
+		self.args = ['origin','coefs']
+	def test_cond(self,pos,args):
+		r0      = args.get('origin')
+		coefs   = args.get('coefs')
+			
+		#Equation of cone is defined as 
+		# (X-X0)^2/A^2 + (Y-Y0)^2/B^2 + (Z-Z0)^2/C^2 = 0
+		x  = pos[0] - r0[0]
+		y  = pos[1] - r0[1]
+		z  = pos[2] - r0[2]
 
-    #Equation of plane is defined as 
-    # A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
-    x  = pos[0] - r0[0]
-    y  = pos[1] - r0[1]
-    z  = pos[2] - r0[2]
-    
-    A = COEF[0]
-    B = COEF[1]
-    C = COEF[2]
-    
-    cond = (x**2)/(A**2) + (y**2)/(B**2) -(z**2)/(C**2) == 0 #condition to be in the plane
-    
-    return cond	
-    
-def cilinder_conditional(pos,r0,COEF):
+		A,B,C = coefs
 
-    #Equation of plane is defined as 
-    # A(X-X0) + B(Y-Y0) + C(Z-Z0) = 0
-    x  = pos[0] - r0[0]
-    y  = pos[1] - r0[1]
-    z  = pos[2] - r0[2]
+		    
+		cond = (x**2)/(A**2) + (y**2)/(B**2) -(z**2)/(C**2) == 0 #condition to be in the cone
+		    
+		return cond	
     
-    RHO_min   = COEF
+class cilinder_conditional():
+	def __init__(self):
+		self.args = ['origin','radius_min']
+	def test_cond(self,pos,args):
+	
+		r0      = args.get('origin')
+		RHO_min = args.get('radius_min')
+		
+		x  = pos[0] - r0[0]
+		y  = pos[1] - r0[1]
+		z  = pos[2] - r0[2]
     
-    cond = np.sqrt( x**2 + y**2) <= RHO_min
-    return cond	
+		cond = np.sqrt( x**2 + y**2) <= RHO_min
+		return cond	
         
-def no_conditional(pos,r0,COEF):
-    return True			
-    
-def rectangle_conditional(pos,r0,COEF):
-    
-    x  = pos[0]
-    y  = pos[1]
-    z  = pos[2]	
-    
-    xlim = COEF[0]
-    ylim = COEF[1]
-    zlim = COEF[2]
-    
-    x_i = xlim[0]
-    x_f = xlim[1]
-    
-    y_i = ylim[0]
-    y_f = ylim[1]
-    
-    z_i = zlim[0]
-    z_f = zlim[1]
-    
-    if ( ( x >= x_i) and ( x <= x_f)):
-        if ( ( y >= y_i) and ( y <= y_f)):
-            if ( ( z >= z_i) and ( z <= z_f)):
-                return True
+class no_conditional():
+	def __init__(self):
+		pass
+	def test_cond(self,pos,args):
+		return True			
+		                
+class rectangle_conditional():
+	def __init__(self):
+		self.args = ['limits']	
+	def test_cond(self,pos,args):
+		limits = args.get('limits')
+		
+		x,y,z          = pos	
+		xlim,ylim,zlim = limits
+		
+		x_i,x_f = xlim
+		y_i,y_f = ylim
+		z_i,z_f = zlim
+		
+		
+		if (( x >= x_i) and ( x <= x_f)):
+			if (( y >= y_i) and ( y <= y_f)):
+				if (( z >= z_i) and ( z <= z_f)):
+					return True 
                 
-# dictonary of all possible geometric creation of particles				
-shape_dic = {'sphere': sphere_conditional, 'plane':plane_conditional,'cone':cone_conditional,'cilinder':cilinder_conditional,'rectangle': rectangle_conditional,'free':no_conditional}				
+#main function, regardless of the conditional, filters the sites according to it	
+def conditional_selection(available, number, system, kwargs):
+	# dictonary of all possible geometric creation of particles				
+	type_dic = {'sphere': sphere_conditional, 'plane':plane_conditional,'cone':cone_conditional,
+	'cilinder':cilinder_conditional,'rectangle': rectangle_conditional,'free':no_conditional}
+
+	selected      = []
+	mat_restric   = kwargs['mat']
+	shape         = kwargs['type_cond']
+	conditional   = type_dic.get(shape)()
+	
+	
+	try:#getting all kwargs given by the user
+		list_kwargs   = conditional.args
+		dict_kwargs   = {}
+		for arg in list_kwargs:
+			dict_kwargs[arg] = kwargs[arg]
+		
+	except:#in case that the conditional does no require additiona kwargs
+		dict_kwargs = []	
+	
+	
+	X_cop     = system.X.copy()
+	Y_cop     = system.Y.copy()
+	Z_cop     = system.Z.copy()
+	Mats_cop  = system.mats.copy()	
+	
+	for index_mol in range(len(X_cop)):
+
+		x   = X_cop[index_mol]
+		y   = Y_cop[index_mol]
+		z   = Z_cop[index_mol]
+		mat = Mats_cop[index_mol]
+		
+		if conditional.test_cond([x,y,z],dict_kwargs) and (mat in mat_restric):
+			selected.append(index_mol)
+			
+	return random.sample(selected,number)                
+				
 
 
 ##LATTICE CLASSES####################################################################################
@@ -215,13 +233,13 @@ class ReadLattice():
 
 
 class Lattice():
-    def __init__(self,num_sites,vector,disorder,composition):
+    def __init__(self,num_sites,vector,disorder,composition): #initializing the lattice class with some basic info given by the user
         self.num_sites   = num_sites
         self.vector      = vector
         self.disorder    = disorder
         self.composition = np.cumsum([i/np.sum(composition) for i in composition])
         
-    def assign_to_system(self, system):
+    def make(self): #Generating the set X,Y,Z,Mats
         X, Y, Z, Mats = [], [], [],[]
         dim = []
         for elem in self.vector:
@@ -246,7 +264,12 @@ class Lattice():
         X = np.array(X)
         Y = np.array(Y)
         Z = np.array(Z)
-        Mats = np.array(Mats)
+        Mats = np.array(Mats)    
+        return X,Y,Z,Mats    
+    
+        
+    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
+        X, Y, Z, Mats = self.make()
         system.set_morph(X,Y,Z,Mats)    
 
         
@@ -278,7 +301,7 @@ class Lattice_BHJ():
         self.composition = composition #np.cumsum([i/np.sum(composition) for i in composition])
         self.lattice     = Lattice(self.num_sites,self.vector,self.disorder,self.composition)
     
-    def assign_to_system(self, system):
+    def make(self):
         X,Y,Z,Mats = self.lattice.make()
         
         #finding the neighbors around each site based on a cutoff distance
@@ -324,8 +347,12 @@ class Lattice_BHJ():
         unique, counts = np.unique(Mats, return_counts=True)
         mat_dict = dict(zip(unique, counts))
 
-        return X,Y,Z,Mats            
-
+        return X,Y,Z,Mats
+                    
+    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
+        X, Y, Z, Mats = self.make()
+        system.set_morph(X,Y,Z,Mats)
+         
 def multiply_lattice(lattice,n_times_ar,delta):
         
     X_lenght = delta[0] #Increments
@@ -459,7 +486,13 @@ class Bilayer():
         Z    = hetero_lattice[:,2]
         Mats = hetero_lattice[:,3]
         
-        return 	X,Y,Z,Mats        
+        return 	X,Y,Z,Mats       
+         
+    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
+        X, Y, Z, Mats = self.make()
+        system.set_morph(X,Y,Z,Mats)
+        
+   
 
 class Electric():
     def __init__(self,**kwargs):
