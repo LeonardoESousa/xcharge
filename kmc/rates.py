@@ -10,7 +10,9 @@ hbar           = 6.582e-16       #Reduced Planck's constant
 
 
 
-###TAXAS#################################################################################    
+###RATES#################################################################################    
+
+##FUNCTION FOR SETTING RADII#############################################################
 def raios(num,Rf,mat,lifetime,mats):
     Raios = np.zeros(num) + Rf[(mat,mat)]
     materiais = [i for i in lifetime.keys() if i != mat]
@@ -19,7 +21,18 @@ def raios(num,Rf,mat,lifetime,mats):
         Raios[mats == m] = R2[mats == m]
     return Raios
 
+def raios_dist(num,Rf,mat,lifetime,mats):
+    Raios = np.array(random.choices(Rf[(mat,mat)][:,0],Rf[(mat,mat)][:,1],k=num))
+    materiais = [i for i in lifetime.keys() if i != mat]
+    for m in materiais:
+        R2 = np.array(random.choices(Rf[(mat,m)][:,0],Rf[(mat,m)][:,1],k=num))
+        Raios[mats == m] = R2[mats == m]
+    return Raios
 
+
+#########################################################################################
+
+##STANDARD FORSTER TRANSFER RATE#########################################################
 class Forster:
     def __init__(self,**kwargs):
         self.kind = 'jump'
@@ -50,7 +63,9 @@ class Forster:
 
     def action(self,particle,system,local):
         particle.move(local)
+#########################################################################################
 
+##TRIPLET TO SINGLET FORSTER TRANSFER####################################################
 class ForsterT:
     def __init__(self,**kwargs):
         self.kind = 'jump'
@@ -80,7 +95,9 @@ class ForsterT:
         particle.move(local)
         energies = system.t1 
         particle.convert(system,energies,self.kind,'singlet')
+#########################################################################################
 
+##FORSTER TRANSFER WITH ORIENTATION FACTORS ON THE FLY###################################
 class ForsterKappa:
     def __init__(self,**kwargs):
         self.kind = 'jump'
@@ -115,7 +132,45 @@ class ForsterKappa:
 
     def action(self,particle,system,local):
         particle.move(local)
+#########################################################################################
 
+##STANDARD FORSTER TRANSFER RATE#########################################################
+class ForsterRedShift:
+    def __init__(self,**kwargs):
+        self.kind = 'jump'
+        self.Rf = kwargs['Rf']
+        self.lifetime = kwargs['life']
+        self.mu = kwargs['mu']
+        self.T  = kwargs['T']
+        self.alpha = 1.15*0.53
+
+
+    def rate(self,**kwargs):
+        r      = kwargs['r']
+        system = kwargs['system']
+        ex     = kwargs['particle']
+        mats   = system.mats    
+        local  = ex.position    
+        mat = mats[local]
+        num = len(mats)
+        
+        Rfs = raios_dist(num,self.Rf,mat,self.lifetime,mats)
+        
+        lifetime = self.lifetime[mat]
+        mu       = self.mu[mat]
+        s1s   = np.copy(system.s1)
+        s1s  -= s1s[local] 
+        boltz = np.exp(-1*s1s/(kb*self.T)) 
+        taxa  = (1/lifetime)*((Rfs/(self.alpha*mu + r))**6)*boltz
+        taxa  = np.nan_to_num(taxa)
+        return taxa
+
+
+    def action(self,particle,system,local):
+        particle.move(local)
+#########################################################################################
+
+##STANDARD DEXTER TRANSFER RATE##########################################################
 class Dexter:
     def __init__(self,**kwargs):
         self.kind = 'jump'
@@ -141,109 +196,118 @@ class Dexter:
 
     def action(self,particle,system,local):
         particle.move(local)
+#########################################################################################
 
+##MOLECULE TO 2D MATERIAL FORSTER TRANSFER###############################################
+#class ForsterDye:
+#    def __init__(self,**kwargs):
+#        self.kind = 'fluor'
+#        self.lcc = kwargs['lcc'] #C-C distances in Angstrom
+#        self.t   = kwargs['t']   #Hopping integral in graphene in eV
+#        self.mu  = kwargs['mu']
+#        self.eps = kwargs['eps']
+#        self.switch = kwargs['switch']
+#    
+#    def rate(self,**kwargs):
+#        r      = kwargs['r']
+#        system = kwargs['system']
+#        ex     = kwargs['particle']
+#        mats   = system.mats  
+#        local  = ex.position  
+#        hw     =  system.s1[local] 
+#        mat = mats[local]
+#        num = len(mats)
+#        
+#        lcc  = self.lcc #C-C distances in Angstrom
+#        t    = self.t   #Hopping integral in graphene in eV
+#        mu   = self.mu[mat]
+#        eps  = self.eps
+#        
+#        switch = raios(num,self.switch,mat,self.mu,mats)
+#        
+#        epsilon = system.epsilon #Permitivity in C/VAngstrom    
+#        vf = t*(3/2)*lcc
+#        q  = np.linspace(0,hw/vf,1000)
+#        q  = q[:-1]
+#        funcao =  np.array([np.trapz(np.exp(-2*q*R)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2))) for R in r])  
+#        taxa = switch*1e-12*((mu*0.53)**2)*(1/48)*(e**2)/((2*np.pi*hbar)*(epsilon**2))*funcao
+#        taxa = np.nan_to_num(taxa)
+#        return taxa
+#
+#    def action(self,particle,system,local):
+#        particle.move(local)        
+#########################################################################################        
 
-class Fluor:
+##EXCITON DISSOCIATION RATE##############################################################
+class Dissociation:
     def __init__(self,**kwargs):
-        self.kind = 'fluor'
-        self.lifetime = kwargs['life']
+        self.kind = 'dissociation'
+        self.AtH = kwargs['AtH']
+        self.inv      = kwargs['invrad']
+        self.T        = kwargs['T']
+        self.Map      = {}
 
     def rate(self,**kwargs):
-        material = kwargs['material']
-        lifetime = self.lifetime.get(material)
-        taxa = 1/lifetime
-        return taxa
+        system   = kwargs['system']
+        r        = kwargs['r']
+        particle = kwargs['particle']
+        local    = particle.position 
+        mats     = system.mats        
+        mat      = mats[local]
+        num      = len(mats)
+
+        lumos = np.copy(system.LUMO)
+        homos = np.copy(system.HOMO)
+        if particle.species   == 'singlet':
+            s1s   = np.copy(system.s1) 
+        elif particle.species == 'triplet':
+            s1s   = np.copy(system.t1)
+
+        AtH        = raios(num,self.AtH,mat,self.inv,mats)
+        in_loc_rad = self.inv[mat]
+        
+        r[r == np.inf] = 0 
+        
+        DEe = lumos - (homos[local] + s1s[local])
+        DEh = (lumos[local] - s1s[local]) - homos  
+        
+
+        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEe+abs(DEe))/(2*kb*self.T))
+        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEh+abs(DEh))/(2*kb*self.T))
+        taxae[r == 0] = 0
+        taxah[r == 0] = 0
+        taxae = np.nan_to_num(taxae)
+        taxah = np.nan_to_num(taxah)
+        
+        TE = np.sum(taxae)
+        TH = np.sum(taxah)
+        if random.uniform(0,1) <= TE/(TE+TH):
+            self.Map[particle.identity] = 'electron'
+            return taxae
+        else:
+            self.Map[particle.identity] = 'hole'
+            return taxah    
+            
+
+    def label(self):
+        return self.kind
      
     def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.s1) 
+        if self.Map[particle.identity] == 'electron':
+            e = Electron(local)
+            h = Hole(particle.position)
+        else:
+           e = Electron(particle.position)
+           h = Hole(local) 
 
-class Phosph:
-    def __init__(self,**kwargs):
-        self.kind = 'phosph'
-        self.lifetime = kwargs['life']
+        h.identity = -1*e.identity   
+        system.add_particle(e)
+        system.add_particle(h)
+        del self.Map[particle.identity]
+        particle.kill('dissociation',system,system.s1)
+#########################################################################################
 
-    def rate(self,**kwargs):
-        material = kwargs['material']
-        lifetime = self.lifetime.get(material)
-        taxa = 1/lifetime
-        return taxa
-     
-    def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.t1)
-        
-class Nonrad:
-    def __init__(self,**kwargs):
-        self.kind = 'nonrad'
-        self.taxa = kwargs['rate']
-
-    def rate(self,**kwargs):
-        material = kwargs['material']
-        taxa = self.taxa.get(material)
-        return taxa
-     
-    def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.s1)        
-
-class ISC:
-    def __init__(self,**kwargs):
-        self.kind = 'isc'
-        self.taxa = kwargs['rate']
-
-    def rate(self,**kwargs):
-        material = kwargs['material']
-        taxa = self.taxa.get(material)
-        return taxa
-     
-    def action(self,particle,system,local):
-        if particle.species == 'singlet':
-            energies = system.s1 
-            newkind  = 'triplet'
-        elif particle.species == 'triplet': 
-            energies = system.t1  
-            newkind  = 'singlet'   
-        particle.convert(system,energies,self.kind,newkind)
-
-
-class ForsterDye:
-    def __init__(self,**kwargs):
-        self.kind = 'fluor'
-        self.lcc = kwargs['lcc'] #C-C distances in Angstrom
-        self.t   = kwargs['t']   #Hopping integral in graphene in eV
-        self.mu  = kwargs['mu']
-        self.eps = kwargs['eps']
-        self.switch = kwargs['switch']
-    
-    def rate(self,**kwargs):
-        r      = kwargs['r']
-        system = kwargs['system']
-        ex     = kwargs['particle']
-        mats   = system.mats  
-        local  = ex.position  
-        hw     =  system.s1[local] 
-        mat = mats[local]
-        num = len(mats)
-        
-        lcc  = self.lcc #C-C distances in Angstrom
-        t    = self.t   #Hopping integral in graphene in eV
-        mu   = self.mu[mat]
-        eps  = self.eps
-        
-        switch = raios(num,self.switch,mat,self.mu,mats)
-        
-        epsilon = system.epsilon #Permitivity in C/VAngstrom    
-        vf = t*(3/2)*lcc
-        q  = np.linspace(0,hw/vf,1000)
-        q  = q[:-1]
-        funcao =  np.array([np.trapz(np.exp(-2*q*R)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2))) for R in r])  
-        taxa = switch*10**(-12)*((mu*0.53)**2)*(1/48)*(e**2)/((2*np.pi*hbar)*(epsilon**2))*funcao
-        taxa = np.nan_to_num(taxa)
-        return taxa
-
-    def action(self,particle,system,local):
-        particle.move(local)        
-        
-        
-
+##MILLER-ABRHAMS RATE####################################################################
 class MillerAbrahams:
     def __init__(self,**kwargs):
         self.kind = 'miller-abrahams'
@@ -322,73 +386,77 @@ class MillerAbrahams:
             pass
         else:
             particle.move(local)
-        
+#########################################################################################        
 
-class Dissociation:
+
+#MONOMOLECULAR RATES#####################################################################
+
+##FLUORESCENCE RATE######################################################################
+class Fluor:
     def __init__(self,**kwargs):
-        self.kind = 'dissociation'
-        self.AtH = kwargs['AtH']
-        self.inv      = kwargs['invrad']
-        self.T        = kwargs['T']
-        self.Map      = {}
+        self.kind = 'fluor'
+        self.lifetime = kwargs['life']
 
     def rate(self,**kwargs):
-        system   = kwargs['system']
-        r        = kwargs['r']
-        particle = kwargs['particle']
-        local    = particle.position 
-        mats     = system.mats        
-        mat      = mats[local]
-        num      = len(mats)
-
-        lumos = np.copy(system.LUMO)
-        homos = np.copy(system.HOMO)
-        if particle.species   == 'singlet':
-            s1s   = np.copy(system.s1) 
-        elif particle.species == 'triplet':
-            s1s   = np.copy(system.t1)
-
-        AtH        = raios(num,self.AtH,mat,self.inv,mats)
-        in_loc_rad = self.inv[mat]
-        
-        r[r == np.inf] = 0 
-        
-        DEe = lumos - (homos[local] + s1s[local])
-        DEh = (lumos[local] - s1s[local]) - homos  
-        
-
-        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEe+abs(DEe))/(2*kb*self.T))
-        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEh+abs(DEh))/(2*kb*self.T))
-        taxae[r == 0] = 0
-        taxah[r == 0] = 0
-        taxae = np.nan_to_num(taxae)
-        taxah = np.nan_to_num(taxah)
-        
-        TE = np.sum(taxae)
-        TH = np.sum(taxah)
-        if random.uniform(0,1) <= TE/(TE+TH):
-            self.Map[particle.identity] = 'electron'
-            return taxae
-        else:
-            self.Map[particle.identity] = 'hole'
-            return taxah    
-            
-
-    def label(self):
-        return self.kind
+        material = kwargs['material']
+        lifetime = self.lifetime.get(material)
+        taxa = 1/lifetime
+        return taxa
      
     def action(self,particle,system,local):
-        if self.Map[particle.identity] == 'electron':
-            e = Electron(local)
-            h = Hole(particle.position)
-        else:
-           e = Electron(particle.position)
-           h = Hole(local) 
+        particle.kill(self.kind,system,system.s1) 
+#########################################################################################
 
-        h.identity = -1*e.identity   
-        system.add_particle(e)
-        system.add_particle(h)
-        del self.Map[particle.identity]
-        particle.kill('dissociation',system,system.s1)
+##PHOSPHORESCENCE RATE###################################################################
+class Phosph:
+    def __init__(self,**kwargs):
+        self.kind = 'phosph'
+        self.lifetime = kwargs['life']
+
+    def rate(self,**kwargs):
+        material = kwargs['material']
+        lifetime = self.lifetime.get(material)
+        taxa = 1/lifetime
+        return taxa
+     
+    def action(self,particle,system,local):
+        particle.kill(self.kind,system,system.t1)
+#########################################################################################
+ 
+##NONRADIATIVE DECAY RATE################################################################         
+class Nonrad:
+    def __init__(self,**kwargs):
+        self.kind = 'nonrad'
+        self.taxa = kwargs['rate']
+
+    def rate(self,**kwargs):
+        material = kwargs['material']
+        taxa = self.taxa.get(material)
+        return taxa
+     
+    def action(self,particle,system,local):
+        particle.kill(self.kind,system,system.s1)        
+#########################################################################################
+
+##INTERSYSTEM CROSSING RATE##############################################################
+class ISC:
+    def __init__(self,**kwargs):
+        self.kind = 'isc'
+        self.taxa = kwargs['rate']
+
+    def rate(self,**kwargs):
+        material = kwargs['material']
+        taxa = self.taxa.get(material)
+        return taxa
+     
+    def action(self,particle,system,local):
+        if particle.species == 'singlet':
+            energies = system.s1 
+            newkind  = 'triplet'
+        elif particle.species == 'triplet': 
+            energies = system.t1  
+            newkind  = 'singlet'   
+        particle.convert(system,energies,self.kind,newkind)
+#########################################################################################
 
 
