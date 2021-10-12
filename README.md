@@ -3,7 +3,7 @@
 <p align="center">KMC is a platform to perform directional-rate exciton dynamics via Kinectic Monte Carlo (KMC) algorithm for generalized morphologies. </p>
 
 <h4 align="center"> 
-	🚧  Under continous development...  🚧
+	🚧  Under continuous development...  🚧
 </h4>
 
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
@@ -12,14 +12,33 @@
 [![maint](https://img.shields.io/maintenance/yes/2021)]()
 [![commit](https://img.shields.io/github/last-commit/LeonardoESousa/KMC?style=plastic)]()
 
+<p align="center">
+  <kbd>
+    <img width="640" style="border-radius: 25px" height="480" src="https://i.postimg.cc/2yVWMfZc/ezgif-com-gif-maker.gif" alt="demo">
+  </kbd>
+</p>
+
+### Main Features
+
+- [x] Forster Hopping rates for singlet and triplets
+- [x] Miller-Abrahams Rate
+- [x] Charge dissociation and recombination
+- [x] Fully customable morphology (presets: Bulk Heterojunction, Bilayer and more)
+- [x] Lattice distortion effects
+- [x] Built-in Parallelization
+- [x] Singlet Annihilation
+- [ ] Include in-site dipole orientation
+
+
 Table of Contents
 =================
 <!--ts-->
    * [Installation](#Installation)
    * [How to Use](#how-to-use)
-   * [Basic Use](#basic-use)
+   * [Basic Usage](#basic-use)
    *    * [Make Animations](#ani)
-   *    * [Paralellization](#paralell)
+   *    * [Parallelization](#paralell)
+   * [Documentation](#doc)
 
 <!--te-->
 
@@ -41,17 +60,17 @@ How to Use
 ============
 
 1) Construct your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples)
-2) At the same directory of your input, run
+2) At the same directory, run
 ```bash
 kmc your_input.py
 ```
 
-Basic Use
+Basic Usage
 ============
 
 Make Animations
 ============
-Set, at your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples)
+Set, at your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples),
 
 ```python
 animation_mode = True
@@ -62,18 +81,29 @@ Then run the job
 kmc your_input.py
 ```
 
-Paralellization
+Parallelization
 ============
-Set the number of rounds as you wish, and assign to n_proc the number of avaliable cores (-1 if you want to use the entire machine). Then, turn off the animation_mode. Your input should look something like
+Set the number of rounds as you wish and assign to n_proc the number of avaliable cores (-1 if you want to use the entire machine). Then, turn off the animation_mode. Your input should look something like
 ```python
 animation_mode = False
 rounds = 10000  # repeating the dynamics 10000 times 
 n_proc = 30     # using 30 cores to execute the job
 ```
-Then run the job
+Then, run the job
 ```python
 kmc your_input.py
 ```
+
+
+Documentation
+============
+<!--ts-->
+   * [Input's Basic Structure](#input)
+   * [Morphology Design](#morph)
+   * [Energy Setting](#energy)
+   * [Particle Creation](#particles)
+   * [Rates](#rates)
+<!--te-->
 
 ### Autors
 ---
