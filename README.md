@@ -1,6 +1,6 @@
-<h1 align="center">KMC</h1
+<h1 align="center">Xcharge: A Kinetic Monte Carlo model for exciton and charge dynamics</h1
   
-<p align="center">KMC is a platform to perform directional-rate exciton dynamics via Kinectic Monte Carlo (KMC) algorithm for generalized morphologies. </p>
+<p align="center">Xcharge is a Kinectic Monte Carlo (KMC) algorithm that can be used to study exciton (singlet or triplet) and charge (electron or hole) dynamics in various morphologies. </p>
 
 <h4 align="center"> 
 	🚧  Under continuous development...  🚧
@@ -18,9 +18,10 @@
   </kbd>
 </p>
 
-### Main Features
+## Main Features
 
-- [x] Forster Hopping rates for singlet and triplets
+- [x] Singlet exciton diffusion with Förster transfer rates.
+- [x] Triplet exciton diffusion with Dexter and/or Triplet-to-Singlet transfer rates.
 - [x] Miller-Abrahams Rate
 - [x] Charge dissociation and recombination
 - [x] Fully customable morphology (presets: Bulk Heterojunction, Bilayer and more)
@@ -30,20 +31,19 @@
 - [ ] Include in-site dipole orientation
 
 
-Table of Contents
-=================
+## Table of Contents
+
 <!--ts-->
-   * [Installation](#Installation)
+   * [Installation](#installation)
    * [How to Use](#how-to-use)
-   * [Basic Usage](#basic-use)
-   *    * [Make Animations](#ani)
-   *    * [Parallelization](#paralell)
-   * [Documentation](#doc)
+   * [Basic Usage](#basic-usage)
+   *    * [Make Animations](#make-animations)
+   *    * [Parallelization](#parallelization)
+   * [Documentation](#documentation)
 
 <!--te-->
 
-Installation
-============
+## Installation
 
 (Manual installation)
 ```bash
@@ -56,8 +56,7 @@ pip3 install .
 pip3 install kmc
 ```
 
-How to Use
-============
+## How to Use
 
 1) Construct your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples)
 2) At the same directory, run
@@ -65,11 +64,10 @@ How to Use
 kmc your_input.py
 ```
 
-Basic Usage
-============
+## Basic Usage
 
-Make Animations
-============
+### Make Animations
+
 Set, at your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples),
 
 ```python
@@ -81,8 +79,8 @@ Then run the job
 kmc your_input.py
 ```
 
-Parallelization
-============
+### Parallelization
+
 Set the number of rounds as you wish and assign to n_proc the number of avaliable cores (-1 if you want to use the entire machine). Then, turn off the animation_mode. Your input should look something like
 ```python
 animation_mode = False
@@ -95,8 +93,8 @@ kmc your_input.py
 ```
 
 
-Documentation
-============
+## Documentation
+
 <!--ts-->
    * [Input's Basic Structure](#input)
    * [Morphology Design](#morph)
@@ -105,7 +103,7 @@ Documentation
    * [Rates](#rates)
 <!--te-->
 
-### Autors
+## Authors
 ---
 
 [![Badge](https://img.shields.io/badge/Email_Leo!-%237159c1?style=for-the-badge&logo=gmail&logoColor=red)](mailto:leonardo.sousa137@gmail.com)
