@@ -1,4 +1,4 @@
-<h1 align="center">Xcharge: A Kinetic Monte Carlo model for exciton and charge dynamics</h1
+<h1 align="center">Xcharge: A Kinetic Monte Carlo Model for Exciton and Charge Dynamics</h1
   
 <p align="center">Xcharge is a Kinectic Monte Carlo (KMC) algorithm that can be used to study exciton (singlet or triplet) and charge (electron or hole) dynamics in various morphologies. </p>
 
