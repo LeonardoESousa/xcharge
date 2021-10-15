@@ -105,7 +105,10 @@ kmc your_input.py
 
 ## Authors
 ---
+<table>
+  <tr>	  
+    <td align="center"><a href="https://github.com/LeonardoESousa"><img style="border-radius: 50%;" src="https://avatars.githubusercontent.com/u/49243510?v=4" width="100px;" alt=""/><br /><sub><b>Dr. Leonardo Evaristo de Sousa</b></sub></a><br />Postdoctoral researcher at the Techinical University of Denmark (DTU)<br /><sub><b><a href="mailto:leonardo.sousa137@gmail.com">EMAIL</a><br /></td>
+    <td align="center"><a href="https://github.com/TSA-Cassiano"><img style="border-radius: 50%;" src="https://avatars.githubusercontent.com/u/26448170?s=400&u=b0820613fd46515f0cfe1806f7251a414d4c249b&v=4" width="100px;" alt=""/><br /><sub><b>MSc Tiago de Sousa Araújo Cassiano</b></sub></a><br />Phd student at the University of Brasília (UnB)<br /><sub><b><a href="mailto:tiagofis96@gmail.com">EMAIL</a><br /></td>
+  </tr>
+</table>
 
-[![Badge](https://img.shields.io/badge/Email_Leo!-%237159c1?style=for-the-badge&logo=gmail&logoColor=red)](mailto:leonardo.sousa137@gmail.com)
-
-[![Badge](https://img.shields.io/badge/Email_Tiago!-%237159c1?style=for-the-badge&logo=gmail&logoColor=red)](mailto:tiagofis96@gmail.com)
