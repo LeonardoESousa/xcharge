@@ -49,7 +49,7 @@ class Create_Particles():
             particles = [Hole(number) for number in selected]
         elif self.kind.lower() == 'singlet':
             particles = [Exciton('singlet',number) for number in selected]
-        elif self.kind.lower() == 'electron':
+        elif self.kind.lower() == 'triplet':
             particles = [Exciton('triplet',number) for number in selected]        
 
         system.set_particles(particles)
@@ -64,20 +64,12 @@ class Gaussian_energy():
         s1 = []
         tipo = self.s1s['level']
         for i in system.mats:
-            s1.append(np.random.normal(self.s1s[i][0],self.s1s[i][1]))
+            if type(self.s1s[i]) == str: #if the user has a file with the distribuition
+                distr  = np.loadtxt(self.s1s[i])
+                s1.append(random.choice(distr))
+            else: #if the user just want a gaussian distribuition
+                s1.append(np.random.normal(self.s1s[i][0],self.s1s[i][1]))                
         system.set_energies(s1,tipo)
-
-class Distribuition_energy():
-    def __init__(self,s1s):
-        self.s1s    = s1s
-        self.distr  = np.loadtxt(self.en_dictionary['file_name'])
-    
-    def assign_to_system(self,system):	
-        s1 = []
-        tipo = self.en_dictionary['level']
-        for i in system.mats:
-            s1.append(random.choice(self.distr[i]))
-        system.set_energies(s1,tipo)    
 
 #########################################################################################
 

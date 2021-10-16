@@ -12,7 +12,8 @@ class System:
         self.dead = []
         self.time = 0
         self.potential_time = -1
-   
+        self.IT = 0 #number of steps
+        
     def set_morph(self,X,Y,Z,Mats):
         self.X = X
         self.Y = Y
@@ -33,11 +34,12 @@ class System:
     	self.bimolec             = anni
     
     def set_particles(self,Ss):
+        
         try:
-            self.particles.extend(Ss)
+            self.particles = self.particles + Ss
         except:    
             self.particles = Ss            
-    
+
     def set_dipoles(self,mus):
         self.mu = mus
         self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))

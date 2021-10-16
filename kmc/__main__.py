@@ -37,6 +37,8 @@ rounds          = param.rounds
 time_limit      = param.time_limit  
 pause           = param.pause
 marker_type     = param.marker_type
+rotate          = param.rotate
+
 
 monomolecular       = param.monomolecular
 processes           = param.processes
@@ -103,11 +105,11 @@ def decision(s,system):
     except:
         jump = 0
         dt = np.inf
-    
     return labels[jump], chosen[jump], dt
 
 def step(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
+        system.IT = system.IT +1
         Ss = system.particles.copy()     
         J, W, DT = [],[],[]
         for s in Ss:
@@ -140,9 +142,9 @@ def spectra(system):
         for s in system.dead:
             texto = s.write()
             f.write(texto)
-        f.write("Fim\n")
+        f.write("END\n")
         
-def animate(num,system,ax,marker_option): 
+def animate(num,system,ax,marker_option,rotate): 
     Ss = step(system)
     X, Y, Z = system.X, system.Y, system.Z        
     mats = system.mats                            
@@ -182,7 +184,10 @@ def animate(num,system,ax,marker_option):
     except:
         pass
     
-    #remove duplicates on legend    
+    if rotate:#rotating the animation by an angle of IT
+        ax.view_init(azim = system.IT)
+    
+    #removing duplicates on legend    
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys())
@@ -248,7 +253,7 @@ def run_animation():
     fig.canvas.mpl_connect('button_press_event', onClick) #pausing if clicking
     fig.canvas.mpl_connect('draw_event', lambda event: pause_plot(event, pause)) #pausing if pause = True at the first frame
    
-    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type],
+    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate],
                                     interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)  
                              
                                        

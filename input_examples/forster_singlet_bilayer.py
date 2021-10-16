@@ -8,8 +8,9 @@ time_limit         = np.inf# in PS
 animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
+rotate             = False # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = True # if you want that the annimation stops in the first frame (debug purposes)
+pause              = True  # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
