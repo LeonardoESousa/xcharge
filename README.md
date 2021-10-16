@@ -12,23 +12,41 @@
 [![maint](https://img.shields.io/maintenance/yes/2021)]()
 [![commit](https://img.shields.io/github/last-commit/LeonardoESousa/KMC?style=plastic)]()
 
+<!--
 <p align="center">
   <kbd>
     <img width="640" style="border-radius: 25px" height="480" src="https://i.postimg.cc/2yVWMfZc/ezgif-com-gif-maker.gif" alt="demo">
   </kbd>
 </p>
+-->
+
+
+<p align="center">
+  <kbd>
+    <img width="441" style="border-radius: 25px" height="340" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
+  </kbd>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <kbd>
+    <img width="407" style="border-radius: 25px" height="357" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
+  </kbd>
+</p>
+
+
+
+
 
 ## Main Features
 
-- [x] Singlet exciton diffusion with Förster transfer rates.
-- [x] Triplet exciton diffusion with Dexter and/or Triplet-to-Singlet transfer rates.
-- [x] Miller-Abrahams Rate
-- [x] Charge dissociation and recombination
-- [x] Fully customable morphology (presets: Bulk Heterojunction, Bilayer and more)
-- [x] Lattice distortion effects
-- [x] Built-in Parallelization
-- [x] Singlet Annihilation
-- [ ] Include in-site dipole orientation
+- [x] Easy to use!
+- [x] Singlet exciton diffusion with Förster transfer rates;
+- [x] Triplet exciton diffusion with Dexter and/or Triplet-to-Singlet transfer rates;
+- [x] Miller-Abrahams Rate;
+- [x] Charge dissociation and recombination;
+- [x] Fully customable morphology (presets: Bulk Heterojunction, Bilayer and more);
+- [x] Lattice distortion effects;
+- [x] Built-in Parallelization;
+- [x] Singlet Annihilation;
+- [ ] Include in-site dipole orientation.
 
 
 ## Table of Contents
