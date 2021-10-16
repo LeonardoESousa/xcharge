@@ -20,7 +20,7 @@
 </p>
 -->
 
-
+<!--
 <p align="center">
   <kbd>
     <img width="441" style="border-radius: 25px" height="340" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
@@ -30,8 +30,17 @@
     <img width="407" style="border-radius: 25px" height="357" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
   </kbd>
 </p>
+-->
 
-
+<p align="center">
+  <kbd>
+    <img width="330" style="border-radius: 25px" height="255" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
+  </kbd>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <kbd>
+    <img width="305" style="border-radius: 25px" height="267" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
+  </kbd>
+</p>
 
 
 
