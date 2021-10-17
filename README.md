@@ -38,7 +38,7 @@
   </kbd>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <kbd>
-    <img width="305" style="border-radius: 25px" height="267" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
+    <img width="335.5" style="border-radius: 25px" height="293.7" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
   </kbd>
 </p>
 
