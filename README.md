@@ -34,7 +34,7 @@
 
 <p align="center">
   <kbd>
-    <img width="330" style="border-radius: 25px" height="255" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
+    <img width="363" style="border-radius: 25px" height="280.5" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
   </kbd>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <kbd>
