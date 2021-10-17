@@ -75,6 +75,196 @@ def lattice(param):
     Z = np.array(Z)
     Mats = np.array(Mats)    
     return X,Y,Z,Mats
+'''    
+def lattice_saw(param):
+	
+    num_molecs =  int(param[0][0]) #adjusting to user's input     
+    vector     =  [ float(x) for x in param[1] ]
+    ps         =  [ float(x)   for x in param[2] ]
+    disorder   =  [ float(x)   for x in param[3] ]
+    
+    X, Y, Z, Mats = [], [], [],[]
+    ps = [i/np.sum(ps) for i in ps]
+    ps = np.cumsum(ps)
+    
+    dx = vector[0]
+    dy = vector[1]
+    dz = vector[2]
+    dim = []
+    for elem in vector:
+        if elem != 0:
+            dim.append(1)
+        else:
+            dim.append(0)
+    numx = max(dim[0]*int(num_molecs**(1/np.sum(dim))),1)
+    numy = max(dim[1]*int(num_molecs**(1/np.sum(dim))),1)
+    numz = max(dim[2]*int(num_molecs**(1/np.sum(dim))),1)
+	  
+    #Se somar +1 vai aparecer duplicados no 2D
+    for nx in range(numx):
+        for ny in range(numy):
+            for nz in range(numz):
+                X.append(nx*vector[0])
+                Y.append(ny*vector[1])
+                Z.append(nz*vector[2])
+                sorte = random.uniform(0,1)
+                chosen = np.where(sorte < ps)[0][0]
+                Mats.append(chosen)
+   
+    
+    
+    X_max_noteeth = max(X)
+    print(X_max_noteeth)
+    size_saw = 10
+    s = 2 #number of blocks to form the saw
+    list_set = [[s*x,s*x+s-1] for x in range(int(numy/s)) if x%2==0]
+
+    def is_in(list_set,n):    
+    	for set_indx in list_set:
+    		x = set_indx[0]
+    		y = set_indx[1]
+    		#print(n,x,y,n >= x,n <=y)
+    		if n >= x and n <=y:
+    			return True   		
+    	return False
+    	
+
+    #size_saw = 6    
+    
+    if dx != 0:
+    	numx_f = numx+size_saw
+    	numx_i = numx 
+
+    if dy != 0:
+    	numy_f = numy
+    	numy_i = 0 
+    else:
+    	numy_f = 1
+    	numy_i = 0    		
+    if dz != 0:
+
+    	numz_f = numx
+    	numz_i = 0 
+    else:
+    	numz_f = 1
+    	numz_i = 0 
+    	  
+    #s = 3 #number of blocks to form the saw
+    #list_set = [[s*x,s*x+s-1] for x in range(int(numy/s)) if x%2==0]    	 	   
+	   
+    for nnx in range(numx_i,numx_f):
+    	for nny in range(numy_i,numy_f):
+    	    for nnz in range(numz_i,numz_f):    	
+ 
+                if is_in(list_set,nny):
+                    pass
+                else:           
+                    continue 
+                X.append(nnx*vector[0])
+                Y.append(nny*vector[1])
+                Z.append(nnz*vector[2])
+                  
+                sorte = random.uniform(0,1)
+                chosen = np.where(sorte < ps)[0][0]
+                Mats.append(chosen)    
+    	    #print(k,range(0,numy))
+    
+
+    X_max_teeth = max(X)
+    print( X_max_noteeth, X_max_teeth)
+    
+    X = np.array(X)
+    Y = np.array(Y)
+    Z = np.array(Z)
+    Mats = np.array(Mats)
+    cell_left = [[X[i],Y[i],Z[i],Mats[i]] for i in range(len(X)) ]
+    
+    X_right, Y_right, Z_right, Mats_right = [], [], [],[]
+    ps = [ float(x)   for x in param[2] ]
+    ps_right = [ 0 for i in range(len(ps))] + ps
+    print(ps_right)
+    ps_right = [i/np.sum(ps_right) for i in ps_right]
+    ps_right = np.cumsum(ps_right)
+        
+    for nx in range(numx):
+        for ny in range(numy):
+            for nz in range(numz):
+                X_right.append(nx*vector[0])
+                Y_right.append(ny*vector[1])
+                Z_right.append(nz*vector[2])
+                sorte = random.uniform(0,1)
+                chosen = np.where(sorte < ps_right)[0][0]
+                Mats_right.append(chosen)    
+
+    #size_saw = 6
+    #s = 3 #number of blocks to form the saw
+    list_set = [[s*x+s,s*x+s-1+s] for x in range(int(numy/s)) if x%2==0]  
+    
+    if dx != 0:
+    	numx_f = numx+size_saw
+    	numx_i = numx 
+
+    if dy != 0:
+    	numy_f = numy
+    	numy_i = 0 
+    else:
+    	numy_f = 1
+    	numy_i = 0    		
+    if dz != 0:
+
+    	numz_f = numx
+    	numz_i = 0 
+    else:
+    	numz_f = 1
+    	numz_i = 0 
+    	  
+    #s = 3 #number of blocks to form the saw
+    #list_set = [[s*x,s*x+s-1] for x in range(int(numy/s)) if x%2==0]    	 	   
+	   
+    for nnx in range(numx_i,numx_f):
+    	for nny in range(numy_i,numy_f):
+    	    for nnz in range(numz_i,numz_f):    	
+ 
+                if is_in(list_set,nny):
+                    pass
+                else:           
+                    continue 
+                X_right.append(nnx*vector[0])
+                Y_right.append(nny*vector[1])
+                Z_right.append(nnz*vector[2])
+                  
+                sorte = random.uniform(0,1)
+                chosen = np.where(sorte < ps_right)[0][0]
+                Mats_right.append(chosen)
+
+
+    dX_left = np.amax(X) - np.amin(X)
+    dY_left = np.amax(Y) - np.amin(Y)
+    dZ_left = np.amax(Z) - np.amin(Z)
+    
+    dist = np.array([i for i in [dX_left,dY_left,dZ_left ] if i > 0])
+    
+    r_min = np.amin(dist)/(len(X)**(1/sum(dim)))
+    if r_min < 5:
+    	r_min = 5
+    print(r_min)
+    X_right = np.array(X_right)
+    Y_right = np.array(Y_right)
+    Z_right = np.array(Z_right)
+    Mats_right = np.array(Mats_right)
+    
+    cutoff = 5    
+    X_max = np.amax(X_right)
+    X_right = -X_right +2*X_max -(X_max_teeth-X_max_noteeth) + r_min#+2.2*X_max_noteeth
+        
+    
+    cell_right = [[X_right[i],Y_right[i],Z_right[i],Mats_right[i]] for i in range(len(X_right)) ]
+    cell = np.vstack((cell_left,cell_right))    
+ 
+    
+                       	
+    return cell[:,0],cell[:,1],cell[:,2],cell[:,3]
+'''    
     
 def lattice_saw(param):
 	
@@ -113,65 +303,58 @@ def lattice_saw(param):
    
     
     
-    
-    size_saw = 6
-    s = 3 #number of blocks to form the saw
-    list_set = [[s*x,s*x+s-1] for x in range(int(numy/s)) if x%2==0]
+    X_max_noteeth = max(X)
 
+    size_saw = 2
+    width_saw = 4 #number of blocks to form the saw
+    list_set = [[width_saw*x,width_saw*x+width_saw-1] for x in range(int(numy/width_saw)) if x%2==0] #left
     def is_in(list_set,n):    
     	for set_indx in list_set:
     		x = set_indx[0]
     		y = set_indx[1]
-    		print(n,x,y,n >= x,n <=y)
+    		#print(n,x,y,n >= x,n <=y)
     		if n >= x and n <=y:
     			return True   		
     	return False
     	
+    def make_teeth(X,Y,Z,Mats,size_saw,width_saw,ps,list_set):
+        if dx != 0:
+    	    numx_f = numx + size_saw
+    	    numx_i = numx 
 
-    size_saw = 6    
-    
-    if dx != 0:
-    	numx_f = numx+size_saw
-    	numx_i = numx 
+        if dy != 0:
+    	    numy_f = numy
+    	    numy_i = 0 
+        else:
+    	    numy_f = 1
+    	    numy_i = 0    		
+        if dz != 0:
 
-    if dy != 0:
-    	numy_f = numy
-    	numy_i = 0 
-    else:
-    	numy_f = 1
-    	numy_i = 0    		
-    if dz != 0:
-
-    	numz_f = numx
-    	numz_i = 0 
-    else:
-    	numz_f = 1
-    	numz_i = 0 
-    	  
-    s = 3 #number of blocks to form the saw
-    list_set = [[s*x,s*x+s-1] for x in range(int(numy/s)) if x%2==0]    	 	   
-    	   
-    for nnx in range(numx_i,numx_f):
-    	for nny in range(numy_i,numy_f):
-    	    for nnz in range(numz_i,numz_f):    	
- 
-                if is_in(list_set,nny):
-                    pass
-                else:           
-                    continue 
-                X.append(nnx*vector[0])
-                Y.append(nny*vector[1])
-                Z.append(nnz*vector[2])
+    	    numz_f = numx
+    	    numz_i = 0 
+        else:
+    	    numz_f = 1
+    	    numz_i = 0     
+    	    
+    	    	
+        for nnx in range(numx_i,numx_f):
+    	    for nny in range(numy_i,numy_f):
+    	        for nnz in range(numz_i,numz_f):    	
+                    if is_in(list_set,nny):
+                        pass
+                    else:           
+                        continue 
+                    X.append(nnx*vector[0])
+                    Y.append(nny*vector[1])
+                    Z.append(nnz*vector[2])
                   
-                sorte = random.uniform(0,1)
-                chosen = np.where(sorte < ps)[0][0]
-                Mats.append(chosen)    
-    	    #print(k,range(0,numy))
-    
+                    sorte = random.uniform(0,1)
+                    chosen = np.where(sorte < ps)[0][0]
+                    Mats.append(chosen) 
+    	  
+    make_teeth(X,Y,Z,Mats,size_saw,width_saw,ps,list_set)
+    X_max_teeth = max(X)
 
-    
-    
-    
     X = np.array(X)
     Y = np.array(Y)
     Z = np.array(Z)
@@ -179,26 +362,56 @@ def lattice_saw(param):
     cell_left = [[X[i],Y[i],Z[i],Mats[i]] for i in range(len(X)) ]
     
     
-    X_right    = X.copy()
-    Y_right    = Y.copy()
-    Z_right    = Z.copy()
-    Mats_right = Mats.copy()    
+    
+    X_right, Y_right, Z_right, Mats_right = [], [], [],[]
+    ps = [ float(x)   for x in param[2] ]
+    ps_right = [ 0 for i in range(len(ps))] + ps
+    ps_right = [i/np.sum(ps_right) for i in ps_right]
+    ps_right = np.cumsum(ps_right)
+        
+    for nx in range(numx):
+        for ny in range(numy):
+            for nz in range(numz):
+                X_right.append(nx*vector[0])
+                Y_right.append(ny*vector[1])
+                Z_right.append(nz*vector[2])
+                sorte = random.uniform(0,1)
+                chosen = np.where(sorte < ps_right)[0][0]
+                Mats_right.append(chosen)    
+                
+    list_set = [[width_saw*x+width_saw,width_saw*x+width_saw-1+width_saw] for x in range(int(numy/width_saw)) if x%2==0]#right                  
+    make_teeth(X_right,Y_right,Z_right,Mats_right,size_saw,width_saw,ps_right,list_set)
 
+    dX_left = np.amax(X) - np.amin(X)
+    dY_left = np.amax(Y) - np.amin(Y)
+    dZ_left = np.amax(Z) - np.amin(Z)
     
+    dist = np.array([i for i in [dX_left,dY_left,dZ_left ] if i > 0])
     
+    r_min = np.amin(dist)/(len(X)**(1/sum(dim)))
+    if r_min < 5:
+    	r_min = 5
+    
+    X_right = np.array(X_right)
+    Y_right = np.array(Y_right)
+    Z_right = np.array(Z_right)
+    Mats_right = np.array(Mats_right)
+    
+    cutoff = 5    
     X_max = np.amax(X_right)
-    X_right = -X_right +2*X_max
-    
+    X_right = -X_right +2*X_max -(X_max_teeth-X_max_noteeth) + r_min#+2.2*X_max_noteeth
+        
     
     cell_right = [[X_right[i],Y_right[i],Z_right[i],Mats_right[i]] for i in range(len(X_right)) ]
     cell = np.vstack((cell_left,cell_right))    
  
     
                        	
-    return cell[:,0],cell[:,1],cell[:,2],cell[:,3]
+    return cell[:,0],cell[:,1],cell[:,2],cell[:,3]  
     
     
     
+        
     
 #generates a bulk heterojunction conformation
 def lattice_BHJ(param):
@@ -1297,7 +1510,7 @@ class morphology_function:
     	
     	
     	
-X,Y,Z,Mats = lattice_saw([[500],[5,5,0],[0.5,0.5],[0,0,0]])
+X,Y,Z,Mats = lattice_saw([[500],[5,5,0],[1],[0,0,0]])
 colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
 colors = np.array([colors_dic.get(int(mat)) for mat in Mats])
 fig = plt.figure()
