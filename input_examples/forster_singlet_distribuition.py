@@ -40,10 +40,28 @@ forster   = Forster(Rf=radii,life=lifetimes,mu=mus)
 ##FLUORESCENCE RATES
 fluor     = Fluor(life=lifetimes)
 
+
+###TRIPLET EXCITONS######################################################################
+
+##DEXTER RADII (Å)
+Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
+
+##PHOSPHORESCENCE LIFETIMES (PS)
+phlife = {0:5.29,1:5.29}
+
+##SUM OF VAN DER WALLS RADII (Å)
+Ls = {0:5.0,1:5.0}
+
+##TRIPLET TRANSFER RATES
+dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
+
+##PHOSPHORESCENCE RATE
+phosph = Phosph(life=phlife)
+
 ###PROCESSES#############################################################################
 
-processes = {'singlet':[forster], 'triplet':[forster], 'electron':[],'hole':[]}
-monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
+processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[],'hole':[]}
+monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
@@ -75,7 +93,7 @@ a2 = morphology.Gaussian_energy(t1s)
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
 exciton    = morphology.Create_Particles('singlet', 20, method, mat=[0,1])
-exciton2   = morphology.Create_Particles('triplet', 2, method, mat=[0,1])
+exciton2   = morphology.Create_Particles('triplet', 5, method, mat=[0,1])
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################
