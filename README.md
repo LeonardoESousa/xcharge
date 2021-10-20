@@ -34,11 +34,11 @@
 
 <p align="center">
   <kbd>
-    <img width="330" style="border-radius: 25px" height="255" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
+    <img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
   </kbd>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <kbd>
-    <img width="305" style="border-radius: 25px" height="267" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
+    <img width="335.5" style="border-radius: 25px" height="293.7" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
   </kbd>
 </p>
 
