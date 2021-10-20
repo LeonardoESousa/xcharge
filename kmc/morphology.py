@@ -49,7 +49,7 @@ class Create_Particles():
             particles = [Hole(number) for number in selected]
         elif self.kind.lower() == 'singlet':
             particles = [Exciton('singlet',number) for number in selected]
-        elif self.kind.lower() == 'electron':
+        elif self.kind.lower() == 'triplet':
             particles = [Exciton('triplet',number) for number in selected]        
 
         system.set_particles(particles)
@@ -64,20 +64,12 @@ class Gaussian_energy():
         s1 = []
         tipo = self.s1s['level']
         for i in system.mats:
-            s1.append(np.random.normal(self.s1s[i][0],self.s1s[i][1]))
+            if type(self.s1s[i]) == str: #if the user has a file with the distribuition
+                distr  = np.loadtxt(self.s1s[i])
+                s1.append(random.choice(distr))
+            else: #if the user just want a gaussian distribuition
+                s1.append(np.random.normal(self.s1s[i][0],self.s1s[i][1]))                
         system.set_energies(s1,tipo)
-
-class Distribuition_energy():
-    def __init__(self,s1s):
-        self.s1s    = s1s
-        self.distr  = np.loadtxt(self.en_dictionary['file_name'])
-    
-    def assign_to_system(self,system):	
-        s1 = []
-        tipo = self.en_dictionary['level']
-        for i in system.mats:
-            s1.append(random.choice(self.distr[i]))
-        system.set_energies(s1,tipo)    
 
 #########################################################################################
 
@@ -507,8 +499,130 @@ class Bilayer():
     def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
         X, Y, Z, Mats = self.make()
         system.set_morph(X,Y,Z,Mats)
+
+#checks if a site is in the list_set        
+def is_in(list_set,n):    
+    for set_indx in list_set:
+    	x = set_indx[0]
+    	y = set_indx[1]
+    	#print(n,x,y,n >= x,n <=y)
+    	if n >= x and n <=y:
+    		return True   		
+    return False
+#this function adds, to a given lattice, teeths, of size_saw size and width of width_saw   
+def make_teeth(X,Y,Z,Mats,size_saw,width_saw,ps,list_set,dr,nums,disorder):
+    dx,dy,dz = dr
+    numx,numy,numz = nums
+    
+    if dx != 0:
+        numx_f = numx + size_saw
+        numx_i = numx 
+
+    if dy != 0:
+        numy_f = numy
+        numy_i = 0 
+    else:
+        numy_f = 1
+        numy_i = 0    		
+    if dz != 0:
+        numz_f = numx
+        numz_i = 0 
+    else:
+        numz_f = 1
+        numz_i = 0     
+
+    ps = np.cumsum([i/np.sum(ps) for i in ps])
+    for nnx in range(numx_i,numx_f):
+        for nny in range(numy_i,numy_f):
+            for nnz in range(numz_i,numz_f):    	
+                if is_in(list_set,nny):
+                    pass
+                else:           
+                    continue 
+                X.append(np.random.normal(nnx*dx,disorder[0]))
+                Y.append(np.random.normal(nny*dy,disorder[1]))
+                Z.append(np.random.normal(nnz*dz,disorder[2]))
+                sorte = random.uniform(0,1)
+                chosen = np.where(sorte < ps)[0][0]
+                Mats.append(chosen)             
+class Saw():    
+    def __init__(self,size_saw,width_saw,num_sites,vector,disorder,composition):
+
+        self.num_sites   = num_sites
+        self.vector      = vector
+        self.disorder    = disorder
+        self.size        = size_saw
+        self.width       = width_saw
         
-   
+        
+        
+        self.composition_right = composition 
+        self.composition_left  = [ 0 for i in range(len(composition))] + composition  
+        self.lattice_right = Lattice(self.num_sites,self.vector,self.disorder,self.composition_right)        
+        self.lattice_left  = Lattice(self.num_sites,self.vector,self.disorder,self.composition_left)                
+        
+    def make(self):    
+        X_left ,Y_left ,Z_left ,Mats_left  = self.lattice_right.make()
+        X_right,Y_right,Z_right,Mats_right = self.lattice_left.make()   
+        
+        X_left ,Y_left ,Z_left ,Mats_left    = X_left.tolist() ,Y_left.tolist() ,Z_left.tolist() ,Mats_left.tolist()
+        X_right ,Y_right,Z_right ,Mats_right = X_right.tolist() ,Y_right.tolist() ,Z_right.tolist() ,Mats_right.tolist()
+                
+        dim = []
+        for elem in self.vector:
+            if elem != 0:
+                dim.append(1)
+            else:
+                dim.append(0)
+                        
+        numx = max(dim[0]*int(self.num_sites**(1/np.sum(dim))),1)
+        numy = max(dim[1]*int(self.num_sites**(1/np.sum(dim))),1)
+        numz = max(dim[2]*int(self.num_sites**(1/np.sum(dim))),1)  
+        nums = [numx,numy,numz]      
+        X_max_noteeth = max(X_left)#lattice size before teeth
+        
+        #getting the sets of the teeths
+        list_set = [[self.width*x,self.width*x+self.width-1] for x in range(int(numy/self.width)) if x%2==0] #left
+        make_teeth(X_left,Y_left,Z_left,Mats_left,self.size,self.width,
+        self.composition_left,list_set,self.vector,nums,self.disorder)
+        X_max_teeth = max(X_left)#lattice size after teeth
+
+        X_left = np.array(X_left)
+        Y_left = np.array(Y_left)
+        Z_left = np.array(Z_left)
+        Mats_left = np.array(Mats_left)
+        cell_left = [[X_left[i],Y_left[i],Z_left[i],Mats_left[i]] for i in range(len(X_left))]        
+        
+        #getting the sets of the teeths             
+        list_set = [[self.width*x+self.width,self.width*x+self.width-1+self.width] for x in range(int(numy/self.width)) if x%2==0]
+        make_teeth(X_right,Y_right,Z_right,Mats_right,self.size,self.width,
+        self.composition_right,list_set,self.vector,nums,self.disorder)
+        
+        #estimating a cutoff distance for the joint
+        dX_left = np.amax(X_left) - np.amin(X_left)
+        dY_left = np.amax(Y_left) - np.amin(Y_left)
+        dZ_left = np.amax(Z_left) - np.amin(Z_left)        
+        dist = np.array([i for i in [dX_left,dY_left,dZ_left ] if i > 0])        
+        r_min = np.amin(dist)/(len(X_left)**(1/sum(dim)))
+        if r_min < 5:
+    	    r_min = 5
+    	    
+        X_right = np.array(X_right)
+        Y_right = np.array(Y_right)
+        Z_right = np.array(Z_right)
+        Mats_right = np.array(Mats_right)
+
+	#joining the sides
+        X_max      = np.amax(X_right)
+        X_right    = -X_right +2*X_max -(X_max_teeth-X_max_noteeth) + r_min
+        cell_right = [[X_right[i],Y_right[i],Z_right[i],Mats_right[i]] for i in range(len(X_right)) ]
+        cell       = np.vstack((cell_left,cell_right))           
+           
+        return 	cell[:,0],cell[:,1],cell[:,2],cell[:,3]         
+         
+    def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
+        X, Y, Z, Mats = self.make()
+        system.set_morph(X,Y,Z,Mats)  
 
 class Electric():
     def __init__(self,**kwargs):

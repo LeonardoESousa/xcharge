@@ -3,7 +3,7 @@ from kmc.rates import *
 from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
-identifier         = 'forster_singlet' #output identifier
+identifier         = 'forster_saw' #output identifier
 time_limit         = np.inf# in PS
 animation_mode     = True
 save_animation     = False # if you want to save the animation
@@ -56,11 +56,13 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-num_sites         = 100             #number of sites of the lattice
+saw_size          = 5
+saw_width         = 3
+num_sites         = 1000             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
-disorder          = [0.5,0.5,0.5]   #std deviation from avg position
-composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
-lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
+disorder          = [0.,0.,0.]   #std deviation from avg position
+composition       = [1]             #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+lattice_func      = morphology.Saw(saw_size,saw_width,num_sites,displacement,disorder,composition)
 
 #ENERGIES
 #Gaussian distribuitions
@@ -74,7 +76,7 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
+exciton   = morphology.Create_Particles('singlet', 10, method, mat=[0,1])
 
 #########################################################################################
 
