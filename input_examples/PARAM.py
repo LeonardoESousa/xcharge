@@ -1,5 +1,6 @@
 import kmc.morphology as morphology
-from kmc.kmc_classes import *
+from kmc.rates import *
+from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
 identifier         = 'New' #output identifier
@@ -7,6 +8,7 @@ time_limit         = np.inf
 animation_mode     = True
 save_animation     = False  # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')  
+marker_type        = 1                 # marker type used at the animation processs ( 0 = balls, 1 = symbols)
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 6     # Number of cores to be used
@@ -76,9 +78,6 @@ phosph = Phosph(life=phlife)
 
 ###CHARGES###############################################################################
 
-##relative permitivity
-relative_eps       = 3.5   
-
 ##ATTEMPT-TO-HOP FREQUENCY (?)
 H = {(0,0):10E12,(0,1):10E12,(1,0):10E12,(1,1):10E12}
 
@@ -98,57 +97,48 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 ###MORPHOLOGY############################################################################
 
 ##Morphology functions
-lattice_filename   = "lattice.example" # file name of the system's morphology
-X,Y,Z,Mats = morphology.read_lattice(lattice_filename)
+
+#Reading a file name that contains your lattice
+#file = 'lattice.example'
+#lattice_func = morphology.ReadLattice(file)
+
+
+
+# Creating a new lattice at each new round
+num_sites         = 100             #number of sites of the lattice
+displacement      = [5, 5, 0]       #vector of the unit cell
+disorder          = [0, 0, 0]       #std deviation from avg position
+composition       = [1.0,0.0]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
+
+
+#Electric Field and Dielectric constant
+Electric_class    = morphology.Electric(eps=3.5,field=np.array([0,0,0]))   
 
 ##ENERGIES
 #Gaussian distribuitions
-s1s = {0:(3.7,0.0), 1:(2.85,0.0)} #(Peak emission energy (eV), Desvio padrao emissao (eV)
-t1s = {0:(6.1,0.0), 1:(5.25,0.0)} # triplet energy, disperison (eV)
+lumos = {0:(-3.7,0.0), 1:(-3.7,0.0), 'level':'lumo'} # mean energy (eV), standard deviation (eV)
+homos = {0:(-6.1,0.0), 1:(-6.1,0.0), 'level':'homo'} # mean energy (eV), standard deviation (eV)
+t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'}     # mean energy (eV), standard deviation (eV)
+s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'}     # mean energy (eV), standard deviation (eV)
 
-#If you have your own distribuition already
-#s1s = {0:'s1_mat0.txt', 1:'s1_mat1.txt'} 
-#t1s = {0:'t1_mat0.txt', 1:'t1_mat1.txt'}
-
-#ener_function     = morphology.s1_t1_distr
-ener_function      = morphology.homo_lumo
-parameters_enefunc = [s1s, t1s, Mats]
-s1, t1 = ener_function(parameters_enefunc)    
-ene_dic = {'s1':s1, 't1':t1, 'HOMO':t1,'LUMO':s1} #careful, if you choose dissociation, you also must give HOMO and LUMO
+s1   = morphology.Gaussian_energy(s1s)
+t1   = morphology.Gaussian_energy(t1s)
+homo = morphology.Gaussian_energy(homos)
+lumo = morphology.Gaussian_energy(lumos)
 #########################################################################################
 
 ##GENERATE PARTICLES#####################################################################
-num_ex             = 20     #number of particles
+method    = morphology.randomized
+electron  = morphology.Create_Particles('electron', 1, method, mat=[0,1])
+holes     = morphology.Create_Particles('hole', 1, method, mat=[0,1])
 
-#Type of particle
-#gen_function       = morphology.gen_pair_elechole
-gen_function        = morphology.gen_excitons  #TRIPLETS OR SINGLETS??
-#gen_function       = morphology.gen_electron
-#gen_function       = morphology.gen_hole
-
-#Shape of the particle's generation
-#Getting filter funcs from morphology		
-#if you dont want to mess with the formation
-selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="free",origin=None,argum=None) 
-
-
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="rectangle",origin=None,argum=[[10,20],[0,10],[0]])
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="plane",origin=[100,100,0],argum=[5,10,0])
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="rectangle",origin=None,argum=[[40,50],[0,60],[0,40]])
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="sphere",origin=[30,30,30],argum=15)
-#selection = morphology.filter_selection(X,Y,Z,Mats,morphology.shape_dic,mat=[None],shape="plane",origin=[10,10,10],argum=[60,60,0])
-
-parameters_genfunc = [num_ex,selection]
 #########################################################################################
 
-##ANNIHILATION OPTIONS###################################################################
-
-##TURN ON ANNIHILATION
-anni               = True
-
+##BIMOLECULAR OPTIONS###################################################################
+bimolec               = True  # Turn on annihilation
 ##list of all annihi funcs that will be used
-annihi_funcs_array = [morphology.anni_ele_hol,morphology.anni_sing] 
+bimolec_funcs_array = [morphology.ele_hol_recomb]
 #########################################################################################
-
    
 
