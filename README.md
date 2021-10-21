@@ -34,7 +34,8 @@
 
 <p align="center">
   <kbd>
-    <img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
+    <!--<img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">-->
+    <img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/7P7KWFJM/kmc.gif" alt="demo">
   </kbd>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <kbd>
@@ -121,9 +122,9 @@ kmc your_input.py
 
 
 ## Documentation
-
+[Main page](https://github.com/LeonardoESousa/xcharge/wiki)
 <!--ts-->
-   * [Input's Basic Structure](#input)
+   * [Input's Basic Structure](https://github.com/LeonardoESousa/xcharge/wiki/Input's-Basic-Structure)
    * [Morphology Design](#morph)
    * [Energy Setting](#energy)
    * [Particle Creation](#particles)
