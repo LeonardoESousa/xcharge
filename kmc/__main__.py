@@ -134,7 +134,7 @@ def step(system):
 def spectra(system):
     if os.path.isfile("Simulation_"+system.identifier+".txt") == False:
         with open("Simulation_"+system.identifier+".txt", "w") as f:
-            texto = "{0:^10}    {1:^6} {2:^6} {3:^6} {4:^4} {5:^4} {6:^9} {7:^6} {8:^6} {9:^6} {10:^4}".format("Time", "DeltaX", "DeltaY", "DeltaZ", "Type", "Energy", "Location" ,"FinalX", "FinalY", "FinalZ", "Causa Mortis")
+            texto = "{0:<15}  {1:<10}  {2:<10}  {3:<10}  {4:<10}  {5:<10}  {6:<10}  {7:<10}  {8:<10}  {9:<10}  {10:<10}".format("Time", "DeltaX", "DeltaY", "DeltaZ", "Type", "Energy", "Location" ,"FinalX", "FinalY", "FinalZ", "CausaMortis")
             f.write(texto+"\n") 
     with open("Simulation_"+system.identifier+".txt", "a") as f:   
         for s in system.dead:

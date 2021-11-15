@@ -25,7 +25,7 @@ class Particles:
         dz = np.nan_to_num(z-z0)
         mat = Mats[self.position]
         energy = energies[self.position]
-        texto = '{0:5.6e}    {1: 6.2f} {2: 6.2f} {3: 6.2f} {4:4} {5: 4.4f} {6:9} {7: 6.2f} {8: 6.2f} {9: 6.2f} {10:4}'.format(
+        texto = '{0:<15.6e}  {1:<10.2f}  {2:<10.2f}  {3:<10.2f}  {4:<10}  {5:<10.4f}  {6:<10}  {7:<10.2f}  {8:<10.2f}  {9:<10.2f}  {10:<10}'.format(
                        time,dx,dy,dz,self.species,energy,mat,x,y,z,causamortis)
         self.report += texto+'\n'
     
