@@ -11,7 +11,8 @@ from kmc.particles import *
 
 def randomized(available, number, system, kwargs):
     mat = kwargs['mat']
-    available = [i for i in available if system.mats[i] in mat]
+    indices = np.nonzero(np.isin(system.mats, np.array(mat)))
+    available = np.intersect1d(available,indices)
     selected = random.sample(available,number)
     return selected            
 
@@ -503,11 +504,11 @@ class Bilayer():
 #checks if a site is in the list_set        
 def is_in(list_set,n):    
     for set_indx in list_set:
-    	x = set_indx[0]
-    	y = set_indx[1]
-    	#print(n,x,y,n >= x,n <=y)
-    	if n >= x and n <=y:
-    		return True   		
+        x = set_indx[0]
+        y = set_indx[1]
+        #print(n,x,y,n >= x,n <=y)
+        if n >= x and n <=y:
+            return True   		
     return False
 #this function adds, to a given lattice, teeths, of size_saw size and width of width_saw   
 def make_teeth(X,Y,Z,Mats,size_saw,width_saw,ps,list_set,dr,nums,disorder):
@@ -605,8 +606,7 @@ class Saw():
         dist = np.array([i for i in [dX_left,dY_left,dZ_left ] if i > 0])        
         r_min = np.amin(dist)/(len(X_left)**(1/sum(dim)))
         if r_min < 5:
-    	    r_min = 5
-    	    
+            r_min = 5	    
         X_right = np.array(X_right)
         Y_right = np.array(Y_right)
         Z_right = np.array(Z_right)
