@@ -12,8 +12,7 @@ from kmc.particles import *
 def randomized(available, number, system, kwargs):
     mat = kwargs['mat']
     indices = np.nonzero(np.isin(system.mats, np.array(mat)))
-    available = np.intersect1d(available,indices)
-    selected = random.sample(list(available),number)
+    selected = random.sample(list(indices[0]),number)   #list(available),number)
     return selected            
 
 def interface(available, number, system, kwargs):
