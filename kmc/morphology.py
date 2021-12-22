@@ -62,7 +62,8 @@ class Gaussian_energy():
 
     def assign_to_system(self,system):	
         type_en = self.s1s['level']
-        uniq = np.unique(system.mats)
+        #uniq = np.unique(system.mats)
+        uniq = system.uniq
         N = len(system.mats)
         s1 = np.zeros(N) + np.random.normal(self.s1s[uniq[0]][0],self.s1s[uniq[0]][1],N)
         materials = [i for i in uniq if i != uniq[0]]

@@ -20,18 +20,19 @@ class System:
         self.Z = Z
         self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
         self.mats = Mats
+        self.uniq = np.unique(Mats)
         
 
 
     def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,anni_funcs_array):
-    	self.processes           = processes
-    	self.monomolecular       = monomolecular
-    	self.identifier          = identifier
-    	self.animation_mode      = animation_mode
-    	self.time_limit          = time_limit
-    	self.pause               = pause
-    	self.bimolec_funcs_array = anni_funcs_array
-    	self.bimolec             = anni
+        self.processes           = processes
+        self.monomolecular       = monomolecular
+        self.identifier          = identifier
+        self.animation_mode      = animation_mode
+        self.time_limit          = time_limit
+        self.pause               = pause
+        self.bimolec_funcs_array = anni_funcs_array
+        self.bimolec             = anni
     
     def set_particles(self,Ss):
         
@@ -52,8 +53,8 @@ class System:
         return len(self.particles)
     
     def set_medium(self,eps_rel):
-    	self.eps_rel = eps_rel
-    	self.epsilon = eps_rel*epsilon_vaccum
+        self.eps_rel = eps_rel
+        self.epsilon = eps_rel*epsilon_vaccum
         
     def get_num(self):
         return len(self.X)
