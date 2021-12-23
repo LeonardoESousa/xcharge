@@ -24,8 +24,6 @@ def randomized(available, number, system, kwargs):
             if system.mats[n] in mat:
                 selected.append(n)
 
-    #indices = np.nonzero(np.isin(system.mats, np.array(mat)))
-    #selected = random.sample(list(indices[0]),number)   #list(available),number)
     return selected            
 
 def interface(available, number, system, kwargs):
@@ -75,20 +73,19 @@ class Gaussian_energy():
 
     def assign_to_system(self,system):	
         type_en = self.s1s['level']
-        #uniq = np.unique(system.mats)
         uniq = system.uniq
         N = len(system.mats)
         
         if type(self.s1s[uniq[0]]) == str: #if the user provides a file that contains the energies
-            s1 = np.zeros(N) + np.random.choice(np.loadtxt(self.s1s[uniq[0]]),size = N)
+            s1 = np.random.choice(np.loadtxt(self.s1s[uniq[0]]),size = N)
         else: #if you want to generate an on-the-fly gaussian distr.
-            s1 = np.zeros(N) + np.random.normal(self.s1s[uniq[0]][0],self.s1s[uniq[0]][1],N)
+            s1 = np.random.normal(self.s1s[uniq[0]][0],self.s1s[uniq[0]][1],N)
         materials = [i for i in uniq if i != uniq[0]]
         for m in materials:
             if type(self.s1s[m]) == str:
-                s11 = np.zeros(N) + np.random.choice(np.loadtxt(self.s1s[m]),size = N)
+                s11 = np.random.choice(np.loadtxt(self.s1s[m]),size = N)
             else:
-                s11 = np.zeros(N) + np.random.normal(self.s1s[m][0],self.s1s[m][1],N)
+                s11 = np.random.normal(self.s1s[m][0],self.s1s[m][1],N)
             s1[system.mats == m] = s11[system.mats == m]         
         system.set_energies(s1,type_en)
 
@@ -270,7 +267,6 @@ class Lattice():
         self.composition = np.cumsum([i/np.sum(composition) for i in composition])
         
     def make(self): #Generating the set X,Y,Z,Mats
-        X, Y, Z, Mats = [], [], [],[]
         dim = []
         for elem in self.vector:
             if elem != 0:
