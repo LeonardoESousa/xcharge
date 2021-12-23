@@ -2,11 +2,19 @@ import numpy as np
 import random
 from kmc.particles import *
 
+
+# Personalized errors
+class randomized_error(Exception):
+    
+    def __init__(self,number):
+        self.message="We were not able to include the " + str(number) + " particle(s) into the lattice. Losen up the spacial restrictions for particle creation!"
+        super().__init__(self.message)
+    
+    
+    
+
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
-
-
-
 #### CHOOSE A FUNC TO GENERATE PARTICLES
 
 def randomized(available, number, system, kwargs):
@@ -23,7 +31,11 @@ def randomized(available, number, system, kwargs):
         for n in new:
             if system.mats[n] in mat:
                 selected.append(n)
-
+                
+    if count >= cutoff:
+        raise randomized_error(number)
+        
+        
     return selected            
 
 def interface(available, number, system, kwargs):
