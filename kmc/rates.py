@@ -14,10 +14,12 @@ hbar           = 6.582e-16       #Reduced Planck's constant
 
 ##FUNCTION FOR SETTING RADII#############################################################
 def raios(num,Rf,mat,lifetime,mats):
-    Raios = np.zeros(num) + Rf[(mat,mat)]
+    Raios = np.empty(num)
+    Raios.fill(Rf[(mat,mat)])
     materiais = [i for i in lifetime.keys() if i != mat]
     for m in materiais:
-        R2 = np.zeros(num) + Rf[(mat,m)]
+        R2 = np.empty(num) 
+        R2.fill(Rf[(mat,m)])
         Raios[mats == m] = R2[mats == m]
     return Raios
 
