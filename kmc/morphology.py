@@ -13,7 +13,12 @@ def randomized(available, number, system, kwargs):
     mat = kwargs['mat']
     selected = random.sample(list(available),number)
     selected = [s for s in selected if system.mats[s] in mat]
-    while len(selected) < number:
+    
+    count   = 0
+    cutoff  = number*10
+    
+    while len(selected) < number and count < cutoff:
+        count = count + 1
         new = random.sample(list(available),number-len(selected))
         for n in new:
             if system.mats[n] in mat:
@@ -73,11 +78,18 @@ class Gaussian_energy():
         #uniq = np.unique(system.mats)
         uniq = system.uniq
         N = len(system.mats)
-        s1 = np.zeros(N) + np.random.normal(self.s1s[uniq[0]][0],self.s1s[uniq[0]][1],N)
+        
+        if type(self.s1s[uniq[0]]) == str: #if the user provides a file that contains the energies
+            s1 = np.zeros(N) + np.random.choice(np.loadtxt(self.s1s[uniq[0]]),size = N)
+        else: #if you want to generate an on-the-fly gaussian distr.
+            s1 = np.zeros(N) + np.random.normal(self.s1s[uniq[0]][0],self.s1s[uniq[0]][1],N)
         materials = [i for i in uniq if i != uniq[0]]
         for m in materials:
-            s11 = np.zeros(N) + np.random.normal(self.s1s[m][0],self.s1s[m][1],N)
-            s1[system.mats == m] = s11[system.mats == m]          
+            if type(self.s1s[m]) == str:
+                s11 = np.zeros(N) + np.random.choice(np.loadtxt(self.s1s[m]),size = N)
+            else:
+                s11 = np.zeros(N) + np.random.normal(self.s1s[m][0],self.s1s[m][1],N)
+            s1[system.mats == m] = s11[system.mats == m]         
         system.set_energies(s1,type_en)
 
 #########################################################################################

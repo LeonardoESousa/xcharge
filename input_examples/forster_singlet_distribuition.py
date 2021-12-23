@@ -5,13 +5,13 @@ from kmc.particles import *
 ###BASIC PARAMETERS######################################################################
 identifier         = 'forster_singlet' #output identifier
 time_limit         = np.inf# in PS
-animation_mode     = True
+animation_mode     = False
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 1     # Number of rounds
+rounds             = 10     # Number of rounds
 n_proc             = 1     # Number of cores to be used
 #########################################################################################
 
