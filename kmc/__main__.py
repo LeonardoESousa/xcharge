@@ -77,31 +77,38 @@ def decision(s,system):
     hop = system.processes.get(kind) 
     mono = system.monomolecular.get(kind)     
     jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
+    #locais    = [range(len(X)) for _ in jump_rate]
+    
+    locais    = [random.choices(range(len(x)),weights=x) for x in jump_rate]
+    jump_rate = [jump_rate[i][locais[i]] for i in range(len(locais))]
+    
     mono_rate = [[m.rate(material=Mat)] for m in mono]
+    locais2   = [[local] for _ in mono_rate]
     jump_rate += mono_rate
+    locais += locais2
 
     indices = [len(x) for x in jump_rate]
-    labels = [transfer for transfer in hop+mono]
+    labels = hop+mono 
 
     jump_rate = np.concatenate(jump_rate)
-    probs = np.cumsum(jump_rate)/np.sum(jump_rate)
-    sorte = random.uniform(0,1)
-    jump = np.where(sorte < probs)[0][0]
+    locais    = np.concatenate(locais)
+    jump = random.choices(range(len(jump_rate)),weights=jump_rate)[0]
     dt = (1/np.sum(jump_rate))*np.log(1/random.uniform(1E-12,1))
 
+    
     chosen = np.where(jump < np.cumsum(indices))[0][0]
     label = labels[chosen]
-    alvo = jump
-    for elem in indices:
-        if alvo - elem >= 0:
-            alvo -= elem
-        else:
-            if elem > 1:
-                chosen = alvo
-            else:
-                chosen = local    
-            break
-    return label, chosen, dt
+    #alvo = jump
+    #for elem in indices:
+    #    if alvo - elem >= 0:
+    #        alvo -= elem
+    #    else:
+    #        if elem > 1:
+    #            chosen = alvo
+    #        else:
+    #            chosen = local    
+    #        break
+    return label, locais[jump], dt
 
 
 #    final_rate = []
