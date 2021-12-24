@@ -18,9 +18,7 @@ def raios(num,Rf,mat,lifetime,mats):
     Raios.fill(Rf[(mat,mat)])
     materiais = [i for i in lifetime.keys() if i != mat]
     for m in materiais:
-        R2 = np.empty(num) 
-        R2.fill(Rf[(mat,m)])
-        Raios[mats == m] = R2[mats == m]
+        Raios[mats == m] =  Rf[(mat,m)]
     return Raios
 
 def raios_dist(num,Rf,mat,lifetime,mats):
@@ -57,8 +55,8 @@ class Forster:
         
         lifetime = self.lifetime[mat]
         mu       = self.mu[mat]
-        
-        taxa = (1/lifetime)*((Rf/(self.alpha*mu + r))**6)
+        x = (Rf/(self.alpha*mu + r))
+        taxa = (1/lifetime)*x*x*x*x*x*x
         taxa = np.nan_to_num(taxa)
         return taxa
 
@@ -88,8 +86,8 @@ class ForsterT:
         Rf = raios(num,self.Rf,mat,self.lifetime,mats)
         lifetime = self.lifetime[mat]
         mu       = self.mu[mat]
-        
-        taxa = (1/lifetime)*((Rf/(self.alpha*mu + r))**6)
+        x = (Rf/(self.alpha*mu + r))
+        taxa = (1/lifetime)*x*x*x*x*x*x
         taxa = np.nan_to_num(taxa)
         return taxa
 
@@ -120,7 +118,7 @@ class ForsterKappa:
 
         R = np.copy(system.R) 
         dR = R - R[local,:]
-        modulo = np.sqrt(np.sum(dR**2,axis=1))[:,np.newaxis]
+        modulo = np.sqrt(np.sum(dR*dR,axis=1))[:,np.newaxis]
         dR /= modulo
 
         kappa = np.inner(mus[local,:],mus) -  3*(np.inner(mus[local,:],dR)*(np.sum(mus*dR,axis=1)))  
@@ -128,8 +126,8 @@ class ForsterKappa:
         
         lifetime = self.lifetime[mat]
         mu       = system.norma_mu[local]
-
-        taxa = (1/lifetime)*(kappa**2)*((Rf/(self.alpha*mu + r))**6)
+        x = (Rf/(self.alpha*mu + r))
+        taxa = (1/lifetime)*(kappa*kappa)*x*x*x*x*x*x
         return taxa
 
     def action(self,particle,system,local):
@@ -163,7 +161,8 @@ class ForsterRedShift:
         s1s   = np.copy(system.s1)
         s1s   = (s1s - s1s[local]) + abs(s1s - s1s[local]) 
         boltz = np.exp(-1*s1s/(2*kb*self.T)) 
-        taxa  = (1/lifetime)*((Rfs/(self.alpha*mu + r))**6)*boltz
+        x = Rfs/(self.alpha*mu + r)
+        taxa  = (1/lifetime)*x*x*x*x*x*x*boltz
         taxa  = np.nan_to_num(taxa)
         return taxa
 

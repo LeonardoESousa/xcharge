@@ -71,7 +71,7 @@ def decision(s,system):
     dx = np.nan_to_num(X - X[local]) 
     dy = np.nan_to_num(Y - Y[local])
     dz = np.nan_to_num(Z - Z[local])
-    r  = np.sqrt(dx**2+dy**2+dz**2)
+    r  = np.sqrt(dx*dx+dy*dy+dz*dz)
     r[r == 0] = np.inf
 
     final_rate = []

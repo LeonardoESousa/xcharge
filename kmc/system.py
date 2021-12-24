@@ -43,7 +43,7 @@ class System:
 
     def set_dipoles(self,mus):
         self.mu = mus
-        self.norma_mu = np.sqrt(np.sum(mus**2,axis=1))
+        self.norma_mu = np.sqrt(np.sum(mus*mus,axis=1))
         self.mu /= self.norma_mu[:,np.newaxis]
 
     def add_particle(self,s):
@@ -89,7 +89,7 @@ class System:
                     dx = np.nan_to_num(self.X - self.X[s.position])
                     dy = np.nan_to_num(self.Y - self.Y[s.position])
                     dz = np.nan_to_num(self.Z - self.Z[s.position])
-                    r  = np.sqrt(dx**2+dy**2+dz**2)*(1e-10)
+                    r  = np.sqrt(dx*dx+dy*dy+dz*dz)*(1e-10)
                     r[r == 0] = np.inf
                     potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential
