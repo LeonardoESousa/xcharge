@@ -92,10 +92,10 @@ class Gaussian_energy():
         stds  = np.empty(N)
         means.fill(self.s1s[uniq[0]][0])
         stds.fill(self.s1s[uniq[0]][1])
-        materials = [i for i in uniq if i != uniq[0]]
-        for m in materials:
-            means[system.mats == m] = self.s1s[m][0]
-            stds[system.mats == m]  = self.s1s[m][1]
+        for m in uniq[1:]:    
+            mask = system.mats == m
+            means[mask] = self.s1s[m][0]
+            stds[mask]  = self.s1s[m][1]
         s1 = np.random.normal(means,stds,N) 
 
         #if type(self.s1s[uniq[0]]) == str: #if the user provides a file that contains the energies
@@ -104,11 +104,13 @@ class Gaussian_energy():
         #    s1 = np.random.normal(self.s1s[uniq[0]][0],self.s1s[uniq[0]][1],N)
         #materials = [i for i in uniq if i != uniq[0]]
         #for m in materials:
+        #    print('aqui')
         #    if type(self.s1s[m]) == str:
         #        s11 = np.random.choice(np.loadtxt(self.s1s[m]),size = N)
         #    else:
         #        s11 = np.random.normal(self.s1s[m][0],self.s1s[m][1],N)
-        #    s1[system.mats == m] = s11[system.mats == m]         
+        #    s1[system.mats == m] = s11[system.mats == m]
+        #print(s1)             
         system.set_energies(s1,type_en)
 
 #########################################################################################
@@ -317,8 +319,7 @@ class Lattice():
         
     def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
         X, Y, Z, Mats = self.make()
-        system.set_morph(X,Y,Z,Mats)    
-
+        system.set_morph(X,Y,Z,Mats)
         
 #list sites' indexes of all neighbors of one given position
 def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):

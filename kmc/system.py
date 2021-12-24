@@ -20,8 +20,7 @@ class System:
         self.Z = Z
         self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
         self.mats = Mats
-        self.uniq = np.unique(Mats)
-        
+        self.uniq = np.unique(Mats)       
 
 
     def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,anni_funcs_array):
