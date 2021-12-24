@@ -46,7 +46,7 @@ def interface(available, number, system, kwargs):
     for i in range(len(available)):
         R = np.copy(system.R) 
         dR = R - R[i,:]
-        modulo = np.sqrt(np.sum(dR**2,axis=1))
+        modulo = np.sqrt(np.sum(dR*dR,axis=1))
         indices = np.argsort(modulo)[1:neighbors+1]
         if np.any(system.mats[indices] != system.mats[i]):
             new_available.append(i)
@@ -88,17 +88,27 @@ class Gaussian_energy():
         uniq = system.uniq
         N = len(system.mats)
         
-        if type(self.s1s[uniq[0]]) == str: #if the user provides a file that contains the energies
-            s1 = np.random.choice(np.loadtxt(self.s1s[uniq[0]]),size = N)
-        else: #if you want to generate an on-the-fly gaussian distr.
-            s1 = np.random.normal(self.s1s[uniq[0]][0],self.s1s[uniq[0]][1],N)
+        means = np.empty(N)
+        stds  = np.empty(N)
+        means.fill(self.s1s[uniq[0]][0])
+        stds.fill(self.s1s[uniq[0]][1])
         materials = [i for i in uniq if i != uniq[0]]
         for m in materials:
-            if type(self.s1s[m]) == str:
-                s11 = np.random.choice(np.loadtxt(self.s1s[m]),size = N)
-            else:
-                s11 = np.random.normal(self.s1s[m][0],self.s1s[m][1],N)
-            s1[system.mats == m] = s11[system.mats == m]         
+            means[system.mats == m] = self.s1s[m][0]
+            stds[system.mats == m]  = self.s1s[m][1]
+        s1 = np.random.normal(means,stds,N) 
+
+        #if type(self.s1s[uniq[0]]) == str: #if the user provides a file that contains the energies
+        #    s1 = np.random.choice(np.loadtxt(self.s1s[uniq[0]]),size = N)
+        #else: #if you want to generate an on-the-fly gaussian distr.
+        #    s1 = np.random.normal(self.s1s[uniq[0]][0],self.s1s[uniq[0]][1],N)
+        #materials = [i for i in uniq if i != uniq[0]]
+        #for m in materials:
+        #    if type(self.s1s[m]) == str:
+        #        s11 = np.random.choice(np.loadtxt(self.s1s[m]),size = N)
+        #    else:
+        #        s11 = np.random.normal(self.s1s[m][0],self.s1s[m][1],N)
+        #    s1[system.mats == m] = s11[system.mats == m]         
         system.set_energies(s1,type_en)
 
 #########################################################################################
