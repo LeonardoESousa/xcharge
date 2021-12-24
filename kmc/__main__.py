@@ -73,76 +73,39 @@ def decision(s,system):
     dz = np.nan_to_num(Z - Z[local])
     r  = np.sqrt(dx**2+dy**2+dz**2)
     r[r == 0] = np.inf
+
+    final_rate = []
+    labels     = []
+    chosen     = []
+    hop = system.processes.get(kind)
+    for transfer in hop:    
+        jump_rate  = transfer.rate(r=r,system=system,particle=s)
+        probs = np.cumsum(jump_rate)/np.sum(jump_rate)
+        sorte = random.uniform(0,1)
+        try:
+            chosen.append(np.where(sorte < probs)[0][0])
+        except:
+            chosen.append(local)
+        final_rate.append(jump_rate[chosen[-1]])
+        labels.append(transfer)
+ 
+    mono = system.monomolecular.get(kind)   
+    for m in mono:
+        final_rate.append(m.rate(material=Mat))
+        labels.append(m)
+        chosen.append(local)
     
-    hop = system.processes.get(kind) 
-    mono = system.monomolecular.get(kind)     
-    jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
-    #locais    = [range(len(X)) for _ in jump_rate]
-    
-    locais    = [random.choices(range(len(x)),weights=x) for x in jump_rate]
-    jump_rate = [jump_rate[i][locais[i]] for i in range(len(locais))]
-    
-    mono_rate = [[m.rate(material=Mat)] for m in mono]
-    locais2   = [[local] for _ in mono_rate]
-    jump_rate += mono_rate
-    locais += locais2
+    probs = np.cumsum(final_rate)/np.sum(final_rate)
+    sorte = random.uniform(0,1)
 
-    indices = [len(x) for x in jump_rate]
-    labels = hop+mono 
-
-    jump_rate = np.concatenate(jump_rate)
-    locais    = np.concatenate(locais)
-    jump = random.choices(range(len(jump_rate)),weights=jump_rate)[0]
-    dt = (1/np.sum(jump_rate))*np.log(1/random.uniform(1E-12,1))
-
-    
-    chosen = np.where(jump < np.cumsum(indices))[0][0]
-    label = labels[chosen]
-    #alvo = jump
-    #for elem in indices:
-    #    if alvo - elem >= 0:
-    #        alvo -= elem
-    #    else:
-    #        if elem > 1:
-    #            chosen = alvo
-    #        else:
-    #            chosen = local    
-    #        break
-    return label, locais[jump], dt
-
-
-#    final_rate = []
-#    labels     = []
-#    chosen     = []
-#    hop = system.processes.get(kind)
-#    for transfer in hop:    
-#        jump_rate  = transfer.rate(r=r,system=system,particle=s)
-#        probs = np.cumsum(jump_rate)/np.sum(jump_rate)
-#        sorte = random.uniform(0,1)
-#        try:
-#            chosen.append(np.where(sorte < probs)[0][0])
-#        except:
-#            chosen.append(local)
-#        final_rate.append(jump_rate[chosen[-1]])
-#        labels.append(transfer)
-# 
-#    mono = system.monomolecular.get(kind)   
-#    for m in mono:
-#        final_rate.append(m.rate(material=Mat))
-#        labels.append(m)
-#        chosen.append(local)
-#    
-#    probs = np.cumsum(final_rate)/np.sum(final_rate)
-#    sorte = random.uniform(0,1)
-#
-#    try:
-#        jump = np.where(sorte < probs)[0][0]
-#        dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
-#    #If no option is available, particle stands still
-#    except:
-#        jump = 0
-#        dt = np.inf
-#    return labels[jump], chosen[jump], dt
+    try:
+        jump = np.where(sorte < probs)[0][0]
+        dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
+    #If no option is available, particle stands still
+    except:
+        jump = 0
+        dt = np.inf
+    return labels[jump], chosen[jump], dt
 
 def step(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
