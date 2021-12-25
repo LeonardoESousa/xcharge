@@ -3,17 +3,17 @@ from kmc.rates import *
 from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
-identifier         = 'forster_singlet' #output identifier
+identifier         = 'forster_test' #output identifier
 time_limit         = np.inf# in PS
 animation_mode     = False
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
-rotate             = False # True = animation rotates, False = remains fixed
+rotate             = False             # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 10     # Number of rounds
+rounds             = 4     # Number of rounds
 n_proc             = 1     # Number of cores to be used
-frozen             = True              # if you want for the lattice to remain the same for all rounds
+frozen             = True  # if you want for the lattice to remain the same for all rounds
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################
@@ -41,28 +41,10 @@ forster   = Forster(Rf=radii,life=lifetimes,mu=mus)
 ##FLUORESCENCE RATES
 fluor     = Fluor(life=lifetimes)
 
-
-###TRIPLET EXCITONS######################################################################
-
-##DEXTER RADII (Å)
-Rds = {(0,0):10, (0,1):0, (1,0):0, (1,1):10}
-
-##PHOSPHORESCENCE LIFETIMES (PS)
-phlife = {0:5.29,1:5.29}
-
-##SUM OF VAN DER WALLS RADII (Å)
-Ls = {0:5.0,1:5.0}
-
-##TRIPLET TRANSFER RATES
-dexter = Dexter(Rd=Rds,life=phlife,L=Ls)
-
-##PHOSPHORESCENCE RATE
-phosph = Phosph(life=phlife)
-
 ###PROCESSES#############################################################################
 
-processes = {'singlet':[forster], 'triplet':[dexter], 'electron':[],'hole':[]}
-monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
+processes = {'singlet':[forster], 'triplet':[], 'electron':[],'hole':[]}
+monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
@@ -75,16 +57,16 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-num_sites         = 100             #number of sites of the lattice
+num_sites         = 20             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
-disorder          = [0.,0.,0.]   #std deviation from avg position
-composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
+disorder          = [0.5,0.5,0.5]   #std deviation from avg position
+composition       = [1,0]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
 lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
 
 #ENERGIES
 #Gaussian distribuitions
-t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #Peak emission energy (eV), disperison (eV)
-s1s   = {0:'s1_mat0.txt', 1:'s1_mat1.txt', 'level':'s1'} # triplet energy, disperison (eV)
+t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
+s1s   = {0:(6.1,0.1), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
 a1 = morphology.Gaussian_energy(s1s)
 a2 = morphology.Gaussian_energy(t1s) 
@@ -93,8 +75,8 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton    = morphology.Create_Particles('singlet', 20, method, mat=[0,1])
-exciton2   = morphology.Create_Particles('triplet', 5, method, mat=[0,1])
+exciton   = morphology.Create_Particles('singlet', 4, method, mat=[0])
+
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################

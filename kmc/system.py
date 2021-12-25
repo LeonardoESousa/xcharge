@@ -38,8 +38,11 @@ class System:
         try:
             self.particles = self.particles + Ss
         except:    
-            self.particles = Ss            
-
+            self.particles = Ss         
+               
+    def reset_particles(self):
+        self.particles = None 
+        
     def set_dipoles(self,mus):
         self.mu = mus
         self.norma_mu = np.sqrt(np.sum(mus*mus,axis=1))

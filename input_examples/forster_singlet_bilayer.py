@@ -13,6 +13,7 @@ marker_type        = 1     # marker type used at the animation processs ( 0 = ba
 pause              = True  # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 100   # Number of rounds
 n_proc             = 1     # Number of cores to be used
+frozen             = True              # if you want for the lattice to remain the same for all rounds
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################

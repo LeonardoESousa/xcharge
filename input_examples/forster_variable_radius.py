@@ -13,6 +13,7 @@ rotate             = False # True = animation rotates, False = remains fixed
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 1     # Number of rounds
 n_proc             = 1     # Number of cores to be used
+frozen             = True              # if you want for the lattice to remain the same for all rounds
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################

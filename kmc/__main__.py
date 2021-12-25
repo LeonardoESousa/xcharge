@@ -6,6 +6,7 @@ from kmc.system import System
 import sys
 import warnings
 import os
+import copy
 import matplotlib.pyplot as plt
 from matplotlib import animation
 from joblib import Parallel, delayed
@@ -38,7 +39,7 @@ time_limit      = param.time_limit
 pause           = param.pause
 marker_type     = param.marker_type
 rotate          = param.rotate
-
+frozen_lattice  = param.frozen
 
 monomolecular       = param.monomolecular
 processes           = param.processes
@@ -226,6 +227,22 @@ def make_system():
     system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,bimolec_funcs_array) 
  
     return system 
+
+#resets particles' initial position for a given system
+def reroll_system(system):
+    system.reset_particles()
+    for argumento in argumentos:
+        class_name = argumento.__class__.__name__
+        if (class_name == "Create_Particles"):
+            argumento.assign_to_system(system)
+    
+    '''
+    #debug
+    p  = system.particles
+    pp = [ part.position for part in p ]
+    print(pp,system.s1)    
+    '''
+    return system
     
 #setting up the animation object and adding responses to events    
 def run_animation():
@@ -280,9 +297,11 @@ def main():
         
         plt.show()
                 
-    else:
-    
+    if not frozen_lattice: # at every round, the entire lattice is recalculated
         Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system()) for _ in range(rounds))
+    else:
+        sys = make_system() # at every round, only particle creation is recalculated
+        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(reroll_system(copy.deepcopy(sys))) for _ in range(rounds))
                 
 if __name__ == "__main__":
     sys.exit(main())        
