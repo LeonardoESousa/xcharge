@@ -7,7 +7,7 @@ from kmc.particles import *
 class randomized_error(Exception):
     
     def __init__(self,number):
-        self.message="We were not able to include the " + str(number) + " particle(s) into the lattice. Losen up the spacial restrictions for particle creation!"
+        self.message="We were not able to include the " + str(number) + " particle(s) into the lattice. Loosen up the spacial restrictions for particle creation!"
         super().__init__(self.message)
     
     
@@ -17,27 +17,43 @@ class randomized_error(Exception):
 # note: always define the function by list (param) that contains the things needed
 #### CHOOSE A FUNC TO GENERATE PARTICLES
 
+'''
 def randomized(available, number, system, kwargs):
     mat = kwargs['mat']
     selected = random.sample(list(available),number)
-    selected = [s for s in selected if system.mats[s] in mat]
-    
+    selected = [s for s in selected if system.mats[s] in mat]    
     count   = 0
-    cutoff  = number*10
-    
+    cutoff  = number*10    
     while len(selected) < number and count < cutoff:
         count = count + 1
         new = random.sample(list(available),number-len(selected))
         for n in new:
             if system.mats[n] in mat:
-                selected.append(n)
-                
-    if count >= cutoff:
-        raise randomized_error(number)
-        
-        
+                selected.append(n)                      
+    if count >= cutoff and len(selected) != number:
+        raise randomized_error(number)                   
     return selected            
+'''
+    
+def randomized(available, number, system, kwargs):
+    mat = kwargs['mat']
+    selected = random.sample(list(available),number)
+    selected = [s for s in selected if system.mats[s] in mat]    
 
+    selec_size_old = len(selected)
+    selec_size_new = number # could be anything that satisfies selec_size_old != selec_size_new = True, but this way is granted to work if  len(selected) < number = True
+    
+    while len(selected) < number and selec_size_old != selec_size_new:
+        selected_size_old = len(selected)
+        new = random.sample(list(available),number-len(selected))
+        for n in new:
+            if system.mats[n] in mat:
+                selected.append(n)                           
+        selec_size_new = len(selected)        
+    if selec_size_old == selec_size_new and len(selected) != number:
+        raise randomized_error(number)                   
+    return selected          
+      
 def interface(available, number, system, kwargs):
     mat = kwargs['mat']
     neighbors = kwargs['neigh']
