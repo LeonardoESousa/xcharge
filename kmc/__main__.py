@@ -9,11 +9,11 @@ import os
 import copy
 import matplotlib.pyplot as plt
 from matplotlib import animation
-from joblib import Parallel, delayed
+#from joblib import Parallel, delayed
 from mpl_toolkits.mplot3d import Axes3D
 import importlib
 warnings.filterwarnings("ignore")   
-
+from tqdm.contrib.concurrent import thread_map, process_map
 
 
 #importing param module
@@ -46,6 +46,18 @@ processes           = param.processes
 bimolec             = param.bimolec
 bimolec_funcs_array = param.bimolec_funcs_array
 
+def make_system():
+    #Create instance of system
+    system = System()
+    #Sets system properties  
+    for argumento in argumentos:
+        argumento.assign_to_system(system)
+
+    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,bimolec_funcs_array) 
+ 
+    return system 
+syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
+    
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):   
     locs = np.array([s.position for s in Ss])
@@ -212,22 +224,6 @@ def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
         plt.switch_backend('agg')
         plt.savefig(fig_name+'.png')
         
-#RUN of a single round   
-def RUN(system):
-    step(system)
-    spectra(system)
-
-def make_system():
-    #Create instance of system
-    system = System()
-    #Sets system properties  
-    for argumento in argumentos:
-        argumento.assign_to_system(system)
-
-    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,bimolec_funcs_array) 
- 
-    return system 
-
 #resets particles' initial position for a given system
 def reroll_system(system):
     system.reset_particles()
@@ -243,7 +239,18 @@ def reroll_system(system):
     print(pp,system.s1)    
     '''
     return system
-    
+            
+#RUN of a single round       
+def RUN(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE IS RECALCULATED
+    system = make_system()
+    step(system)
+    spectra(system)
+ 
+def RUN_FREEZE(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE REMAINS INTACT
+    system = reroll_system(copy.deepcopy(syst))  
+    step(system)
+    spectra(system)
+
 #setting up the animation object and adding responses to events    
 def run_animation():
     ani_running = True
@@ -296,12 +303,13 @@ def main():
                 ani.save(path, writer=writervideo)
         
         plt.show()
-                
-    if not frozen_lattice: # at every round, the entire lattice is recalculated
-        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(make_system()) for _ in range(rounds))
-    else:
-        sys = make_system() # at every round, only particle creation is recalculated
-        Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(reroll_system(copy.deepcopy(sys))) for _ in range(rounds))
+    else:            
+        if not frozen_lattice: # at every round, the entire lattice is recalculated
+            #Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(_) for _ in range(rounds))
+            process_map(RUN,range(rounds),max_workers = n_proc)  
+        else:# at every round, only particle creation is recalculated
+            #Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN_FREEZE)(_) for _ in range(rounds))
+            process_map(RUN_FREEZE,range(rounds),max_workers = n_proc) 
                 
 if __name__ == "__main__":
     sys.exit(main())        
