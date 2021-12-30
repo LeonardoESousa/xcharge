@@ -38,19 +38,36 @@ def randomized(available, number, system, kwargs):
 def randomized(available, number, system, kwargs):
     mat = kwargs['mat']
     selected = random.sample(list(available),number)
-    selected = [s for s in selected if system.mats[s] in mat]    
-
+    selected = [s for s in selected if system.mats[s] in mat]
     selec_size_old = len(selected)
     selec_size_new = number # could be anything that satisfies selec_size_old != selec_size_new = True, but this way is granted to work if  len(selected) < number = True
     
-    while len(selected) < number and selec_size_old != selec_size_new:
-        selected_size_old = len(selected)
-        new = random.sample(list(available),number-len(selected))
-        for n in new:
-            if system.mats[n] in mat:
-                selected.append(n)                           
-        selec_size_new = len(selected)        
-    if selec_size_old == selec_size_new and len(selected) != number:
+    count = 1
+    cutoff = number*np.sqrt(len(list(available)))
+    #print(count,number,selec_size_old,selec_size_new)
+    while len(selected) < number and count < cutoff:
+    
+        count = count + 1
+        selec_size_old = len(selected)
+        sel_old = selected.copy()
+        new      = random.sample(list(available),number-len(selected))
+        new_mat  = [sel for sel in new if system.mats[sel] in mat] 
+        selected = list(set(selected + new_mat)) #enforcing uniqueness                       
+        selec_size_new = len(selected)
+        '''
+        print()
+        print('--->',count,selec_size_old,selec_size_new,new, [system.mats[a] for a in new])
+        print('---> sel. old',sel_old)
+        print('---> sel. new',selected)
+        '''
+    '''    
+    print('#')    
+    print(count,selec_size_old,selec_size_new, len(selected) < number,selec_size_old != selec_size_new )
+    print(cutoff,count)
+    print(selected)
+    '''
+    
+    if count == cutoff:#if we could not find suitable sites for particle creation
         raise randomized_error(number)                   
     return selected          
       

@@ -52,7 +52,6 @@ def make_system():
     #Sets system properties  
     for argumento in argumentos:
         argumento.assign_to_system(system)
-
     system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,bimolec_funcs_array) 
  
     return system 
