@@ -90,9 +90,13 @@ def decision(s,system):
     mono = system.monomolecular.get(kind)     
     jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
     
-    locais    = np.array([np.random.choice(np.arange(len(x)),p=x/np.sum(x)) for x in jump_rate]).astype(int)
-    jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
-    
+    try:
+        locais    = np.array([np.random.choice(np.arange(len(x)),p=x/np.sum(x)) for x in jump_rate]).astype(int)
+        jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
+    except:
+        locais    = np.array([local])
+        jump_rate = np.array([0])
+
     mono_rate = np.array([m.rate(material=Mat) for m in mono])
     jump_rate = np.append(jump_rate,mono_rate)
     locais2   = np.zeros(len(mono_rate)) + local
@@ -100,27 +104,17 @@ def decision(s,system):
     labels = hop+mono 
 
     jump = np.random.choice(np.arange(len(jump_rate)),p=jump_rate/np.sum(jump_rate))
-    dt = (1/np.sum(jump_rate))*np.log(1/random.uniform(1E-12,1))
+    labels[jump].action(s,system,locais[jump])
 
-    return labels[jump], locais[jump], dt
+    return jump_rate[jump] #[labels[jump], locais[jump], jump_rate[jump]]
   
 
 def step(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
-        system.IT = system.IT +1
+        system.IT += 1
         Ss = system.particles.copy()     
-        J, W, DT = [],[],[]
-        for s in Ss:
-            jump, where, dt = decision(s,system)
-            J.append(jump)
-            W.append(where)
-            DT.append(dt)    
-        time_step = min(DT)
-        system.time += time_step
-        fator = random.uniform(0,1)
-        for i in range(len(Ss)):
-            if fator <= time_step/DT[i]:
-                J[i].action(Ss[i],system,W[i])
+        R = [decision(s,system) for s in Ss]
+        system.time += (1/np.sum(R))*np.log(1/random.uniform(1E-12,1))
         if system.bimolec:
             anni_general(system,Ss,system.bimolec_funcs_array)
         if system.animation_mode:
