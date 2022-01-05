@@ -43,7 +43,7 @@ def randomized(available, number, system, kwargs):
     selec_size_new = number # could be anything that satisfies selec_size_old != selec_size_new = True, but this way is granted to work if  len(selected) < number = True
     
     count = 1
-    cutoff = number*np.sqrt(len(list(available)))
+    cutoff = 10000*number*np.sqrt(len(list(available)))
     #print(count,number,selec_size_old,selec_size_new)
     while len(selected) < number and count < cutoff:
     
