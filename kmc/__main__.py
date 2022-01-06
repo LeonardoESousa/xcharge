@@ -155,24 +155,10 @@ def animate(num,system,ax,marker_option,rotate):
             ys = Y[s.position]
             zs = Z[s.position]    
                 
-            if marker_option == 1:      
-                if s.species == 'electron':
-                    ax.scatter(xs,ys,zs,marker="$e^-$",color='red',s=200,alpha=1,label=s.species)
-                elif s.species == 'hole':
-                    ax.scatter(xs,ys,zs,marker="$h^+$",color='blue',s=200,alpha=1,label=s.species)
-                elif s.species == 'triplet':
-                    ax.scatter(xs,ys,zs,marker='$T_1$',color='green',s=200,alpha=1,label=s.species)
-                elif s.species == 'singlet':
-                    ax.scatter(xs,ys,zs,marker='$S_1$',color='orange',s=200,alpha=1,label=s.species)
-            if marker_option == 0:               
-                if s.species == 'electron':
-                    ax.scatter(xs,ys,zs,color='red',s=100,alpha=1,label=s.species)
-                elif s.species == 'hole':
-                    ax.scatter(xs,ys,zs,color='blue',s=100,alpha=1,label=s.species)
-                elif s.species == 'triplet':
-                    ax.scatter(xs,ys,zs,color='green',s=100,alpha=1,label=s.species)
-                elif s.species == 'singlet':
-                    ax.scatter(xs,ys,zs,color='orange',s=100,alpha=1,label=s.species)
+            if marker_option == 1:
+                ax.scatter(xs,ys,zs,marker=s.marker,color=s.color,s=200,alpha=1,label=s.species)      
+            if marker_option == 0:
+                ax.scatter(xs,ys,zs,color=s.color,s=100,alpha=1,label=s.species)               
     except:
         pass
     

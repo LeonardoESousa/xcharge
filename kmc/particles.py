@@ -46,13 +46,23 @@ class Electron(Particles):
     def __init__(self,initial):
         Particles.__init__(self,'electron',initial) 
         self.charge = -1
+        self.color  = "red"
+        self.marker = "$e^-$"
 
 class Exciton(Particles):
     def __init__(self,kind,initial):
         Particles.__init__(self,kind,initial) 
         self.charge = 0
+        if kind == 'singlet':
+            self.color  = "orange"
+            self.marker = "$S_1$"
+        elif kind == 'triplet':
+            self.color  = "green"
+            self.marker = "$T_1$"
 
 class Hole(Particles):
     def __init__(self,initial):
         Particles.__init__(self,'hole',initial) 
         self.charge = 1
+        self.color  = "blue"
+        self.marker = "$h^+$"
