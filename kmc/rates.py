@@ -204,8 +204,8 @@ class Dissociation:
         mat      = mats[local]
         num      = len(mats)
 
-        lumos = np.copy(system.LUMO)
-        homos = np.copy(system.HOMO)
+        lumos = np.copy(system.lumo)
+        homos = np.copy(system.homo)
         if particle.species   == 'singlet':
             s1s   = np.copy(system.s1) 
         elif particle.species == 'triplet':
@@ -287,8 +287,8 @@ class MillerAbrahams:
         indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
 
         if particle.species == 'electron':
-            engs  = np.copy(system.LUMO)
-            homos = np.copy(system.HOMO)
+            engs  = np.copy(system.lumo)
+            homos = np.copy(system.homo)
             
             for m in indices_h:
                 potential[m] = 0
@@ -301,8 +301,8 @@ class MillerAbrahams:
             engs += -1*potential
             DE = (engs - engs[local]) + abs(engs - engs[local])
         elif particle.species == 'hole':
-            engs  = np.copy(system.HOMO)
-            lumos = np.copy(system.LUMO)
+            engs  = np.copy(system.homo)
+            lumos = np.copy(system.lumo)
           
             for m in indices_e:
                 potential[m] = 0
