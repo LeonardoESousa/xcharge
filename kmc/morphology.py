@@ -1,7 +1,7 @@
 import numpy as np
 import random
 from kmc.particles import *
-
+import sys
 
 # Personalized errors
 class randomized_error(Exception):
@@ -99,15 +99,8 @@ class Create_Particles():
 
     def assign_to_system(self,system):
         selected = self.method(range(len(system.X)),self.num, system, self.argv)
-        if self.kind.lower() == 'electron':
-            particles = [Electron(number) for number in selected]
-        elif self.kind.lower() == 'hole':
-            particles = [Hole(number) for number in selected]
-        elif self.kind.lower() == 'singlet':
-            particles = [Exciton('singlet',number) for number in selected]
-        elif self.kind.lower() == 'triplet':
-            particles = [Exciton('triplet',number) for number in selected]        
-
+        Particula = getattr(sys.modules[__name__], self.kind.title())
+        particles = [Particula(number) for number in selected]
         system.set_particles(particles)
 #########################################################################################
 
@@ -158,9 +151,9 @@ def ele_hol_recomb(system,tipos,Ss,indices,locs):
         Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.s1)
         Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.s1)
         if random.uniform(0,1) <= 0.75 and abs(id1) != abs(id2):
-            system.add_particle(Exciton('triplet',locs[indices[0][0]]))
+            system.add_particle(Triplet(locs[indices[0][0]]))
         else:
-            system.add_particle(Exciton('singlet',locs[indices[0][0]]))
+            system.add_particle(Singlet(locs[indices[0][0]]))
             
             
 #annihililation exciton singlets pair

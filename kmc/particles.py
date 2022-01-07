@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import sys
 
 class Particles:
     def __init__(self,species,initial):
@@ -35,8 +36,11 @@ class Particles:
         system.remove(self)
     
     def convert(self,system,energies,causamortis,newkind):
+        self.status = 'dead'
         self.make_text(system,energies,causamortis)
-        self.species = newkind
+        Particula = getattr(sys.modules[__name__], newkind.title())
+        system.set_particles([Particula(self.position)])
+        system.remove(self)
 
     def write(self):
         return self.report
@@ -49,16 +53,19 @@ class Electron(Particles):
         self.color  = "red"
         self.marker = "$e^-$"
 
-class Exciton(Particles):
-    def __init__(self,kind,initial):
-        Particles.__init__(self,kind,initial) 
+class Singlet(Particles):
+    def __init__(self,initial):
+        Particles.__init__(self,'singlet',initial) 
         self.charge = 0
-        if kind == 'singlet':
-            self.color  = "orange"
-            self.marker = "$S_1$"
-        elif kind == 'triplet':
-            self.color  = "green"
-            self.marker = "$T_1$"
+        self.color  = "orange"
+        self.marker = "$S_1$"
+        
+class Triplet(Particles):
+    def __init__(self,initial):
+        Particles.__init__(self,'triplet',initial) 
+        self.charge = 0
+        self.color  = "green"
+        self.marker = "$T_1$"
 
 class Hole(Particles):
     def __init__(self,initial):
