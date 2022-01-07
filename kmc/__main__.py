@@ -46,6 +46,18 @@ processes           = param.processes
 bimolec             = param.bimolec
 bimolec_funcs_array = param.bimolec_funcs_array
 
+def passar(*args):
+    pass
+
+def anni(system,Ss,array):
+    anni_general(system,Ss,array)
+   
+
+if bimolec:
+    bi_func = anni
+else:
+    bi_func = passar
+
 def make_system():
     #Create instance of system
     system = System()
@@ -80,12 +92,11 @@ def decision(s,system):
     local = s.position    
     X,Y,Z = system.X, system.Y, system.Z 
     Mat   = system.mats[local]   
-    dx = np.nan_to_num(X - X[local]) 
-    dy = np.nan_to_num(Y - Y[local])
-    dz = np.nan_to_num(Z - Z[local])
+    dx = X - X[local]   
+    dy = Y - Y[local]  
+    dz = Z - Z[local]  
     r  = np.sqrt(dx*dx+dy*dy+dz*dz)
-    r[r == 0] = np.inf
-
+    
     hop = system.processes.get(kind) 
     mono = system.monomolecular.get(kind)     
     jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
@@ -106,24 +117,39 @@ def decision(s,system):
     jump = np.random.choice(np.arange(len(jump_rate)),p=jump_rate/np.sum(jump_rate))
     labels[jump].action(s,system,locais[jump])
 
-    return jump_rate[jump] #[labels[jump], locais[jump], jump_rate[jump]]
-  
+    return np.sum(jump_rate)
 
-def step(system): 
+########ITERATION FUNCTIONS#######################################################
+def step_ani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
         Ss = system.particles.copy()     
         R = [decision(s,system) for s in Ss]
-        system.time += (1/np.sum(R))*np.log(1/random.uniform(1E-12,1))
-        if system.bimolec:
-            anni_general(system,Ss,system.bimolec_funcs_array)
-        if system.animation_mode:
-            return Ss       
+        system.time += (1/np.sum(R))*np.log(1/random.uniform(1E-12,1))    
+        bi_func(system,Ss,system.bimolec_funcs_array)
+        return Ss       
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1)
   
-               
+def step_nonani(system): 
+    while system.count_particles() > 0 and system.time < system.time_limit:
+        system.IT += 1
+        Ss = system.particles.copy()     
+        R = [decision(s,system) for s in Ss]
+        system.time += (1/np.sum(R))*np.log(1/random.uniform(1E-12,1))    
+        bi_func(system,Ss,system.bimolec_funcs_array)       
+    Ss = system.particles.copy()
+    for s in Ss:
+        s.kill('alive',system,system.s1)
+##########################################################################################
+
+if animation_mode:
+    step = step_ani
+else:
+    step = step_nonani
+
+
 #Prints Spectra
 def spectra(system):
     if os.path.isfile("Simulation_"+system.identifier+".txt") == False:

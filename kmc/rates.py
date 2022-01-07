@@ -49,15 +49,12 @@ class Forster:
         mats   = system.mats    
         local  = ex.position    
         mat = mats[local]
-        num = len(mats)
         
-        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
+        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
         
-        lifetime = self.lifetime[mat]
-        mu       = self.mu[mat]
-        x = (Rf/(self.alpha*mu + r))
-        taxa = (1/lifetime)*x*x*x*x*x*x
-        taxa = np.nan_to_num(taxa)
+        x = (Rf/(self.alpha*self.mu[mat] + r))
+        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
+        taxa[r == 0] = 0
         return taxa
 
 
@@ -81,20 +78,16 @@ class ForsterT:
         mats   = system.mats 
         local  = ex.position 
         mat = mats[local]
-        num = len(mats)
         
-        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
-        lifetime = self.lifetime[mat]
-        mu       = self.mu[mat]
-        x = (Rf/(self.alpha*mu + r))
-        taxa = (1/lifetime)*x*x*x*x*x*x
-        taxa = np.nan_to_num(taxa)
+        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
+        x = (Rf/(self.alpha*self.mu[mat] + r))
+        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
+        taxa[r == 0] = 0
         return taxa
 
     def action(self,particle,system,local):
         particle.move(local)
-        energies = system.t1 
-        particle.convert(system,energies,self.kind,'singlet')
+        particle.convert(system,system.t1,self.kind,'singlet')
 #########################################################################################
 
 ##FORSTER TRANSFER WITH ORIENTATION FACTORS ON THE FLY###################################
@@ -113,7 +106,6 @@ class ForsterKappa:
         mats   = system.mats    
         local  = ex.position    
         mat = mats[local]
-        num = len(mats)
         mus = np.copy(system.mu)
 
         R = np.copy(system.R) 
@@ -122,12 +114,11 @@ class ForsterKappa:
         dR /= modulo
 
         kappa = np.inner(mus[local,:],mus) -  3*(np.inner(mus[local,:],dR)*(np.sum(mus*dR,axis=1)))  
-        Rf = raios(num,self.Rf,mat,self.lifetime,mats)
+        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
         
-        lifetime = self.lifetime[mat]
-        mu       = system.norma_mu[local]
-        x = (Rf/(self.alpha*mu + r))
-        taxa = (1/lifetime)*(kappa*kappa)*x*x*x*x*x*x
+        x = (Rf/(self.alpha*system.norma_mu[local] + r))
+        taxa = (1/self.lifetime[mat])*(kappa*kappa)*x*x*x*x*x*x
+        taxa[r == 0] = 0
         return taxa
 
     def action(self,particle,system,local):
@@ -156,14 +147,12 @@ class ForsterRedShift:
         
         Rfs = raios_dist(num,self.Rf,mat,self.lifetime,mats)
         
-        lifetime = self.lifetime[mat]
-        mu       = self.mu[mat]
         s1s   = np.copy(system.s1)
         s1s   = (s1s - s1s[local]) + abs(s1s - s1s[local]) 
         boltz = np.exp(-1*s1s/(2*kb*self.T)) 
-        x = Rfs/(self.alpha*mu + r)
-        taxa  = (1/lifetime)*x*x*x*x*x*x*boltz
-        taxa  = np.nan_to_num(taxa)
+        x = Rfs/(self.alpha*self.mu[mat] + r)
+        taxa  = (1/self.lifetime[mat])*x*x*x*x*x*x*boltz
+        taxa[r == 0] = 0
         return taxa
 
 
@@ -186,57 +175,16 @@ class Dexter:
         mats   = system.mats  
         local  = ex.position  
         mat = mats[local]
-        num = len(mats)
         
-        Rd = raios(num,self.Rd,mat,self.lifetime,mats)
+        Rd = raios(len(mats),self.Rd,mat,self.lifetime,mats)
         
-        lifetime = self.lifetime[mat]
-        L        = self.L[mat]
-        taxa = (1/lifetime)*np.exp((2*Rd/L)*(1-r/Rd))
+        taxa = (1/self.lifetime[mat])*np.exp((2*Rd/self.L[mat])*(1-r/Rd))
+        taxa[r == 0] = 0
         return taxa
 
     def action(self,particle,system,local):
         particle.move(local)
-#########################################################################################
-
-##MOLECULE TO 2D MATERIAL FORSTER TRANSFER###############################################
-#class ForsterDye:
-#    def __init__(self,**kwargs):
-#        self.kind = 'fluor'
-#        self.lcc = kwargs['lcc'] #C-C distances in Angstrom
-#        self.t   = kwargs['t']   #Hopping integral in graphene in eV
-#        self.mu  = kwargs['mu']
-#        self.eps = kwargs['eps']
-#        self.switch = kwargs['switch']
-#    
-#    def rate(self,**kwargs):
-#        r      = kwargs['r']
-#        system = kwargs['system']
-#        ex     = kwargs['particle']
-#        mats   = system.mats  
-#        local  = ex.position  
-#        hw     =  system.s1[local] 
-#        mat = mats[local]
-#        num = len(mats)
-#        
-#        lcc  = self.lcc #C-C distances in Angstrom
-#        t    = self.t   #Hopping integral in graphene in eV
-#        mu   = self.mu[mat]
-#        
-#        switch = raios(num,self.switch,mat,self.mu,mats)
-#        
-#        epsilon = system.epsilon     
-#        vf = t*(3/2)*lcc
-#        q  = np.linspace(0,hw/vf,1000)
-#        q  = q[:-1]
-#        funcao =  np.array([np.trapz(np.exp(-2*q*R)*(q**3)/np.sqrt(hw**2-(q**2)*(vf**2)),q) for R in r])  
-#        taxa = switch*1e-12*((mu*0.53)**2)*(1/48)*(e**2)/((2*np.pi*hbar)*(epsilon**2))*funcao
-#        taxa = np.nan_to_num(taxa)
-#        return taxa
-#
-#    def action(self,particle,system,local):
-#        particle.move(local)        
-#########################################################################################        
+#########################################################################################       
 
 ##EXCITON DISSOCIATION RATE##############################################################
 class Dissociation:
@@ -266,7 +214,6 @@ class Dissociation:
         AtH        = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
         
-        r[r == np.inf] = 0 
         
         DEe = lumos - (homos[local] + s1s[local])
         DEh = (lumos[local] - s1s[local]) - homos  
@@ -373,7 +320,6 @@ class MillerAbrahams:
                                -2*in_loc_rad*r)*np.exp(-1*DE/(2*kb*self.T))
                                    	               
         taxa[r == 0] = 0
-        taxa = np.nan_to_num(taxa)
         return taxa
 
     def label(self):
@@ -398,10 +344,7 @@ class Fluor:
         self.lifetime = kwargs['life']
 
     def rate(self,**kwargs):
-        material = kwargs['material']
-        lifetime = self.lifetime.get(material)
-        taxa = 1/lifetime
-        return taxa
+        return 1/self.lifetime[kwargs['material']]
      
     def action(self,particle,system,local):
         particle.kill(self.kind,system,system.s1) 
@@ -414,10 +357,7 @@ class Phosph:
         self.lifetime = kwargs['life']
 
     def rate(self,**kwargs):
-        material = kwargs['material']
-        lifetime = self.lifetime.get(material)
-        taxa = 1/lifetime
-        return taxa
+        return 1/self.lifetime[kwargs['material']]
      
     def action(self,particle,system,local):
         particle.kill(self.kind,system,system.t1)
@@ -430,9 +370,7 @@ class Nonrad:
         self.taxa = kwargs['rate']
 
     def rate(self,**kwargs):
-        material = kwargs['material']
-        taxa = self.taxa.get(material)
-        return taxa
+        return self.taxa[kwargs['material']]
      
     def action(self,particle,system,local):
         particle.kill(self.kind,system,system.s1)        
@@ -446,17 +384,13 @@ class ISC:
 
     def rate(self,**kwargs):
         material = kwargs['material']
-        taxa = self.taxa.get(material)
-        return taxa
+        return self.taxa[material]
      
     def action(self,particle,system,local):
         if particle.species == 'singlet':
-            energies = system.s1 
-            newkind  = 'triplet'
-        elif particle.species == 'triplet': 
-            energies = system.t1  
-            newkind  = 'singlet'   
-        particle.convert(system,energies,self.kind,newkind)
+            particle.convert(system,system.s1,self.kind,'triplet')
+        elif particle.species == 'triplet':    
+            particle.convert(system,system.t1,self.kind,'singlet')
 #########################################################################################
 
 
