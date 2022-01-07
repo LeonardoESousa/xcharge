@@ -20,9 +20,9 @@ class Particles:
         Mats  = system.mats 
         x0,y0,z0 = X[self.initial],Y[self.initial],Z[self.initial]
         x, y, z  = X[self.position],Y[self.position],Z[self.position]
-        dx = np.nan_to_num(x-x0)
-        dy = np.nan_to_num(y-y0)
-        dz = np.nan_to_num(z-z0)
+        dx = x-x0 
+        dy = y-y0 
+        dz = z-z0 
         mat = Mats[self.position]
         energy = energies[self.position]
         texto = '{0:<15.6e}  {1:<10.2f}  {2:<10.2f}  {3:<10.2f}  {4:<10}  {5:<10.4f}  {6:<10}  {7:<10.2f}  {8:<10.2f}  {9:<10.2f}  {10:<10}'.format(
