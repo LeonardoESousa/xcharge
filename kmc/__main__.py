@@ -103,8 +103,7 @@ def decision(s,system):
     jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
     
     try:
-        interval  = np.arange(len(X))
-        locais    = np.array([random.choices(interval,weights=x)[0] for x in jump_rate]).astype(int)
+        locais    = np.array([np.where(random.uniform(0,1) <= np.cumsum(x/np.sum(x)))[0][0] for x in jump_rate]).astype(int)
         jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
     except:
         locais    = np.array([local])
@@ -116,10 +115,11 @@ def decision(s,system):
     locais    = np.append(locais,locais2.astype(int))
     labels = hop+mono 
 
-    jump = random.choices(np.arange(len(jump_rate)),weights=jump_rate)[0]
+    total_rate = np.sum(jump_rate)
+    jump = np.where(random.uniform(0,1) <= np.cumsum(jump_rate/total_rate))[0][0]
     labels[jump].action(s,system,locais[jump])
 
-    return np.sum(jump_rate)
+    return total_rate
 
 ########ITERATION FUNCTIONS#######################################################
 def step_ani(system): 
