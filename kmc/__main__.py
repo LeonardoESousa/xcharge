@@ -103,7 +103,6 @@ def decision(s,system):
     jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
     
     try:
-        #locais    = np.array([np.random.choice(np.arange(len(x)),p=x/np.sum(x)) for x in jump_rate]).astype(int)
         interval  = np.arange(len(X))
         locais    = np.array([random.choices(interval,weights=x)[0] for x in jump_rate]).astype(int)
         jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
@@ -117,7 +116,6 @@ def decision(s,system):
     locais    = np.append(locais,locais2.astype(int))
     labels = hop+mono 
 
-    #jump = np.random.choice(np.arange(len(jump_rate)),p=jump_rate/np.sum(jump_rate))
     jump = random.choices(np.arange(len(jump_rate)),weights=jump_rate)[0]
     labels[jump].action(s,system,locais[jump])
 
