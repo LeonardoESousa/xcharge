@@ -70,7 +70,8 @@ def make_system():
 syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
     
 # runs the annihilations defined in anni_funcs_array                 
-def anni_general(system,Ss,anni_funcs_array):   
+def anni_general(system,Ss,anni_funcs_array):
+    Ss = system.particles.copy()      
     locs = np.array([s.position for s in Ss])
     
     if len(locs) > len(set(locs)):
