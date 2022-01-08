@@ -75,7 +75,7 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
+exciton   = morphology.Create_Particles('singlet', 3, method, mat=[0,1])
 
 #########################################################################################
 
