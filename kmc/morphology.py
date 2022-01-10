@@ -148,21 +148,24 @@ def ele_hol_recomb(system,tipos,Ss,indices,locs):
     if 'electron' in tipos and 'hole' in tipos:        
         id1 = Ss[indices[0][tipos.index('electron')]].identity
         id2 = Ss[indices[0][tipos.index('hole')]].identity
-        Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.s1)
-        Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.s1)
+        
+        maked_for_death = []
+        maked_for_death.append(Ss[indices[0][tipos.index('electron')]],'anni',system.s1)
+        maked_for_death.append(Ss[indices[0][tipos.index('hole')]],'anni',system.s1)        
+        
         if random.uniform(0,1) <= 0.75 and abs(id1) != abs(id2):
-            system.add_particle(Triplet(locs[indices[0][0]]))
+            system.add_particle(Exciton('triplet',locs[indices[0][0]]))
         else:
-            system.add_particle(Singlet(locs[indices[0][0]]))
+            system.add_particle(Exciton('singlet',locs[indices[0][0]]))
             
-            
+        return marked_for_death
+           
 #annihililation exciton singlets pair
 def anni_sing(system,tipos,Ss,indices,locs):
     duplicates = set([x for x in tipos if tipos.count(x) > 1]) # checking if there is 2 occurrences of the types
-    if 'singlet' in duplicates:        
-        Ss[indices[0][tipos.index('singlet')]].kill('anni',system,system.s1)
-             
-        
+    if 'singlet' in duplicates: 
+        maked_for_death = [Ss[indices[0][tipos.index('singlet')]],'anni',system.s1]
+        return [maked_for_death]     
 ############################################           
 # FUNCS TO SHAPE THE GENERATION OF PARTICLES
 

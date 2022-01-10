@@ -71,8 +71,9 @@ syst = make_system() #global system-type object to be used in frozen simulations
     
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,Ss,anni_funcs_array):
-    Ss = system.particles.copy()      
+    Ss = system.particles.copy()   
     locs = np.array([s.position for s in Ss])
+    kill_list = []
     
     if len(locs) > len(set(locs)):
         locs2 = np.array(list(set(locs)))
@@ -84,7 +85,15 @@ def anni_general(system,Ss,anni_funcs_array):
                 
                 #running all the choosen annifuncs from morphology.py
                 for anni_func in anni_funcs_array:
-                    anni_func(system,tipos,Ss,indices,locs)
+                    list_death = anni_func(system,tipos,Ss,indices,locs)
+                    if list_death:
+                        kill_list = kill_list + list_death
+                    
+    kill_list = list(filter(None, kill_list))
+    if kill_list:                
+        for dead in kill_list:
+             dead[0].kill(dead[1],system,dead[2])  
+
                   
 
 
