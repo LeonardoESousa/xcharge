@@ -88,18 +88,16 @@ def anni_general(system,Ss,anni_funcs_array):
                   
 
 
-def decision(s,system):
+def decision(s,system,X,Y,Z):
     kind = s.species      
-    local = s.position    
-    X,Y,Z = system.X, system.Y, system.Z 
-    Mat   = system.mats[local]   
+    local = s.position        
     dx = X - X[local]   
     dy = Y - Y[local]  
     dz = Z - Z[local]  
     r  = np.sqrt(dx*dx+dy*dy+dz*dz)
     
-    hop = system.processes.get(kind) 
-    mono = system.monomolecular.get(kind)     
+    hop  = system.processes[kind] 
+    mono = system.monomolecular[kind]     
     jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
     
     try:
@@ -109,7 +107,7 @@ def decision(s,system):
         locais    = np.array([local])
         jump_rate = np.array([0])
 
-    mono_rate = np.array([m.rate(material=Mat) for m in mono])
+    mono_rate = np.array([m.rate(material=system.mats[local]) for m in mono])
     jump_rate = np.append(jump_rate,mono_rate)
     locais2   = np.zeros(len(mono_rate)) + local
     locais    = np.append(locais,locais2.astype(int))
@@ -125,8 +123,9 @@ def decision(s,system):
 def step_ani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
-        Ss = system.particles.copy()     
-        R = [decision(s,system) for s in Ss]
+        Ss = system.particles.copy()
+        X,Y,Z = system.X, system.Y, system.Z     
+        R = [decision(s,system,X,Y,Z) for s in Ss]
         system.time += (1/np.sum(R))*np.log(1/random.uniform(1E-12,1))    
         bi_func(system,Ss,system.bimolec_funcs_array)
         return Ss       
@@ -137,8 +136,9 @@ def step_ani(system):
 def step_nonani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
-        Ss = system.particles.copy()     
-        R = [decision(s,system) for s in Ss]
+        Ss = system.particles.copy()
+        X,Y,Z = system.X, system.Y, system.Z     
+        R = [decision(s,system,X,Y,Z) for s in Ss]
         system.time += (1/np.sum(R))*np.log(1/random.uniform(1E-12,1))    
         bi_func(system,Ss,system.bimolec_funcs_array)       
     Ss = system.particles.copy()
