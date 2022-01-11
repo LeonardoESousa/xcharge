@@ -98,6 +98,8 @@ def anni_general(system,Ss,anni_funcs_array):
 
 
 def decision(s,system,X,Y,Z):
+    if s.schedule > 0:
+        return s.schedule
     kind = s.species      
     local = s.position        
     dx = X - X[local]   
@@ -108,7 +110,7 @@ def decision(s,system,X,Y,Z):
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
     jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
-    
+
     try:
         locais    = np.array([np.where(random.uniform(0,1) <= np.cumsum(x/np.sum(x)))[0][0] for x in jump_rate]).astype(int)
         jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
@@ -124,9 +126,11 @@ def decision(s,system,X,Y,Z):
 
     total_rate = np.sum(jump_rate)
     jump = np.where(random.uniform(0,1) <= np.cumsum(jump_rate/total_rate))[0][0]
-    labels[jump].action(s,system,locais[jump])
-
-    return total_rate
+    s.process = labels[jump]
+    s.destination = int(locais[jump])
+    time_step = (1/total_rate)*np.log(1/random.uniform(0,1))
+    s.schedule = time_step
+    return time_step
 
 ########ITERATION FUNCTIONS#######################################################
 def step_ani(system): 
@@ -134,8 +138,15 @@ def step_ani(system):
         system.IT += 1
         Ss = system.particles.copy()
         X,Y,Z = system.X, system.Y, system.Z     
-        R = [decision(s,system,X,Y,Z) for s in Ss]
-        system.time += (1/np.sum(R))*np.log(1/random.uniform(1E-12,1))    
+        R = np.array([decision(s,system,X,Y,Z) for s in Ss])
+        time_step = min(R)
+        R -= time_step
+        for i in range(len(Ss)):
+            if R[i] <= 0:
+                Ss[i].process.action(Ss[i],system,Ss[i].destination)
+            else:
+                Ss[i].schedule = R[i]           
+        system.time += time_step   
         bi_func(system,Ss,system.bimolec_funcs_array)
         return Ss       
     Ss = system.particles.copy()
@@ -147,8 +158,15 @@ def step_nonani(system):
         system.IT += 1
         Ss = system.particles.copy()
         X,Y,Z = system.X, system.Y, system.Z     
-        R = [decision(s,system,X,Y,Z) for s in Ss]
-        system.time += (1/np.sum(R))*np.log(1/random.uniform(1E-12,1))    
+        R = np.array([decision(s,system,X,Y,Z) for s in Ss])
+        time_step = min(R)
+        R -= time_step
+        for i in range(len(Ss)):
+            if R[i] <= 0:
+                Ss[i].process.action(Ss[i],system,Ss[i].destination)
+            else:
+                Ss[i].schedule = R[i]           
+        system.time += time_step    
         bi_func(system,Ss,system.bimolec_funcs_array)       
     Ss = system.particles.copy()
     for s in Ss:
