@@ -94,12 +94,27 @@ def anni_general(system,Ss,anni_funcs_array):
         for dead in kill_list:
              dead[0].kill(dead[1],system,dead[2])  
 
-                  
+# runs the annihilations defined in anni_funcs_array                 
+#def anni_general(system,Ss,anni_funcs_array):
+#    Ss = system.particles.copy()   
+#    locs = np.array([s.position for s in Ss])
+#    kill_list = []
+#    unicos, antindice = np.unique(locs, return_index=True)
+#    if len(locs) > len(unicos):
+#        indice = np.invert(np.in1d(np.arange(len(locs)),antindice))
+#        superpostos = np.where(locs == locs[indice])[0]
+#        tipos = [Ss[j].species for j in superpostos]
+#        #running all the choosen annifuncs from morphology.py
+#        list_death = [anni_func(system,tipos,Ss,superpostos,locs) for anni_func in anni_funcs_array]
+#        if list_death:
+#            kill_list += list_death                
+#    kill_list = list(filter(None, kill_list))
+#    if kill_list:                
+#        for dead in kill_list:
+#             dead[0].kill(dead[1],system,dead[2])                 
 
 
 def decision(s,system,X,Y,Z):
-    if s.schedule > 0:
-        return s.schedule
     kind = s.species      
     local = s.position        
     dx = X - X[local]   
@@ -124,13 +139,10 @@ def decision(s,system,X,Y,Z):
     locais    = np.append(locais,locais2.astype(int))
     labels = hop+mono 
 
-    total_rate = np.sum(jump_rate)
-    jump = np.where(random.uniform(0,1) <= np.cumsum(jump_rate/total_rate))[0][0]
+    jump = np.where(random.uniform(0,1) <= np.cumsum(jump_rate/np.sum(jump_rate)))[0][0]
     s.process = labels[jump]
-    s.destination = int(locais[jump])
-    time_step = (1/total_rate)*np.log(1/random.uniform(0,1))
-    s.schedule = time_step
-    return time_step
+    s.destination = locais[jump]
+    return np.sum(jump_rate) #jump_rate[jump]
 
 ########ITERATION FUNCTIONS#######################################################
 def step_ani(system): 
@@ -139,14 +151,9 @@ def step_ani(system):
         Ss = system.particles.copy()
         X,Y,Z = system.X, system.Y, system.Z     
         R = np.array([decision(s,system,X,Y,Z) for s in Ss])
-        time_step = min(R)
-        R -= time_step
-        for i in range(len(Ss)):
-            if R[i] <= 0:
-                Ss[i].process.action(Ss[i],system,Ss[i].destination)
-            else:
-                Ss[i].schedule = R[i]           
-        system.time += time_step   
+        system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
+        jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
+        Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)
         bi_func(system,Ss,system.bimolec_funcs_array)
         return Ss       
     Ss = system.particles.copy()
@@ -159,14 +166,10 @@ def step_nonani(system):
         Ss = system.particles.copy()
         X,Y,Z = system.X, system.Y, system.Z     
         R = np.array([decision(s,system,X,Y,Z) for s in Ss])
-        time_step = min(R)
-        R -= time_step
-        for i in range(len(Ss)):
-            if R[i] <= 0:
-                Ss[i].process.action(Ss[i],system,Ss[i].destination)
-            else:
-                Ss[i].schedule = R[i]           
-        system.time += time_step    
+        system.time += (1/total_rate)*np.log(1/random.uniform(0,1))
+        total_rate = np.sum(R)
+        jump = np.where(random.uniform(0,1) <= np.cumsum(R/total_rate))[0][0]
+        Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
         bi_func(system,Ss,system.bimolec_funcs_array)       
     Ss = system.particles.copy()
     for s in Ss:

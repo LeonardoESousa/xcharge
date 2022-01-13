@@ -12,12 +12,10 @@ class Particles:
         self.report   = ''
         self.process  = None
         self.destination  = None
-        self.schedule = 0
-    
+        
     def move(self,local):
         self.position = local
-        self.schedule = 0
-
+        
     
     def make_text(self,system,energies,causamortis):
         time = system.time   
