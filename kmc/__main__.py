@@ -166,7 +166,7 @@ def step_nonani(system):
         Ss = system.particles.copy()
         X,Y,Z = system.X, system.Y, system.Z     
         R = np.array([decision(s,system,X,Y,Z) for s in Ss])
-        system.time += (1/total_rate)*np.log(1/random.uniform(0,1))
+        system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
         total_rate = np.sum(R)
         jump = np.where(random.uniform(0,1) <= np.cumsum(R/total_rate))[0][0]
         Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
