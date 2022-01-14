@@ -49,8 +49,8 @@ bimolec_funcs_array = param.bimolec_funcs_array
 def passar(*args):
     pass
 
-def anni(system,Ss,array):
-    anni_general(system,Ss,array)
+def anni(system,array):
+    anni_general(system,array)
    
 
 if bimolec:
@@ -70,48 +70,22 @@ def make_system():
 syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
     
 # runs the annihilations defined in anni_funcs_array                 
-def anni_general(system,Ss,anni_funcs_array):
+def anni_general(system,anni_dict):
     Ss = system.particles.copy()   
     locs = np.array([s.position for s in Ss])
-    kill_list = []
-    
-    if len(locs) > len(set(locs)):
-        locs2 = np.array(list(set(locs)))
-        for i in range(len(locs2)):
-            indices = np.where(locs == locs2[i])
-            if len(indices[0]) > 1:
-
-                tipos = [Ss[j].species for j in indices[0]]
-                
-                #running all the choosen annifuncs from morphology.py
-                for anni_func in anni_funcs_array:
-                    list_death = anni_func(system,tipos,Ss,indices,locs)
-                    if list_death:
-                        kill_list = kill_list + list_death
-                    
-    kill_list = list(filter(None, kill_list))
-    if kill_list:                
-        for dead in kill_list:
-             dead[0].kill(dead[1],system,dead[2])  
-
-# runs the annihilations defined in anni_funcs_array                 
-#def anni_general(system,Ss,anni_funcs_array):
-#    Ss = system.particles.copy()   
-#    locs = np.array([s.position for s in Ss])
-#    kill_list = []
-#    unicos, antindice = np.unique(locs, return_index=True)
-#    if len(locs) > len(unicos):
-#        indice = np.invert(np.in1d(np.arange(len(locs)),antindice))
-#        superpostos = np.where(locs == locs[indice])[0]
-#        tipos = [Ss[j].species for j in superpostos]
-#        #running all the choosen annifuncs from morphology.py
-#        list_death = [anni_func(system,tipos,Ss,superpostos,locs) for anni_func in anni_funcs_array]
-#        if list_death:
-#            kill_list += list_death                
-#    kill_list = list(filter(None, kill_list))
-#    if kill_list:                
-#        for dead in kill_list:
-#             dead[0].kill(dead[1],system,dead[2])                 
+    unicos, antindice = np.unique(locs, return_index=True)
+    if len(locs) > len(unicos):
+        indice = np.invert(np.in1d(np.arange(len(locs)),antindice))
+        superpostos = [np.where(locs == j)[0] for j in locs[indice]]
+        done = []
+        for superp in superpostos:
+            check = list(superp)
+            if check not in done:
+                try:
+                    anni_dict[tuple(sorted(Ss[i].species for i in superp[:2]))](Ss,system,superp)
+                    done.append(check)
+                except:
+                    pass                    
 
 
 def decision(s,system,X,Y,Z):
@@ -142,7 +116,7 @@ def decision(s,system,X,Y,Z):
     jump = np.where(random.uniform(0,1) <= np.cumsum(jump_rate/np.sum(jump_rate)))[0][0]
     s.process = labels[jump]
     s.destination = locais[jump]
-    return np.sum(jump_rate) #jump_rate[jump]
+    return np.sum(jump_rate)
 
 ########ITERATION FUNCTIONS#######################################################
 def step_ani(system): 
@@ -154,7 +128,7 @@ def step_ani(system):
         system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
         jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
         Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)
-        bi_func(system,Ss,system.bimolec_funcs_array)
+        bi_func(system,system.bimolec_funcs_array)
         return Ss       
     Ss = system.particles.copy()
     for s in Ss:
@@ -169,7 +143,7 @@ def step_nonani(system):
         system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
         jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
         Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-        bi_func(system,Ss,system.bimolec_funcs_array)       
+        bi_func(system,system.bimolec_funcs_array)       
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1)

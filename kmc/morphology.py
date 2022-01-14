@@ -144,28 +144,22 @@ class Gaussian_energy():
 # BIMOLEC FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
 
 #recombination electron-hole pair
-def ele_hol_recomb(system,tipos,Ss,indices,locs):
-    if 'electron' in tipos and 'hole' in tipos:        
-        id1 = Ss[indices[0][tipos.index('electron')]].identity
-        id2 = Ss[indices[0][tipos.index('hole')]].identity
-        
-        maked_for_death = []
-        maked_for_death.append(Ss[indices[0][tipos.index('electron')]],'anni',system.s1)
-        maked_for_death.append(Ss[indices[0][tipos.index('hole')]],'anni',system.s1)        
-        
-        if random.uniform(0,1) <= 0.75 and abs(id1) != abs(id2):
-            system.add_particle(Exciton('triplet',locs[indices[0][0]]))
-        else:
-            system.add_particle(Exciton('singlet',locs[indices[0][0]]))
-            
-        return marked_for_death
+def ele_hol_recomb(Ss,system,superp):
+    if random.uniform(0,1) <= 0.75 and abs(Ss[0].identity) != abs(Ss[1].identity):
+        system.add_particle(Triplet(Ss[0].position))
+    else:
+        system.add_particle(Singlet(Ss[0].position))
+
+    for i in superp:
+        Ss[i].kill('recomb',system,system.lumo)
+
            
-#annihililation exciton singlets pair
-def anni_sing(system,tipos,Ss,indices,locs):
-    duplicates = set([x for x in tipos if tipos.count(x) > 1]) # checking if there is 2 occurrences of the types
-    if 'singlet' in duplicates: 
-        maked_for_death = [Ss[indices[0][tipos.index('singlet')]],'anni',system.s1]
-        return [maked_for_death]     
+#singlet-singlet annihilation (ssa)   
+def anni_sing(Ss,system,superp):
+    Ss[random.choices(superp)[0]].kill('ssa',system,system.s1)
+    
+
+bimolec_funcs_array = {('singlet','singlet'):anni_sing, ('electron','hole'):ele_hol_recomb}   
 ############################################           
 # FUNCS TO SHAPE THE GENERATION OF PARTICLES
 
