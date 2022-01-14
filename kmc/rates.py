@@ -269,20 +269,12 @@ class MillerAbrahams:
         local    = particle.position 
         mats     = system.mats        
         mat      = mats[local]
-        num      = len(mats)
         
-        charge   = particle.charge 
-
-        AtH        = raios(num,self.AtH,mat,self.inv,mats)
+        AtH        = raios(len(mats),self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
         
         potential = np.copy(system.electrostatic())
-        
-        #case where two electrons or holes overlap
-        duplicate  = [ x.charge for x in system.particles if x.position == local]
-        for charge in duplicate:
-            potential -= charge*abs(e)/(4*np.pi*system.epsilon*r*1e-10)
-         
+                 
         indices_e  = [ x.position for x in system.particles if x.charge == -1 and x.position != local ]
         indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
 
@@ -321,17 +313,10 @@ class MillerAbrahams:
                                    	               
         taxa[r == 0] = 0
         return taxa
-
-    def label(self):
-        return self.kind
-     
+ 
     def action(self,particle,system,local):
-        
-        indices_e  = [ x.position for x in system.particles if x.charge == -1 ]    	
-        if particle.species == 'hole' and local in indices_e:
-            pass
-        else:
-            particle.move(local)
+        particle.move(local)
+
 #########################################################################################        
 
 
