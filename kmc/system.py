@@ -36,7 +36,7 @@ class System:
     def set_particles(self,Ss):
         
         try:
-            self.particles = self.particles + Ss
+            self.particles += Ss
         except:    
             self.particles = Ss         
                
@@ -47,9 +47,6 @@ class System:
         self.mu = mus
         self.norma_mu = np.sqrt(np.sum(mus*mus,axis=1))
         self.mu /= self.norma_mu[:,np.newaxis]
-
-    def add_particle(self,s):
-        self.particles.append(s)
     
     def count_particles(self):
         return len(self.particles)
@@ -81,15 +78,13 @@ class System:
             potential = np.copy(self.electric_potential)
             for s in self.particles:
                 if s.charge != 0:
-                    dx = np.nan_to_num(self.X - self.X[s.position])
-                    dy = np.nan_to_num(self.Y - self.Y[s.position])
-                    dz = np.nan_to_num(self.Z - self.Z[s.position])
+                    dx = self.X - self.X[s.position]
+                    dy = self.Y - self.Y[s.position]
+                    dz = self.Z - self.Z[s.position]
                     r  = np.sqrt(dx*dx+dy*dy+dz*dz)*(1e-10)
                     r[r == 0] = np.inf
                     potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential
-            self.potential_time = self.time
-        else:
-            pass   
+            self.potential_time = self.time   
         return self.potential
             
