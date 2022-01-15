@@ -146,9 +146,9 @@ class Gaussian_energy():
 #recombination electron-hole pair
 def ele_hol_recomb(Ss,system,superp):
     if random.uniform(0,1) <= 0.75 and abs(Ss[0].identity) != abs(Ss[1].identity):
-        system.add_particle(Triplet(Ss[0].position))
+        system.set_particles([Triplet(Ss[0].position)])
     else:
-        system.add_particle(Singlet(Ss[0].position))
+        system.set_particles([Singlet(Ss[0].position)])
 
     for i in superp:
         Ss[i].kill('recomb',system,system.lumo)
