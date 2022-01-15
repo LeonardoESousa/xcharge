@@ -186,14 +186,13 @@ class Dexter:
         particle.move(local)
 #########################################################################################       
 
-##EXCITON DISSOCIATION RATE##############################################################
-class Dissociation:
+##EXCITON DISSOCIATION BY ELECTRON HOP RATE##############################################
+class Dissociation_electron:
     def __init__(self,**kwargs):
-        self.kind = 'dissociation'
+        self.kind = 'dissociation_e'
         self.AtH = kwargs['AtH']
         self.inv      = kwargs['invrad']
         self.T        = kwargs['T']
-        self.Map      = {}
 
     def rate(self,**kwargs):
         system   = kwargs['system']
@@ -214,50 +213,24 @@ class Dissociation:
         AtH        = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
         
-        
         DEe = lumos - (homos[local] + s1s[local])
-        DEh = (lumos[local] - s1s[local]) - homos  
-        
-
-        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEe+abs(DEe))/(2*kb*self.T))
-        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-1*(DEh+abs(DEh))/(2*kb*self.T))
+        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-(DEe+abs(DEe))/(2*kb*self.T))
         taxae[r == 0] = 0
-        taxah[r == 0] = 0
-        taxae = np.nan_to_num(taxae)
-        taxah = np.nan_to_num(taxah)
-        
-        TE = np.sum(taxae)
-        TH = np.sum(taxah)
-        if random.uniform(0,1) <= TE/(TE+TH):
-            self.Map[particle.identity] = 'electron'
-            return taxae
-        else:
-            self.Map[particle.identity] = 'hole'
-            return taxah    
+        return taxae
             
-
-    def label(self):
-        return self.kind
      
     def action(self,particle,system,local):
-        if self.Map[particle.identity] == 'electron':
-            e = Electron(local)
-            h = Hole(particle.position)
-        else:
-           e = Electron(particle.position)
-           h = Hole(local) 
-
+        e = Electron(local)
+        h = Hole(particle.position)
         h.identity = -1*e.identity   
-        system.add_particle(e)
-        system.add_particle(h)
-        del self.Map[particle.identity]
-        particle.kill('dissociation',system,system.s1)
+        system.set_particles([e,h])
+        particle.kill(self.kind,system,system.s1)
 #########################################################################################
 
-##MILLER-ABRHAMS RATE####################################################################
-class MillerAbrahams:
+##EXCITON DISSOCIATION BY HOLE HOP RATE##################################################
+class Dissociation_hole:
     def __init__(self,**kwargs):
-        self.kind = 'miller-abrahams'
+        self.kind = 'dissociation_h'
         self.AtH = kwargs['AtH']
         self.inv      = kwargs['invrad']
         self.T        = kwargs['T']
@@ -269,55 +242,84 @@ class MillerAbrahams:
         local    = particle.position 
         mats     = system.mats        
         mat      = mats[local]
-        
-        AtH        = raios(len(mats),self.AtH,mat,self.inv,mats)
+        num      = len(mats)
+
+        lumos = np.copy(system.lumo)
+        homos = np.copy(system.homo)
+        if particle.species   == 'singlet':
+            s1s   = np.copy(system.s1) 
+        elif particle.species == 'triplet':
+            s1s   = np.copy(system.t1)
+
+        AtH        = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
         
-        potential = np.copy(system.electrostatic())
+        DEh = (lumos[local] - s1s[local]) - homos  
+        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-(DEh+abs(DEh))/(2*kb*self.T))
+        taxah[r == 0] = 0
+        return taxah
                  
-        indices_e  = [ x.position for x in system.particles if x.charge == -1 and x.position != local ]
-        indices_h  = [ x.position for x in system.particles if x.charge == 1  and x.position != local]
+    def action(self,particle,system,local):
+        e = Electron(particle.position)
+        h = Hole(local) 
+        h.identity = -1*e.identity   
+        system.set_particles([e,h])
+        particle.kill(self.kind,system,system.s1)
+#########################################################################################
 
-        if particle.species == 'electron':
-            engs  = np.copy(system.lumo)
-            homos = np.copy(system.homo)
-            
-            for m in indices_h:
-                potential[m] = 0
-                engs[m] = homos[m]
-                
-            for m in indices_e:
-                potential[m] = 0
-                engs[m] = -np.inf             
-                
-            engs += -1*potential
-            DE = (engs - engs[local]) + abs(engs - engs[local])
-        elif particle.species == 'hole':
-            engs  = np.copy(system.homo)
-            lumos = np.copy(system.lumo)
-          
-            for m in indices_e:
-                potential[m] = 0
-                engs[m] = lumos[m]
-                
-            for m in indices_h:
-                potential[m] = 0
-                engs[m] = -np.inf 
-                 
-            engs += -1*potential
-            DE = (engs[local] - engs) + abs(engs[local] - engs)
-            
 
+def corrected_energies(system,s,r):
+    potential = np.copy(system.electrostatic())
+    r[r == 0]  = np.inf 
+    potential -= s.charge*abs(e)/(4*np.pi*system.epsilon*r)
+    indices_e  = np.array([x.position for x in system.particles if x.charge == -1 and x.position != s.position]).astype(int)
+    indices_h  = np.array([x.position for x in system.particles if x.charge ==  1 and x.position != s.position]).astype(int)
+
+    if s.species == 'electron':
+        engs  = np.copy(system.lumo)
+        engs[indices_h] = system.homo[indices_h]
+        engs[indices_e] = np.inf                
+        engs += -1*potential
+        DE = (engs - engs[s.position]) + abs(engs - engs[s.position])
+    elif s.species == 'hole':
+        engs  = np.copy(system.homo)
+        engs[indices_e] = system.lumo[indices_e] 
+        engs[indices_h] = -np.inf     
+        engs += -1*potential
+        DE = (engs[s.position] - engs) + abs(engs[s.position] - engs)
+    return DE
+
+
+
+##MILLER-ABRHAMS RATE####################################################################
+class MillerAbrahams:
+    def __init__(self,**kwargs):
+        self.kind = 'miller-abrahams'
+        self.AtH  = kwargs['AtH']
+        self.inv  = kwargs['invrad']
+        self.T    = kwargs['T']
+
+    def rate(self,**kwargs):
+        system    = kwargs['system']
+        r         = kwargs['r']
+        particle  = kwargs['particle']
+        mats      = system.mats        
+        mat       = mats[particle.position]
+        
+        AtH        = raios(len(r),self.AtH,mat,self.inv,mats)
+        in_loc_rad = self.inv[mat]
+
+        DE = corrected_energies(system,particle,r) 
         taxa = (1e-12)*(AtH)*np.exp(
-                               -2*in_loc_rad*r)*np.exp(-1*DE/(2*kb*self.T))
-                                   	               
+                               -(in_loc_rad*r+in_loc_rad*r))*np.exp(-DE/((kb*self.T+kb*self.T)))                           	               
         taxa[r == 0] = 0
         return taxa
  
     def action(self,particle,system,local):
         particle.move(local)
 
-#########################################################################################        
+######################################################################################### 
+
 
 
 #MONOMOLECULAR RATES#####################################################################
@@ -366,6 +368,7 @@ class ISC:
     def __init__(self,**kwargs):
         self.kind = 'isc'
         self.taxa = kwargs['rate']
+        self.map  = {'singlet':'triplet', 'triplet':'singlet'}
 
     def rate(self,**kwargs):
         material = kwargs['material']
@@ -373,9 +376,13 @@ class ISC:
      
     def action(self,particle,system,local):
         if particle.species == 'singlet':
-            particle.convert(system,system.s1,self.kind,'triplet')
+            Particula = getattr(sys.modules[__name__], 'Triplet')
+            system.set_particles([Particula(particle.position)])
+            particle.kill(self.kind,system,system.s1)
         elif particle.species == 'triplet':    
-            particle.convert(system,system.t1,self.kind,'singlet')
+            Particula = getattr(sys.modules[__name__], 'Singlet')
+            system.set_particles([Particula(particle.position)])
+            particle.kill('r'+self.kind,system,system.s1)
 #########################################################################################
 
 
