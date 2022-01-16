@@ -75,7 +75,7 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
+exciton   = morphology.Create_Particles('singlet', 3, method, mat=[0,1])
 
 #########################################################################################
 
@@ -84,6 +84,3 @@ bimolec               = True  # Turn on annihilation
 ##list of all annihi funcs that will be used
 bimolec_funcs_array = [morphology.ele_hol_recomb,morphology.anni_sing] 
 #########################################################################################
-
-   
-
