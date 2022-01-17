@@ -37,13 +37,6 @@ class Particles:
         self.make_text(system,energies,causamortis)
         system.remove(self)
     
-    def convert(self,system,energies,causamortis,newkind):
-        self.status = 'dead'
-        self.make_text(system,energies,causamortis)
-        Particula = getattr(sys.modules[__name__], newkind.title())
-        system.set_particles([Particula(self.position)])
-        system.remove(self)
-
     def write(self):
         return self.report
 
