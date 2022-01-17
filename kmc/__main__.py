@@ -29,22 +29,55 @@ for name, value in vars(param).items():
         #print(name,hasattr(value, 'make'))
 
 #getting all essential info from user's input
-n_proc          = param.n_proc
-identifier      = param.identifier 
-animation_mode  = param.animation_mode
-save_animation  = param.save_animation 
-animation_exten = param.animation_exten    
-rounds          = param.rounds
-time_limit      = param.time_limit  
-pause           = param.pause
-marker_type     = param.marker_type
-rotate          = param.rotate
-frozen_lattice  = param.frozen
-
+n_proc              = param.n_proc
+rounds              = param.rounds
 monomolecular       = param.monomolecular
 processes           = param.processes
-bimolec             = param.bimolec
-bimolec_funcs_array = param.bimolec_funcs_array
+bimolec_funcs_array = [ele_hol_recomb,anni_sing]  
+
+# Dealing with user-default options
+try:
+    identifier     = param.identifier   
+except:
+    identifier = spec.name
+try:
+    animation_mode = param.animation_mode
+except:
+    animation_mode = False
+try:
+    save_animation = param.save_animation
+except:
+    save_animation = False
+try:
+    animation_exten = param.animation_exten
+except:
+    animation_exten = "gif"
+try:
+    time_limit = param.time_limit
+except:
+    time_limit = np.inf
+try:
+    pause = param.pause
+except:
+    pause = False
+try:
+    marker_type = param.marker_type
+except:
+    marker_type = 1
+try:
+    rotate = param.rotate
+except:
+    rotate = False
+try:
+    frozen_lattice  = param.frozen
+except:
+    frozen_lattice = False
+try:
+    bimolec  = param.bimolec
+except:
+    bimolec  = False
+#####
+
 
 def passar(*args):
     pass

@@ -99,8 +99,6 @@ exciton2   = morphology.Create_Particles('triplet', 5, method, mat=[0,1])
 
 ##BIMOLECULAR OPTIONS###################################################################
 bimolec               = True  # Turn on annihilation
-##list of all annihi funcs that will be used
-bimolec_funcs_array = [morphology.ele_hol_recomb,morphology.anni_sing] 
 #########################################################################################
 
    
