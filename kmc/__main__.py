@@ -97,7 +97,7 @@ def make_system():
     #Sets system properties  
     for argumento in argumentos:
         argumento.assign_to_system(system)
-    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,bimolec_funcs_array) 
+    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec) 
  
     return system 
 syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
@@ -161,7 +161,7 @@ def step_ani(system):
         system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
         jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
         Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)
-        bi_func(system,system.bimolec_funcs_array)
+        bi_func(system,bimolec_funcs_array)
         return Ss       
     Ss = system.particles.copy()
     for s in Ss:
@@ -176,7 +176,7 @@ def step_nonani(system):
         system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
         jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
         Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-        bi_func(system,system.bimolec_funcs_array)       
+        bi_func(system,bimolec_funcs_array)       
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1)

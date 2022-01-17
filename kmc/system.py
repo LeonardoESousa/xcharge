@@ -23,14 +23,13 @@ class System:
         self.uniq = np.unique(Mats)       
 
 
-    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,anni_funcs_array):
+    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni):
         self.processes           = processes
         self.monomolecular       = monomolecular
         self.identifier          = identifier
         self.animation_mode      = animation_mode
         self.time_limit          = time_limit
         self.pause               = pause
-        self.bimolec_funcs_array = anni_funcs_array
         self.bimolec             = anni
     
     def set_particles(self,Ss):
