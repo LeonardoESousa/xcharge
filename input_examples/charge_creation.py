@@ -45,7 +45,7 @@ fluor     = Fluor(life=lifetimes)
 ##DISSOCIATION RATE
 H = {(0,0):1e10,(0,1):1e10,(1,0):1e10,(1,1):1e10}
 invrad = {0:0.1,1:0.1}
-dissociation = Dissociation(AtH=H,invrad=invrad,T=300)
+dissociation = Dissociation_electron(AtH=H,invrad=invrad,T=300)
 
 ###TRIPLET EXCITONS######################################################################
 
