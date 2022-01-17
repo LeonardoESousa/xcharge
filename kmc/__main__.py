@@ -3,6 +3,7 @@ import random
 from kmc.rates import *
 from kmc.particles import *
 from kmc.system import System
+from kmc.bimolecular import *
 import sys
 import warnings
 import os
@@ -33,7 +34,6 @@ n_proc              = param.n_proc
 rounds              = param.rounds
 monomolecular       = param.monomolecular
 processes           = param.processes
-bimolec_funcs_array = [ele_hol_recomb,anni_sing]  
 
 # Dealing with user-default options
 try:
