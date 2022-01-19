@@ -86,8 +86,8 @@ class ForsterT:
         return taxa
 
     def action(self,particle,system,local):
-        particle.move(local)
-        particle.convert(system,system.t1,self.kind,'singlet')
+        system.set_particles([Singlet(local)])
+        particle.kill('tts',system,system.t1)
 #########################################################################################
 
 ##FORSTER TRANSFER WITH ORIENTATION FACTORS ON THE FLY###################################
@@ -376,12 +376,10 @@ class ISC:
      
     def action(self,particle,system,local):
         if particle.species == 'singlet':
-            Particula = getattr(sys.modules[__name__], 'Triplet')
-            system.set_particles([Particula(particle.position)])
+            system.set_particles([Triplet(particle.position)])
             particle.kill(self.kind,system,system.s1)
         elif particle.species == 'triplet':    
-            Particula = getattr(sys.modules[__name__], 'Singlet')
-            system.set_particles([Particula(particle.position)])
+            system.set_particles([Singlet(particle.position)])
             particle.kill('r'+self.kind,system,system.s1)
 #########################################################################################
 
