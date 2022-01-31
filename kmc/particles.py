@@ -28,12 +28,12 @@ class Particles:
         dz = z-z0 
         mat = Mats[self.position]
         energy = energies[self.position]
-        texto = '{0:<15.6e}  {1:<10.2f}  {2:<10.2f}  {3:<10.2f}  {4:<10}  {5:<10.4f}  {6:<10}  {7:<10.2f}  {8:<10.2f}  {9:<10.2f}  {10:<10}'.format(
-                       time,dx,dy,dz,self.species,energy,mat,x,y,z,causamortis)
+        texto = '{0:<15.6e}  {1:<10.2f}  {2:<10.2f}  {3:<10.2f}  {4:<10}  {5:<10.4f}  {6:<10}  {7:<10.2f}  {8:<10.2f}  {9:<10.2f}  {10:<11}  {11:<10}'.format(
+                       time,dx,dy,dz,self.species,energy,mat,x,y,z,causamortis,self.status)
         self.report += texto+'\n'
     
-    def kill(self,causamortis,system,energies):
-        self.status = 'dead'
+    def kill(self,causamortis,system,energies,result):
+        self.status = result
         self.make_text(system,energies,causamortis)
         system.remove(self)
     

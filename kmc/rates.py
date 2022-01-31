@@ -87,7 +87,7 @@ class ForsterT:
 
     def action(self,particle,system,local):
         system.set_particles([Singlet(local)])
-        particle.kill('tts',system,system.t1)
+        particle.kill('tts',system,system.t1,'converted')
 #########################################################################################
 
 ##FORSTER TRANSFER WITH ORIENTATION FACTORS ON THE FLY###################################
@@ -224,7 +224,7 @@ class Dissociation_electron:
         h = Hole(particle.position)
         h.identity = -1*e.identity   
         system.set_particles([e,h])
-        particle.kill(self.kind,system,system.s1)
+        particle.kill(self.kind,system,system.s1,'converted')
 #########################################################################################
 
 ##EXCITON DISSOCIATION BY HOLE HOP RATE##################################################
@@ -264,7 +264,7 @@ class Dissociation_hole:
         h = Hole(local) 
         h.identity = -1*e.identity   
         system.set_particles([e,h])
-        particle.kill(self.kind,system,system.s1)
+        particle.kill(self.kind,system,system.s1,'converted')
 #########################################################################################
 
 
@@ -334,7 +334,7 @@ class Fluor:
         return 1/self.lifetime[kwargs['material']]
      
     def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.s1) 
+        particle.kill(self.kind,system,system.s1,'dead') 
 #########################################################################################
 
 ##PHOSPHORESCENCE RATE###################################################################
@@ -347,7 +347,7 @@ class Phosph:
         return 1/self.lifetime[kwargs['material']]
      
     def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.t1)
+        particle.kill(self.kind,system,system.t1,'dead')
 #########################################################################################
  
 ##NONRADIATIVE DECAY RATE################################################################         
@@ -360,7 +360,7 @@ class Nonrad:
         return self.taxa[kwargs['material']]
      
     def action(self,particle,system,local):
-        particle.kill(self.kind,system,system.s1)        
+        particle.kill(self.kind,system,system.s1,'dead')        
 #########################################################################################
 
 ##INTERSYSTEM CROSSING RATE##############################################################
@@ -377,10 +377,10 @@ class ISC:
     def action(self,particle,system,local):
         if particle.species == 'singlet':
             system.set_particles([Triplet(particle.position)])
-            particle.kill(self.kind,system,system.s1)
+            particle.kill(self.kind,system,system.s1,'converted')
         elif particle.species == 'triplet':    
             system.set_particles([Singlet(particle.position)])
-            particle.kill('r'+self.kind,system,system.s1)
+            particle.kill('r'+self.kind,system,system.s1,'converted')
 #########################################################################################
 
 
