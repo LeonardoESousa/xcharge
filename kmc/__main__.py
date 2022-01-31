@@ -3,7 +3,7 @@ import random
 from kmc.rates import *
 from kmc.particles import *
 from kmc.system import System
-from kmc.morphology import *
+from kmc.bimolecular import *
 import sys
 import warnings
 import os
@@ -34,7 +34,62 @@ n_proc              = param.n_proc
 rounds              = param.rounds
 monomolecular       = param.monomolecular
 processes           = param.processes
- 
+
+# Dealing with user-default options
+try:
+    identifier     = param.identifier   
+except:
+    identifier = spec.name
+try:
+    animation_mode = param.animation_mode
+except:
+    animation_mode = False
+try:
+    save_animation = param.save_animation
+except:
+    save_animation = False
+try:
+    animation_exten = param.animation_exten
+except:
+    animation_exten = "gif"
+try:
+    time_limit = param.time_limit
+except:
+    time_limit = np.inf
+try:
+    pause = param.pause
+except:
+    pause = False
+try:
+    marker_type = param.marker_type
+except:
+    marker_type = 1
+try:
+    rotate = param.rotate
+except:
+    rotate = False
+try:
+    frozen_lattice  = param.frozen
+except:
+    frozen_lattice = False
+try:
+    bimolec  = param.bimolec
+except:
+    bimolec  = False
+#####
+
+
+def passar(*args):
+    pass
+
+def anni(system,array):
+    anni_general(system,array)
+   
+
+if bimolec:
+    bi_func = anni
+else:
+    bi_func = passar
 
 # Dealing with user-default options
 try:
@@ -90,103 +145,102 @@ def make_system():
     #Sets system properties  
     for argumento in argumentos:
         argumento.assign_to_system(system)
-    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,bimolec_funcs_array) 
+    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec) 
  
     return system 
 syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
     
 # runs the annihilations defined in anni_funcs_array                 
-def anni_general(system,Ss,anni_funcs_array):   
+def anni_general(system,anni_dict):
+    Ss = system.particles.copy()   
     locs = np.array([s.position for s in Ss])
-    
-    if len(locs) > len(set(locs)):
-        locs2 = np.array(list(set(locs)))
-        for i in range(len(locs2)):
-            indices = np.where(locs == locs2[i])
-            if len(indices[0]) > 1:
+    unicos, antindice = np.unique(locs, return_index=True)
+    if len(locs) > len(unicos):
+        indice = np.invert(np.in1d(np.arange(len(locs)),antindice))
+        superpostos = [np.where(locs == j)[0] for j in locs[indice]]
+        done = []
+        for superp in superpostos:
+            check = list(superp)
+            if check not in done:
+                try:
+                    anni_dict[tuple(sorted(Ss[i].species for i in superp[:2]))](Ss,system,superp)
+                    done.append(check)
+                except:
+                    pass                    
 
-                tipos = [Ss[j].species for j in indices[0]]
-                
-                #running all the choosen annifuncs from morphology.py
-                for anni_func in anni_funcs_array:
-                    anni_func(system,tipos,Ss,indices,locs)
-                  
 
-
-def decision(s,system):
+def decision(s,system,X,Y,Z):
     kind = s.species      
-    local = s.position    
-    X,Y,Z = system.X, system.Y, system.Z 
-    Mat   = system.mats[local]   
-    dx = np.nan_to_num(X - X[local]) 
-    dy = np.nan_to_num(Y - Y[local])
-    dz = np.nan_to_num(Z - Z[local])
+    local = s.position        
+    dx = X - X[local]   
+    dy = Y - Y[local]  
+    dz = Z - Z[local]  
     r  = np.sqrt(dx*dx+dy*dy+dz*dz)
-    r[r == 0] = np.inf
-
-    final_rate = []
-    labels     = []
-    chosen     = []
-    hop = system.processes.get(kind)
-    for transfer in hop:    
-        jump_rate  = transfer.rate(r=r,system=system,particle=s)
-        probs = np.cumsum(jump_rate)/np.sum(jump_rate)
-        sorte = random.uniform(0,1)
-        try:
-            chosen.append(np.where(sorte < probs)[0][0])
-        except:
-            chosen.append(local)
-        final_rate.append(jump_rate[chosen[-1]])
-        labels.append(transfer)
- 
-    mono = system.monomolecular.get(kind)   
-    for m in mono:
-        final_rate.append(m.rate(material=Mat))
-        labels.append(m)
-        chosen.append(local)
     
-    probs = np.cumsum(final_rate)/np.sum(final_rate)
-    sorte = random.uniform(0,1)
+    hop  = system.processes[kind] 
+    mono = system.monomolecular[kind]     
+    jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
 
     try:
-        jump = np.where(sorte < probs)[0][0]
-        dt = (1/np.sum(final_rate))*np.log(1/random.uniform(1E-12,1))
-    #If no option is available, particle stands still
+        locais    = np.array([np.where(random.uniform(0,1) <= np.cumsum(x/np.sum(x)))[0][0] for x in jump_rate]).astype(int)
+        jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
     except:
-        jump = 0
-        dt = np.inf
-    return labels[jump], chosen[jump], dt
+        locais    = np.array([local])
+        jump_rate = np.array([0])
 
-def step(system): 
+    mono_rate = np.array([m.rate(material=system.mats[local]) for m in mono])
+    jump_rate = np.append(jump_rate,mono_rate)
+    locais2   = np.zeros(len(mono_rate)) + local
+    locais    = np.append(locais,locais2.astype(int))
+    labels = hop+mono 
+
+    jump = np.where(random.uniform(0,1) <= np.cumsum(jump_rate/np.sum(jump_rate)))[0][0]
+    s.process = labels[jump]
+    s.destination = locais[jump]
+    return np.sum(jump_rate)
+
+########ITERATION FUNCTIONS#######################################################
+def step_ani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
-        system.IT = system.IT +1
-        Ss = system.particles.copy()     
-        J, W, DT = [],[],[]
-        for s in Ss:
-            jump, where, dt = decision(s,system)
-            J.append(jump)
-            W.append(where)
-            DT.append(dt)    
-        time_step = min(DT)
-        system.time += time_step
-        fator = random.uniform(0,1)
-        for i in range(len(Ss)):
-            if fator <= time_step/DT[i]:
-                J[i].action(Ss[i],system,W[i])
-        if system.bimolec:
-            anni_general(system,Ss,system.bimolec_funcs_array)
-        if system.animation_mode:
-            return Ss       
+        system.IT += 1
+        Ss = system.particles.copy()
+        X,Y,Z = system.X, system.Y, system.Z     
+        R = np.array([decision(s,system,X,Y,Z) for s in Ss])
+        system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
+        jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
+        Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)
+        bi_func(system,bimolec_funcs_array)
+        return Ss       
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1)
   
-               
+def step_nonani(system): 
+    while system.count_particles() > 0 and system.time < system.time_limit:
+        system.IT += 1
+        Ss = system.particles.copy()
+        X,Y,Z = system.X, system.Y, system.Z     
+        R = np.array([decision(s,system,X,Y,Z) for s in Ss])
+        system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
+        jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
+        Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
+        bi_func(system,bimolec_funcs_array)       
+    Ss = system.particles.copy()
+    for s in Ss:
+        s.kill('alive',system,system.s1)
+##########################################################################################
+
+if animation_mode:
+    step = step_ani
+else:
+    step = step_nonani
+
+
 #Prints Spectra
 def spectra(system):
     if os.path.isfile("Simulation_"+system.identifier+".txt") == False:
         with open("Simulation_"+system.identifier+".txt", "w") as f:
-            texto = "{0:<15}  {1:<10}  {2:<10}  {3:<10}  {4:<10}  {5:<10}  {6:<10}  {7:<10}  {8:<10}  {9:<10}  {10:<10}".format("Time", "DeltaX", "DeltaY", "DeltaZ", "Type", "Energy", "Location" ,"FinalX", "FinalY", "FinalZ", "CausaMortis")
+            texto = "{0:<15}  {1:<10}  {2:<10}  {3:<10}  {4:<10}  {5:<10}  {6:<10}  {7:<10}  {8:<10}  {9:<10}  {10:<11}  {11:<10}".format("Time", "DeltaX", "DeltaY", "DeltaZ", "Type", "Energy", "Location" ,"FinalX", "FinalY", "FinalZ", "CausaMortis", 'Status')
             f.write(texto+"\n") 
     with open("Simulation_"+system.identifier+".txt", "a") as f:   
         for s in system.dead:
@@ -213,24 +267,10 @@ def animate(num,system,ax,marker_option,rotate):
             ys = Y[s.position]
             zs = Z[s.position]    
                 
-            if marker_option == 1:      
-                if s.species == 'electron':
-                    ax.scatter(xs,ys,zs,marker="$e^-$",color='red',s=200,alpha=1,label=s.species)
-                elif s.species == 'hole':
-                    ax.scatter(xs,ys,zs,marker="$h^+$",color='blue',s=200,alpha=1,label=s.species)
-                elif s.species == 'triplet':
-                    ax.scatter(xs,ys,zs,marker='$T_1$',color='green',s=200,alpha=1,label=s.species)
-                elif s.species == 'singlet':
-                    ax.scatter(xs,ys,zs,marker='$S_1$',color='orange',s=200,alpha=1,label=s.species)
-            if marker_option == 0:               
-                if s.species == 'electron':
-                    ax.scatter(xs,ys,zs,color='red',s=100,alpha=1,label=s.species)
-                elif s.species == 'hole':
-                    ax.scatter(xs,ys,zs,color='blue',s=100,alpha=1,label=s.species)
-                elif s.species == 'triplet':
-                    ax.scatter(xs,ys,zs,color='green',s=100,alpha=1,label=s.species)
-                elif s.species == 'singlet':
-                    ax.scatter(xs,ys,zs,color='orange',s=100,alpha=1,label=s.species)
+            if marker_option == 1:
+                ax.scatter(xs,ys,zs,marker=s.marker,color=s.color,s=200,alpha=1,label=s.species)      
+            if marker_option == 0:
+                ax.scatter(xs,ys,zs,color=s.color,s=100,alpha=1,label=s.species)               
     except:
         pass
     

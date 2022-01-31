@@ -1,7 +1,7 @@
 import numpy as np
 import random
 from kmc.particles import *
-
+import sys
 
 # Personalized errors
 class randomized_error(Exception):
@@ -43,7 +43,7 @@ def randomized(available, number, system, kwargs):
     selec_size_new = number # could be anything that satisfies selec_size_old != selec_size_new = True, but this way is granted to work if  len(selected) < number = True
     
     count = 1
-    cutoff = number*np.sqrt(len(list(available)))
+    cutoff = 10000*number*np.sqrt(len(list(available)))
     #print(count,number,selec_size_old,selec_size_new)
     while len(selected) < number and count < cutoff:
     
@@ -99,15 +99,8 @@ class Create_Particles():
 
     def assign_to_system(self,system):
         selected = self.method(range(len(system.X)),self.num, system, self.argv)
-        if self.kind.lower() == 'electron':
-            particles = [Electron(number) for number in selected]
-        elif self.kind.lower() == 'hole':
-            particles = [Hole(number) for number in selected]
-        elif self.kind.lower() == 'singlet':
-            particles = [Exciton('singlet',number) for number in selected]
-        elif self.kind.lower() == 'triplet':
-            particles = [Exciton('triplet',number) for number in selected]        
-
+        Particula = getattr(sys.modules[__name__], self.kind.title())
+        particles = [Particula(number) for number in selected]
         system.set_particles(particles)
 #########################################################################################
 
@@ -148,29 +141,6 @@ class Gaussian_energy():
 
 #########################################################################################
 
-# BIMOLEC FUNCS NOTE: ALL THEM MUST HAVE THE SAME VARIABLES (system,tipos,Ss,indices,locs)
-
-#recombination electron-hole pair
-def ele_hol_recomb(system,tipos,Ss,indices,locs):
-    if 'electron' in tipos and 'hole' in tipos:        
-        id1 = Ss[indices[0][tipos.index('electron')]].identity
-        id2 = Ss[indices[0][tipos.index('hole')]].identity
-        Ss[indices[0][tipos.index('electron')]].kill('anni',system,system.s1)
-        Ss[indices[0][tipos.index('hole')]].kill('anni',system,system.s1)
-        if random.uniform(0,1) <= 0.75 and abs(id1) != abs(id2):
-            system.add_particle(Exciton('triplet',locs[indices[0][0]]))
-        else:
-            system.add_particle(Exciton('singlet',locs[indices[0][0]]))
-            
-            
-#annihililation exciton singlets pair
-def anni_sing(system,tipos,Ss,indices,locs):
-    duplicates = set([x for x in tipos if tipos.count(x) > 1]) # checking if there is 2 occurrences of the types
-    if 'singlet' in duplicates:        
-        Ss[indices[0][tipos.index('singlet')]].kill('anni',system,system.s1)
-             
-        
-############################################           
 # FUNCS TO SHAPE THE GENERATION OF PARTICLES
 
 

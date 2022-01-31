@@ -23,20 +23,19 @@ class System:
         self.uniq = np.unique(Mats)       
 
 
-    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,anni_funcs_array):
+    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni):
         self.processes           = processes
         self.monomolecular       = monomolecular
         self.identifier          = identifier
         self.animation_mode      = animation_mode
         self.time_limit          = time_limit
         self.pause               = pause
-        self.bimolec_funcs_array = anni_funcs_array
         self.bimolec             = anni
     
     def set_particles(self,Ss):
         
         try:
-            self.particles = self.particles + Ss
+            self.particles += Ss
         except:    
             self.particles = Ss         
                
@@ -47,9 +46,6 @@ class System:
         self.mu = mus
         self.norma_mu = np.sqrt(np.sum(mus*mus,axis=1))
         self.mu /= self.norma_mu[:,np.newaxis]
-
-    def add_particle(self,s):
-        self.particles.append(s)
     
     def count_particles(self):
         return len(self.particles)
@@ -62,14 +58,7 @@ class System:
         return len(self.X)
            
     def set_energies(self,energy, kind):
-        if kind.lower() == 's1':
-            self.s1   = energy 
-        elif kind.lower() == 't1':
-            self.t1   = energy
-        elif kind.lower() == 'homo':
-            self.HOMO = energy
-        elif kind.lower() == 'lumo':
-            self.LUMO = energy
+        setattr(self, kind.lower(), energy)
         
     def remove(self,particle):
         self.particles.remove(particle)
@@ -88,15 +77,13 @@ class System:
             potential = np.copy(self.electric_potential)
             for s in self.particles:
                 if s.charge != 0:
-                    dx = np.nan_to_num(self.X - self.X[s.position])
-                    dy = np.nan_to_num(self.Y - self.Y[s.position])
-                    dz = np.nan_to_num(self.Z - self.Z[s.position])
+                    dx = self.X - self.X[s.position]
+                    dy = self.Y - self.Y[s.position]
+                    dz = self.Z - self.Z[s.position]
                     r  = np.sqrt(dx*dx+dy*dy+dz*dz)*(1e-10)
                     r[r == 0] = np.inf
                     potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential
-            self.potential_time = self.time
-        else:
-            pass   
+            self.potential_time = self.time   
         return self.potential
             
