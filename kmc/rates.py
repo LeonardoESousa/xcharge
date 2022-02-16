@@ -11,7 +11,6 @@ hbar           = 6.582e-16       #Reduced Planck's constant
 
 
 ###RATES#################################################################################    
-
 ##FUNCTION FOR SETTING RADII#############################################################
 def raios(num,Rf,mat,lifetime,mats):
     Raios = np.empty(num)
@@ -29,9 +28,13 @@ def raios_dist(num,Rf,mat,lifetime,mats):
         Raios[mats == m] = R2[mats == m]
     return Raios
 
-
+class Annihilation_Radius:
+    def __init__(self,dic):
+        self.dic   = dic
+    def assign_to_system(self,system):
+        system.append_annihi_radius(self.dic)
+        #print(self.dic)
 #########################################################################################
-
 ##STANDARD FORSTER TRANSFER RATE#########################################################
 class Forster:
     def __init__(self,**kwargs):
@@ -41,7 +44,6 @@ class Forster:
         self.mu = kwargs['mu']
         self.alpha = 1.15*0.53
 
-
     def rate(self,**kwargs):
         r      = kwargs['r']
         system = kwargs['system']
@@ -49,8 +51,49 @@ class Forster:
         mats   = system.mats    
         local  = ex.position    
         mat = mats[local]
+
+        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)      
+
+        #solution #1 (brute force but elegant)
+        '''  
+        for p in system.particles: # sweeping over the other particles and changing the Forster radius when applicable
+            try:
+                annihi_dics      = system.annihi_radius
+                annihi_dic       = annihi_dics['singlet',p.species]
+                Rf[p.position]   = annihi_dic[(mat,mats[p.position])]
+            except:
+                pass
+        '''    
         
-        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
+        #solution #2 (smart search but ugly)
+        '''
+        ss = [[p.position,mats[p.position]] for p in system.particles if p.species == 'singlet']
+        try:         
+            for ele in ss:
+                Rf[ele[0]] = system.annihi_radius['singlet','singlet'][(mat,ele[1])] 
+        except:
+            pass
+        '''
+        
+        #solution #3 : make a new forster class that recieves. I will make in another branch
+        # putting here the idea so I will not forget:
+        
+        #class Forster:
+        #   def __init__(self,**kwargs):
+        #   ...
+        #   self.annihi = kwargs['SS']
+        #   
+        #   
+        #   try:
+        #       self.annihi
+	#       rate == rate_anni
+	#   except:
+	#       rate == rate_default
+	#
+	
+	
+        #k = len([ x for x in Rf if x == 0]) #debug tool
+        #print(k,Rf)
         
         x = (Rf/(self.alpha*self.mu[mat] + r))
         taxa = (1/self.lifetime[mat])*x*x*x*x*x*x

@@ -46,7 +46,8 @@ fluor     = Fluor(life=lifetimes)
 processes = {'singlet':[forster], 'triplet':[], 'electron':[],'hole':[]}
 monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #########################################################################################
-
+#SS = Annihilation_Radius({('singlet','singlet'):{(0,0):0,(0,1):0,(1,1):0,(1,0):0}})
+#TT = Annihilation_Radius({('triplet','triplet'):{(0,0):0,(0,1):0,(1,1):0,(1,0):0}})
 ###MORPHOLOGY############################################################################
 
 ##Morphology functions
@@ -75,7 +76,7 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 3, method, mat=[0,1])
+exciton   = morphology.Create_Particles('singlet', 30, method, mat=[0,1])
 
 #########################################################################################
 

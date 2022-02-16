@@ -15,7 +15,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import importlib
 warnings.filterwarnings("ignore")   
 from tqdm.contrib.concurrent import thread_map, process_map
-
+import inspect
 
 #importing param module
 working_dir = os.getcwd()+'/'
@@ -25,7 +25,8 @@ spec.loader.exec_module(param)
 
 argumentos = []  
 for name, value in vars(param).items():
-    if hasattr(value, 'assign_to_system'):        
+    #print(name,value)
+    if hasattr(value, 'assign_to_system') and not inspect.isclass(value): #getting only instancied classes
         argumentos.append(value)
         #print(name,hasattr(value, 'make'))
 
@@ -120,7 +121,6 @@ def anni_general(system,anni_dict):
                 except:
                     pass                    
 
-
 def decision(s,system,X,Y,Z):
     kind = s.species      
     local = s.position        
@@ -186,7 +186,6 @@ if animation_mode:
     step = step_ani
 else:
     step = step_nonani
-
 
 #Prints Spectra
 def spectra(system):
