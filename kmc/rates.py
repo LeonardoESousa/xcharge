@@ -86,8 +86,9 @@ class ForsterT:
         return taxa
 
     def action(self,particle,system,local):
-        system.set_particles([Singlet(local)])
+        particle.move(local)
         particle.kill('tts',system,system.t1,'converted')
+        system.set_particles([Singlet(local)])
 #########################################################################################
 
 ##FORSTER TRANSFER WITH ORIENTATION FACTORS ON THE FLY###################################
