@@ -97,10 +97,6 @@ try:
 except:
     identifier = spec.name
 try:
-    bimolec_funcs_array = param.bimolec_funcs_array   
-except:
-    bimolec_funcs_array = [ele_hol_recomb,anni_sing] 
-try:
     animation_mode = param.animation_mode
 except:
     animation_mode = False
