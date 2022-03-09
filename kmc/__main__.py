@@ -200,12 +200,15 @@ def step_ani(system):
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
         Ss = system.particles.copy()
+        random.shuffle(Ss)
         X,Y,Z = system.X, system.Y, system.Z     
         R = np.array([decision(s,system,X,Y,Z) for s in Ss])
-        system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
-        jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
-        Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)
-        bi_func(system,bimolec_funcs_array)
+        system.time += (1/max(R))*np.log(1/random.uniform(0,1))
+        jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
+        for jump in jumps:
+            if Ss[jump] in system.particles:
+                Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
+                bi_func(system,bimolec_funcs_array)
         return Ss       
     Ss = system.particles.copy()
     for s in Ss:
@@ -215,12 +218,16 @@ def step_nonani(system):
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
         Ss = system.particles.copy()
+        random.shuffle(Ss)
         X,Y,Z = system.X, system.Y, system.Z     
         R = np.array([decision(s,system,X,Y,Z) for s in Ss])
-        system.time += (1/np.sum(R))*np.log(1/random.uniform(0,1))
-        jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
-        Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-        bi_func(system,bimolec_funcs_array)       
+        system.time += (1/max(R))*np.log(1/random.uniform(0,1))
+        #jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
+        jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
+        for jump in jumps:
+            if Ss[jump] in system.particles:
+                Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
+                bi_func(system,bimolec_funcs_array)       
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1)
