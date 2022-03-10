@@ -82,8 +82,8 @@ except:
 def passar(*args):
     pass
 
-def anni(system,array):
-    anni_general(system,array)
+def anni(system,array,local):
+    anni_general(system,array,local)
    
 
 if bimolec:
@@ -147,22 +147,12 @@ def make_system():
 syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
     
 # runs the annihilations defined in anni_funcs_array                 
-def anni_general(system,anni_dict):
+def anni_general(system,anni_dict,local):
     Ss = system.particles.copy()   
     locs = np.array([s.position for s in Ss])
-    unicos, antindice = np.unique(locs, return_index=True)
-    if len(locs) > len(unicos):
-        indice = np.invert(np.in1d(np.arange(len(locs)),antindice))
-        superpostos = [np.where(locs == j)[0] for j in locs[indice]]
-        done = []
-        for superp in superpostos:
-            check = list(superp)
-            if check not in done:
-                try:
-                    anni_dict[tuple(sorted(Ss[i].species for i in superp[:2]))](Ss,system,superp)
-                    done.append(check)
-                except:
-                    pass                    
+    superpostos = np.where(locs == local)[0]
+    if len(superpostos) > 1:
+        anni_dict[tuple(sorted(Ss[i].species for i in superpostos[:2]))](Ss,system,superpostos[:2])
 
 
 def decision(s,system,X,Y,Z):
@@ -180,6 +170,7 @@ def decision(s,system,X,Y,Z):
     try:
         locais    = np.array([np.where(random.uniform(0,1) <= np.cumsum(x/np.sum(x)))[0][0] for x in jump_rate]).astype(int)
         jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
+        #jump_rate = np.array([max(jump_rate[i]) for i in np.arange(len(locais))])
     except:
         locais    = np.array([local])
         jump_rate = np.array([0])
@@ -208,7 +199,7 @@ def step_ani(system):
         for jump in jumps:
             if Ss[jump] in system.particles:
                 Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-                bi_func(system,bimolec_funcs_array)
+                bi_func(system,bimolec_funcs_array,Ss[jump].destination)
         return Ss       
     Ss = system.particles.copy()
     for s in Ss:
@@ -222,12 +213,11 @@ def step_nonani(system):
         X,Y,Z = system.X, system.Y, system.Z     
         R = np.array([decision(s,system,X,Y,Z) for s in Ss])
         system.time += (1/max(R))*np.log(1/random.uniform(0,1))
-        #jump = np.where(random.uniform(0,1) <= np.cumsum(R/np.sum(R)))[0][0]
         jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
         for jump in jumps:
             if Ss[jump] in system.particles:
                 Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-                bi_func(system,bimolec_funcs_array)       
+                bi_func(system,bimolec_funcs_array,Ss[jump].destination)       
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1)
