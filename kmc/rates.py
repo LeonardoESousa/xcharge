@@ -269,8 +269,9 @@ class Dissociation_hole:
 #########################################################################################
 
 
-def corrected_energies(system,s,r):
+def corrected_energies(system,s,r,dx,dy,dz):
     potential = np.copy(system.electrostatic())
+    potential += -1*(system.field[0]*dx + system.field[1]*dy + system.field[2]*dz)
     r[r == 0]  = np.inf 
     potential -= s.charge*abs(e)/(4*np.pi*system.epsilon*r)
     indices_e  = np.array([x.position for x in system.particles if x.charge == -1 and x.position != s.position]).astype(int)
@@ -303,6 +304,9 @@ class MillerAbrahams:
     def rate(self,**kwargs):
         system    = kwargs['system']
         r         = kwargs['r']
+        dx        = kwargs['dx']
+        dy        = kwargs['dy']
+        dz        = kwargs['dz']
         particle  = kwargs['particle']
         mats      = system.mats        
         mat       = mats[particle.position]
@@ -310,7 +314,7 @@ class MillerAbrahams:
         AtH        = raios(len(r),self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
 
-        DE = corrected_energies(system,particle,r) 
+        DE = corrected_energies(system,particle,r,dx,dy,dz) 
         taxa = (1e-12)*(AtH)*np.exp(
                                -(in_loc_rad*r+in_loc_rad*r))*np.exp(-DE/((kb*self.T+kb*self.T)))                           	               
         taxa[r == 0] = 0

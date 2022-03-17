@@ -18,12 +18,15 @@ class System:
         self.X = X
         self.Y = Y
         self.Z = Z
+        self.Lx = max(X) - min(X)
+        self.Ly = max(Y) - min(Y)
+        self.Lz = max(Z) - min(Z)
         self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
         self.mats = Mats
         self.uniq = np.unique(Mats)       
 
 
-    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni):
+    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,distance):
         self.processes           = processes
         self.monomolecular       = monomolecular
         self.identifier          = identifier
@@ -31,6 +34,7 @@ class System:
         self.time_limit          = time_limit
         self.pause               = pause
         self.bimolec             = anni
+        self.distance            = distance
     
     def set_particles(self,Ss):
         
@@ -65,22 +69,20 @@ class System:
         self.dead.append(particle) 
 
     def set_electric_field(self, field):
-        field = field/(1e8)
-        comp_x = -1*field[0]*self.X
-        comp_y = -1*field[1]*self.Y
-        comp_z = -1*field[2]*self.Z
-        self.electric_potential = comp_x + comp_y + comp_z
+        self.field = np.array(field)/(1e8)
+        #comp_x = -1*field[0]*self.X
+        #comp_y = -1*field[1]*self.Y
+        #comp_z = -1*field[2]*self.Z
+        #self.electric_potential = comp_x + comp_y + comp_z
         
 
     def electrostatic(self):
         if self.time > self.potential_time:
-            potential = np.copy(self.electric_potential)
+            potential = 0#np.copy(self.electric_potential)
             for s in self.particles:
                 if s.charge != 0:
-                    dx = self.X - self.X[s.position]
-                    dy = self.Y - self.Y[s.position]
-                    dz = self.Z - self.Z[s.position]
-                    r  = np.sqrt(dx*dx+dy*dy+dz*dz)*(1e-10)
+                    dx, dy, dz = self.distance(self, s.position)
+                    r = np.sqrt(dx*dx + dy*dy + dz*dz)*(1e-10)
                     r[r == 0] = np.inf
                     potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential

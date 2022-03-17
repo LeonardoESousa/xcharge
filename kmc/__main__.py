@@ -91,6 +91,34 @@ if bimolec:
 else:
     bi_func = passar
 
+
+def regular_distance(system,local):
+    dx = system.X - system.X[local]   
+    dy = system.Y - system.Y[local]  
+    dz = system.Z - system.Z[local]
+    return dx, dy, dz
+
+def periodic_distance(system,local):
+    dx = system.X - system.X[local]   
+    dy = system.Y - system.Y[local]  
+    dz = system.Z - system.Z[local]
+    maskx = 2*abs(dx) > system.Lx
+    masky = 2*abs(dy) > system.Ly
+    maskz = 2*abs(dz) > system.Lz
+    dx[maskx] = -1*(system.Lx - abs(dx))[maskx]
+    dy[masky] = -1*(system.Ly - abs(dy))[masky]
+    dz[maskz] = -1*(system.Lz - abs(dz))[maskz]
+    return dx, dy, dz
+
+try:
+    if param.periodic:
+        distance = periodic_distance
+    else:
+        distance =  regular_distance    
+except:
+    distance =  regular_distance 
+
+
 # Dealing with user-default options
 try:
     identifier     = param.identifier   
@@ -131,7 +159,7 @@ except:
 try:
     bimolec  = param.bimolec
 except:
-    bimolec  = False
+    bimolec  = False       
 #####
 
             
@@ -141,7 +169,7 @@ def make_system():
     #Sets system properties  
     for argumento in argumentos:
         argumento.assign_to_system(system)
-    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec) 
+    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance) 
  
     return system 
 syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
@@ -155,17 +183,14 @@ def anni_general(system,anni_dict,local):
         anni_dict[tuple(sorted(Ss[i].species for i in superpostos[:2]))](Ss,system,superpostos[:2])
 
 
-def decision(s,system,X,Y,Z):
+def decision(s,system):
     kind = s.species      
-    local = s.position        
-    dx = X - X[local]   
-    dy = Y - Y[local]  
-    dz = Z - Z[local]  
-    r  = np.sqrt(dx*dx+dy*dy+dz*dz)
-    
+    local= s.position        
+    dx, dy, dz = distance(system,local)
+    r = np.sqrt(dx*dx + dy*dy + dz*dz)
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
-    jump_rate = [transfer.rate(r=r,system=system,particle=s) for transfer in hop]
+    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s) for transfer in hop]
 
     try:
         locais    = np.array([np.where(random.uniform(0,1) <= np.cumsum(x/np.sum(x)))[0][0] for x in jump_rate]).astype(int)
@@ -193,7 +218,7 @@ def step_ani(system):
         Ss = system.particles.copy()
         random.shuffle(Ss)
         X,Y,Z = system.X, system.Y, system.Z     
-        R = np.array([decision(s,system,X,Y,Z) for s in Ss])
+        R = np.array([decision(s,system) for s in Ss])
         system.time += (1/max(R))*np.log(1/random.uniform(0,1))
         jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
         for jump in jumps:
@@ -203,7 +228,7 @@ def step_ani(system):
         return Ss       
     Ss = system.particles.copy()
     for s in Ss:
-        s.kill('alive',system,system.s1)
+        s.kill('alive',system,system.s1,'alive')
   
 def step_nonani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
@@ -211,7 +236,7 @@ def step_nonani(system):
         Ss = system.particles.copy()
         random.shuffle(Ss)
         X,Y,Z = system.X, system.Y, system.Z     
-        R = np.array([decision(s,system,X,Y,Z) for s in Ss])
+        R = np.array([decision(s,system) for s in Ss])
         system.time += (1/max(R))*np.log(1/random.uniform(0,1))
         jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
         for jump in jumps:
@@ -220,7 +245,7 @@ def step_nonani(system):
                 bi_func(system,bimolec_funcs_array,Ss[jump].destination)       
     Ss = system.particles.copy()
     for s in Ss:
-        s.kill('alive',system,system.s1)
+        s.kill('alive',system,system.s1,'alive')
 ##########################################################################################
 
 if animation_mode:
