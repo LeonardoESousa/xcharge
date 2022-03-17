@@ -70,15 +70,11 @@ class System:
 
     def set_electric_field(self, field):
         self.field = np.array(field)/(1e8)
-        #comp_x = -1*field[0]*self.X
-        #comp_y = -1*field[1]*self.Y
-        #comp_z = -1*field[2]*self.Z
-        #self.electric_potential = comp_x + comp_y + comp_z
         
 
     def electrostatic(self):
         if self.time > self.potential_time:
-            potential = 0#np.copy(self.electric_potential)
+            potential = 0
             for s in self.particles:
                 if s.charge != 0:
                     dx, dy, dz = self.distance(self, s.position)
