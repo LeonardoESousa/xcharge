@@ -59,7 +59,7 @@ class Forster:
 
 
     def action(self,particle,system,local):
-        particle.move(local)
+        particle.move(local,system)
 #########################################################################################
 
 ##TRIPLET TO SINGLET FORSTER TRANSFER####################################################
@@ -86,7 +86,7 @@ class ForsterT:
         return taxa
 
     def action(self,particle,system,local):
-        particle.move(local)
+        particle.move(local,system)
         particle.kill('tts',system,system.t1,'converted')
         system.set_particles([Singlet(local)])
 #########################################################################################
@@ -123,7 +123,7 @@ class ForsterKappa:
         return taxa
 
     def action(self,particle,system,local):
-        particle.move(local)
+        particle.move(local,system)
 #########################################################################################
 
 ##STANDARD FORSTER TRANSFER RATE#########################################################
@@ -158,7 +158,7 @@ class ForsterRedShift:
 
 
     def action(self,particle,system,local):
-        particle.move(local)
+        particle.move(local,system)
 #########################################################################################
 
 ##STANDARD DEXTER TRANSFER RATE##########################################################
@@ -184,7 +184,7 @@ class Dexter:
         return taxa
 
     def action(self,particle,system,local):
-        particle.move(local)
+        particle.move(local,system)
 #########################################################################################       
 
 ##EXCITON DISSOCIATION BY ELECTRON HOP RATE##############################################
@@ -321,7 +321,7 @@ class MillerAbrahams:
         return taxa
  
     def action(self,particle,system,local):
-        particle.move(local)
+        particle.move(local,system)
 
 ######################################################################################### 
 
