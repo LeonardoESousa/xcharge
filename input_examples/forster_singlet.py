@@ -5,14 +5,14 @@ from kmc.particles import *
 ###BASIC PARAMETERS######################################################################
 identifier         = 'forster_singlet' #output identifier
 time_limit         = np.inf# in PS
-animation_mode     = True
+animation_mode     = False
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False             # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 1     # Number of rounds
-n_proc             = 1     # Number of cores to be used
+rounds             = 100000     # Number of rounds
+n_proc             = 8     # Number of cores to be used
 frozen             = True              # if you want for the lattice to remain the same for all rounds
 #########################################################################################
 
@@ -66,8 +66,8 @@ lattice_func      = morphology.Lattice(num_sites,displacement,disorder,compositi
 
 #ENERGIES
 #Gaussian distribuitions
-t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
-s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
+t1s   = {0:(3.7,0.2), 1:(3.7,0.2), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
+s1s   = {0:(6.1,0.5), 1:(6.1,0.5), 'level':'s1'} # triplet energy, disperison (eV)
 
 a1 = morphology.Gaussian_energy(s1s)
 a2 = morphology.Gaussian_energy(t1s) 
@@ -76,7 +76,7 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 30, method, mat=[0,1])
+exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
 
 #########################################################################################
 
