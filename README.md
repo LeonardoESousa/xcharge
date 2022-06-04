@@ -35,11 +35,13 @@
 <p align="center">
   <kbd>
     <!--<img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">-->
-    <img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/7P7KWFJM/kmc.gif" alt="demo">
+    <!--<img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/7P7KWFJM/kmc.gif" alt="demo">-->
+    <img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/C1yPf4t0/kmc-opt.gif" alt="demo">
   </kbd>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <kbd>
-    <img width="335.5" style="border-radius: 25px" height="293.7" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
+    <!--<img width="335.5" style="border-radius: 25px" height="293.7" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">-->
+    <img width="335.5" style="border-radius: 25px" height="293.7" src="https://i.postimg.cc/zfNHbbjM/latt.gif" alt="demo">
   </kbd>
 </p>
 
