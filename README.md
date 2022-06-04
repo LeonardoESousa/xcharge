@@ -58,6 +58,7 @@
 - [x] Lattice distortion effects;
 - [x] Built-in Parallelization;
 - [x] Singlet Annihilation;
+- [x] Native Dashboard for Analysis; 
 - [ ] Include in-site dipole orientation.
 
 
@@ -69,6 +70,7 @@
    * [Basic Usage](#basic-usage)
    *    * [Make Animations](#make-animations)
    *    * [Parallelization](#parallelization)
+   *    * [Analysis Dashboard](#analysis-dashboards)
    * [Documentation](#documentation)
 
 <!--te-->
@@ -122,6 +124,19 @@ Then, run the job
 kmc your_input.py
 ```
 
+### Analysis Dashboard
+
+<p align="center">
+  <kbd>
+    <img width="640" style="border-radius: 25px" height="480" src="https://i.postimg.cc/fRvGx1sK/dash.gif" alt="demo">
+  </kbd>
+</p>
+
+At any terminal, enter
+```bash
+dash
+```
+Click in <em> Upload </em>, choose you file and press <em>Read File </em>.
 
 ## Documentation
 [Main page](https://github.com/LeonardoESousa/xcharge/wiki)
