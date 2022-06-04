@@ -14,6 +14,7 @@ pause              = False             # if you want that the annimation stops i
 rounds             = 100               # Number of rounds
 n_proc             = 1                 # Number of cores to be used
 frozen             = True              # if you want for the lattice to remain the same for all rounds
+periodic           = True              # if you want periodic boundary conditions
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################
@@ -93,7 +94,7 @@ monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-num_sites         = 100             #number of sites of the lattice
+num_sites         = 1000             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
 disorder          = [0, 0, 0]       #std deviation from avg position
 composition       = [1.0,0.0]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
@@ -101,7 +102,7 @@ lattice_func      = morphology.Lattice(num_sites,displacement,disorder,compositi
 
 
 #Electric Field and Dielectric constant
-Electric_class    = morphology.Electric(eps=3.5,field=np.array([0,0,0]))   
+Electric_class    = morphology.Electric(eps=3.5,field=np.array([0,100000,0]))   
 
 ##ENERGIES
 #Gaussian distribuitions
@@ -118,8 +119,8 @@ lumo = morphology.Gaussian_energy(lumos)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-electron  = morphology.Create_Particles('electron', 5, method, mat=[0,1])
-holes     = morphology.Create_Particles('hole', 5, method, mat=[0,1])
+#electron  = morphology.Create_Particles('electron', 5, method, mat=[0,1])
+holes     = morphology.Create_Particles('hole', 1, method, mat=[0,1])
 
 #########################################################################################
 

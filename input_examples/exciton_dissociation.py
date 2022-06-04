@@ -14,6 +14,7 @@ pause              = False             # if you want that the annimation stops i
 rounds             = 100               # Number of rounds
 n_proc             = 1                 # Number of cores to be used
 frozen             = True              # if you want for the lattice to remain the same for all rounds
+periodic           = True              # if you want periodic boundary conditions
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################

@@ -11,9 +11,10 @@ animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 10     # Number of rounds
+rounds             = 10    # Number of rounds
 n_proc             = 1     # Number of cores to be used
-frozen             = True              # if you want for the lattice to remain the same for all rounds
+frozen             = True  # if you want for the lattice to remain the same for all rounds
+periodic           = True  # if you want periodic boundary conditions
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################
