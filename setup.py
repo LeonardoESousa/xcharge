@@ -16,12 +16,12 @@ NAME = 'KMC'
 DESCRIPTION = 'Kinetic Monte Carlo'
 URL = 'https://github.com/LeonardoESousa/KMC'
 EMAIL = 'leonardo.sousa137@gmail.com'
-AUTHOR = 'Leonardo Evaristo de Sousa'
+AUTHOR = 'Leonardo Evaristo de Sousa and Tiago de Sousa Araújo Cassiano'
 REQUIRES_PYTHON = '>=3.6.0'
 VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
-REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib', 'tqdm']
+REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib', 'tqdm', 'voila', 'ipywidgets', 'pandas', 'IPython']
 
 # What packages are optional?
 EXTRAS = {
@@ -105,7 +105,7 @@ setup(
     packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
     # If your package is a single module, use this instead of 'packages':
     #py_modules=['mypackage'],
-    entry_points={'console_scripts': ["kmc = kmc.__main__:main", "build = kmc.build_morph:main" ]},
+    entry_points={'console_scripts': ["kmc = kmc.__main__:main", "build = kmc.build_morph:main", "dash = kmc.main_dashboard:main"]},
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,

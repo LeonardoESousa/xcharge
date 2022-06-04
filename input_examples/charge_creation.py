@@ -26,7 +26,7 @@ r11   = 25
 radii = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
 ##FLUORESCENCE LIFETIMES (ps)
-f0 = 2900000 #lifetime of material 0
+f0 = 2900 #lifetime of material 0
 f1 = 2900    #lifetime of material 1
 lifetimes = {0:f0,1:f1}
 
@@ -118,8 +118,8 @@ lumo = morphology.Gaussian_energy(lumos)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-electron  = morphology.Create_Particles('electron', 1, method, mat=[0,1])
-holes     = morphology.Create_Particles('hole', 1, method, mat=[0,1])
+electron  = morphology.Create_Particles('electron', 5, method, mat=[0,1])
+holes     = morphology.Create_Particles('hole', 5, method, mat=[0,1])
 
 #########################################################################################
 

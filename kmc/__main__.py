@@ -75,7 +75,7 @@ except:
 try:
     bimolec  = param.bimolec
 except:
-    bimolec  = False
+    bimolec  = False       
 #####
 
 
@@ -118,50 +118,6 @@ try:
 except:
     distance =  regular_distance 
 
-
-# Dealing with user-default options
-try:
-    identifier     = param.identifier   
-except:
-    identifier = spec.name
-try:
-    animation_mode = param.animation_mode
-except:
-    animation_mode = False
-try:
-    save_animation = param.save_animation
-except:
-    save_animation = False
-try:
-    animation_exten = param.animation_exten
-except:
-    animation_exten = "gif"
-try:
-    time_limit = param.time_limit
-except:
-    time_limit = np.inf
-try:
-    pause = param.pause
-except:
-    pause = False
-try:
-    marker_type = param.marker_type
-except:
-    marker_type = 1
-try:
-    rotate = param.rotate
-except:
-    rotate = False
-try:
-    frozen_lattice  = param.frozen
-except:
-    frozen_lattice = False
-try:
-    bimolec  = param.bimolec
-except:
-    bimolec  = False       
-#####
-
             
 def make_system():
     #Create instance of system
@@ -180,7 +136,10 @@ def anni_general(system,anni_dict,local):
     locs = np.array([s.position for s in Ss])
     superpostos = np.where(locs == local)[0]
     if len(superpostos) > 1:
-        anni_dict[tuple(sorted(Ss[i].species for i in superpostos[:2]))](Ss,system,superpostos[:2])
+        try:
+            anni_dict[tuple(sorted(Ss[i].species for i in superpostos[:2]))](Ss,system,superpostos[:2])
+        except:#in case of the set (particle1,partticle2) is not defined
+            pass
 
 
 def decision(s,system):

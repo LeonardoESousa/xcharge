@@ -5,14 +5,14 @@ from kmc.particles import *
 ###BASIC PARAMETERS######################################################################
 identifier         = 'forster_singlet' #output identifier
 time_limit         = np.inf# in PS
-animation_mode     = True
+animation_mode     = False
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False             # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 1     # Number of rounds
-n_proc             = 1     # Number of cores to be used
+rounds             = 1000     # Number of rounds
+n_proc             = 8     # Number of cores to be used
 frozen             = True              # if you want for the lattice to remain the same for all rounds
 #########################################################################################
 
@@ -59,7 +59,7 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 # Creating a new lattice at each new round
 num_sites         = 100             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
-disorder          = [0.5,0.5,0.5]   #std deviation from avg position
+disorder          = [0.,0.,0.]   #std deviation from avg position
 composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
 lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
 
@@ -80,5 +80,5 @@ exciton   = morphology.Create_Particles('singlet', 3, method, mat=[0,1])
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################
-bimolec               = True  # Turn on annihilation
+bimolec               = False  # Turn on annihilation
 #########################################################################################
