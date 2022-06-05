@@ -1,3 +1,10 @@
+############################################################
+# forster_singlet.py.                                        
+# This example illustrates the simulation of singlet excitons.
+# 3 singlet excitons.
+# 2 Materials.
+############################################################
+
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *

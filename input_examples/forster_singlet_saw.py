@@ -1,3 +1,11 @@
+###################################################################
+# forster_singlet_saw.py.                                        
+# This example illustrates the simulation of singlet excitons 
+# in a saw-type conformation.
+# 10 singlet excitons and 10 triplets.
+# 2 Materials.
+###################################################################
+
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *

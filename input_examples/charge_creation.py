@@ -1,3 +1,11 @@
+############################################################
+# charge_creation.py.                                        
+# This example illustrates the simulation of charge dynamics.
+# Here 5 pairs of electron-holes are created in a 2D lattice.
+# 2 Materials.
+# Eletric field off.
+############################################################
+
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *
@@ -46,8 +54,8 @@ fluor     = Fluor(life=lifetimes)
 ##DISSOCIATION RATE
 H = {(0,0):1e10,(0,1):1e10,(1,0):1e10,(1,1):1e10}
 invrad = {0:0.1,1:0.1}
-dissociation = Dissociation_electron(AtH=H,invrad=invrad,T=300)
-
+dissociation_e = Dissociation_electron(AtH=H,invrad=invrad,T=300)
+dissociation_h = Dissociation_hole(AtH=H,invrad=invrad,T=300)
 ###TRIPLET EXCITONS######################################################################
 
 ##DEXTER RADII (Å)
@@ -79,7 +87,7 @@ miller = MillerAbrahams(AtH=H,invrad=invrad,T=300)
 
 ###PROCESSES#############################################################################
 
-processes = {'singlet':[forster,dissociation], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
+processes = {'singlet':[forster,dissociation_e,dissociation_h], 'triplet':[dexter], 'electron':[miller],'hole':[miller]}
 monomolecular = {'singlet':[fluor],'triplet':[phosph],'electron':[],'hole':[]}
 #########################################################################################
 
@@ -102,7 +110,7 @@ lattice_func      = morphology.Lattice(num_sites,displacement,disorder,compositi
 
 
 #Electric Field and Dielectric constant
-Electric_class    = morphology.Electric(eps=3.5,field=np.array([0,100000,0]))   
+Electric_class    = morphology.Electric(eps=3.5,field=np.array([0,0,0]))   
 
 ##ENERGIES
 #Gaussian distribuitions
@@ -119,8 +127,8 @@ lumo = morphology.Gaussian_energy(lumos)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-#electron  = morphology.Create_Particles('electron', 5, method, mat=[0,1])
-holes     = morphology.Create_Particles('hole', 1, method, mat=[0,1])
+electron  = morphology.Create_Particles('electron', 5, method, mat=[0,1])
+holes     = morphology.Create_Particles('hole', 5, method, mat=[0,1])
 
 #########################################################################################
 

@@ -1,3 +1,11 @@
+############################################################
+# forster_singlet_bilayer.py.                                        
+# This example illustrates the simulation of singlet excitons 
+# in a bilayer conformation.
+# 2 singlet excitons created at the interface.
+# 2 Materials.
+############################################################
+
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *

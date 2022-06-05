@@ -1,3 +1,11 @@
+###################################################################
+# forster_singlet_distribution.py.                                        
+# This example illustrates the simulation of singlet excitons 
+# that reads the singlet's energies distributions from a txt file.
+# 20 singlet excitons and 10 triplets.
+# 2 Materials.
+###################################################################
+
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *

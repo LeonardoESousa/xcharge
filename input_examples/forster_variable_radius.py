@@ -1,3 +1,11 @@
+###################################################################
+# forster_singlet_radius.py.                                        
+# This example illustrates the simulation of singlet excitons 
+#that reads the Forster radius from a txt file
+# 25 singlet excitons inside a sphere.
+# 2 Materials.
+###################################################################
+
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *

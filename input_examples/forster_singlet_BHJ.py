@@ -1,3 +1,11 @@
+############################################################
+# forster_singlet_BHJ.py.                                        
+# This example illustrates the simulation of singlet excitons 
+# in a bulk heterojunction conformation.
+# 10 singlet excitons.
+# 2 Materials.
+############################################################
+
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *

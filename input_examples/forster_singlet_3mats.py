@@ -1,3 +1,10 @@
+############################################################
+# forster_singlet_3mats.py.                                        
+# This example illustrates the simulation of singlet excitons.
+# 1 singlet exciton created at Mat 0 and 1.
+# 3 Materials.
+############################################################
+
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *
