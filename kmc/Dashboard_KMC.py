@@ -2,7 +2,7 @@
  "cells": [
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 29,
    "id": "207b1518",
    "metadata": {},
    "outputs": [],
@@ -36,7 +36,7 @@
     "#dropdown = widgets.Dropdown(options=files, values=files[0],description='File name',disabled=False)\n",
     "\n",
     "dropdown = widgets.FileUpload(\n",
-    "    accept='',  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'\n",
+    "    accept='.txt',  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'\n",
     "    multiple=False  # True to accept multiple files upload else False\n",
     ")\n",
     "\n",
@@ -225,7 +225,6 @@
     "        names, counts = zip(*histogram_data)\n",
     "        print(names, counts)\n",
     "        x = np.arange(len(names))\n",
-    "        \n",
     "        plt.figure(3)\n",
     "        plt.clf()\n",
     "        plt.bar(x, height=counts)\n",
@@ -254,6 +253,8 @@
     "    kwargs[\"elect_box3\"], kwargs[\"elect_box4\"],\n",
     "    kwargs[\"elect_box5\"], kwargs[\"elect_box6\"]]\n",
     "    \n",
+    "    dump_but = kwargs[\"dump_but\"]\n",
+    "    \n",
     "    par_boxes = {}\n",
     "    par_boxes['singlet']  = singlet_boxes\n",
     "    par_boxes['triplet']  = triplet_boxes\n",
@@ -276,6 +277,19 @@
     "                histogram_data.append([part+'_'+death,n_filter])\n",
     "    if histogram_data:\n",
     "        make_hist_plot(histogram_data)\n",
+    "        if dump_but:\n",
+    "            hist_data = np.array(histogram_data,dtype='str')\n",
+    "            np.savetxt('histogram.txt' , hist_data, delimiter=' ', fmt='%s')\n",
+    "#button to download the data from histogram\n",
+    "dump_but_hist = widgets.ToggleButton(\n",
+    "    value=False,\n",
+    "    description='Click me',\n",
+    "    disabled=False,\n",
+    "    button_style='success', # 'success', 'info', 'warning', 'danger' or ''\n",
+    "    )\n",
+    "\n",
+    "\n",
+    "\n",
     "def Histogram_widget(data,tot_len,particle_existence,**kwargs):\n",
     "    \n",
     "    #filtering using the common filtering interface\n",
@@ -315,7 +329,7 @@
     "    name_deaths['triplet']  = deaths_triplet\n",
     "    name_deaths['hole']     = deaths_hole\n",
     "    name_deaths['electron'] = deaths_electron\n",
-    "\n",
+    "    \n",
     "    #initializating the histogram widget by giving the boxes as input\n",
     "    w_hi = widgets.interactive(Histogram_func,data=fixed(data_filtred),name_deaths=fixed(name_deaths),\n",
     "                           singl_box1=box_singlet[0],singl_box2=box_singlet[1],\n",
@@ -330,8 +344,8 @@
     "                           elect_box1=box_electron[0],elect_box2=box_electron[1],\n",
     "                           elect_box3=box_electron[2],elect_box4=box_electron[3],\n",
     "                           elect_box5=box_electron[4],elect_box6=box_electron[5],\n",
-    "                            )    \n",
-    "    \n",
+    "                           dump_but = dump_but_hist)    \n",
+    "\n",
     "    #organize the boxes by particle type\n",
     "    def organize_boxes(num_ele,widget_int):\n",
     "        labels = ['Singlet','Triplet', 'Hole', 'Electron']\n",
@@ -349,7 +363,7 @@
     "    v = organize_boxes(6,w_hi)                \n",
     "    #h = widgets.HBox([w_hi.children[i] for i in range(len(w_hi.children)-1)])\n",
     "    #v = widgets.VBox([widgets.Label('Singlet: '),h,w_hi.children[-1]])\n",
-    "    display(v)\n",
+    "    display(v,dump_but_hist)\n",
     "    #display(w_hi)\n",
     "def get_widgets_per_particle(min_energy,max_energy,unique_mats,unique_death,unique_status):\n",
     "    min_bound,max_bound = get_bound(max_energy,min_energy)\n",
@@ -414,7 +428,6 @@
     "def pre_load(file_name,run_button):\n",
     "    #print('the file '+ list(file_name.keys())[0] + 'was loaded!')\n",
     "    if run_button:\n",
-    "        \n",
     "        name = list(file_name.keys())[0]\n",
     "        data = file_name[name]['content']\n",
     "        data = io.StringIO(data.decode('utf-8'))\n",
@@ -547,12 +560,41 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 30,
    "id": "9d5f2a51",
    "metadata": {
     "scrolled": false
    },
-   "outputs": [],
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "68380ebeeec1415db46882e86bdf5cc8",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HTML(value='<p style=\"font-size:24px\"><b>DASHBOARD KMC</b></p>')"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "d0cc436387db4cc593f757a80d74ff62",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "VBox(children=(HBox(children=(FileUpload(value={}, accept='.txt', description='Upload'), ToggleButton(value=Fa…"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
    "source": [
     "display(widgets.HTML(value = r'<p style=\"font-size:24px\"><b>DASHBOARD KMC</b></p>'))\n",
     "i = widgets.interactive(pre_load, file_name=dropdown,run_button=run_but);\n",
@@ -560,6 +602,14 @@
     "v = widgets.VBox([h,i.children[2]])\n",
     "display(v)"
    ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "16f45cdd",
+   "metadata": {},
+   "outputs": [],
+   "source": []
   }
  ],
  "metadata": {
