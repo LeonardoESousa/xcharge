@@ -87,7 +87,15 @@ pip3 install .
 ```bash
 pip3 install kmc
 ```
-
+If you encounter the following error:
+```
+Failed building wheel for pillow
+```
+Install (for Ubuntu) these two libraries
+```bash
+sudo apt install libjpeg8-dev zlib1g-dev
+```
+and try to reinstall xcharge
 ## How to Use
 
 1) Construct your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples)
