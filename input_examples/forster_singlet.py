@@ -18,24 +18,24 @@ animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False             # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 1000     # Number of rounds
-n_proc             = 8     # Number of cores to be used
+rounds             = 5000     # Number of rounds
+n_proc             = 10     # Number of cores to be used
 frozen             = True              # if you want for the lattice to remain the same for all rounds
-periodic           = True              # if you want periodic boundary conditions
+periodic           = False              # if you want periodic boundary conditions
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################
 
 ##FORSTER RADII (Å)
 r00   = 25   #Forster radius material 0 --> material 0 (Angstrom)    
-r01   = 25   #material 0 --> material 1      
-r10   = 25       
+r01   = 0   #material 0 --> material 1      
+r10   = 0       
 r11   = 25     
 radii = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
 ##FLUORESCENCE LIFETIMES (PS)
-f0 = 29000 #lifetime of material 0
-f1 = 2900 #lifetime of material 1
+f0 = 2900 #lifetime of material 0
+f1 = 290  #lifetime of material 1
 lifetimes = {0:f0,1:f1}
 
 ##TANSITION DIPOLE MOMENTS (a.u.)
@@ -83,7 +83,7 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 3, method, mat=[0,1])
+exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
 
 #########################################################################################
 
