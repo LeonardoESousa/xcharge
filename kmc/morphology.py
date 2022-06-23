@@ -91,10 +91,11 @@ def interface(available, number, system, kwargs):
 
 ##CLASS FOR GENERATING PARTICLES IN THE SYSTEM###########################################
 class Create_Particles():
-    def __init__(self,kind, num, method, **kwargs):
+    def __init__(self,kind, num, method, prob, **kwargs):
         self.kind   = kind
         self.num    = num
         self.method = method
+        self.prob   = prob
         self.argv   = kwargs
 
     def assign_to_system(self,system):

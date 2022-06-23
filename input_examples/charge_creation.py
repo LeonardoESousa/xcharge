@@ -19,7 +19,7 @@ animation_exten    = 'gif'             # possible options ('gif' and 'mp4')
 rotate             = False             # True = animation rotates, False = remains fixed
 marker_type        = 1                 # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False             # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 100               # Number of rounds
+rounds             = 1               # Number of rounds
 n_proc             = 1                 # Number of cores to be used
 frozen             = True              # if you want for the lattice to remain the same for all rounds
 periodic           = True              # if you want periodic boundary conditions
@@ -127,8 +127,8 @@ lumo = morphology.Gaussian_energy(lumos)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-electron  = morphology.Create_Particles('electron', 5, method, mat=[0,1])
-holes     = morphology.Create_Particles('hole', 5, method, mat=[0,1])
+electron  = morphology.Create_Particles('electron', 5, method, mat=[0,1],prob=True)
+holes     = morphology.Create_Particles('hole', 5, method, mat=[0,1],prob=True)
 
 #########################################################################################
 

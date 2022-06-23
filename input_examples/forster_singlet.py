@@ -18,8 +18,8 @@ animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False             # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 5000     # Number of rounds
-n_proc             = 10     # Number of cores to be used
+rounds             = 1     # Number of rounds
+n_proc             = 1     # Number of cores to be used
 frozen             = True              # if you want for the lattice to remain the same for all rounds
 periodic           = False              # if you want periodic boundary conditions
 #########################################################################################
@@ -84,7 +84,6 @@ a2 = morphology.Gaussian_energy(t1s)
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
 exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
-
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################

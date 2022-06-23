@@ -50,7 +50,7 @@ argumentos = []
 for name, value in vars(param).items():
     if hasattr(value, 'assign_to_system'):        
         argumentos.append(value)
-        #print(name,hasattr(value, 'make'))
+        print(name,hasattr(value, 'make'))
 
 #getting all essential info from user's input
 n_proc              = param.n_proc
@@ -141,12 +141,29 @@ try:
 except:
     distance =  regular_distance 
 
-            
+def creation_prob(args):
+    x = [arg for arg in args if arg.__class__.__name__ == "Create_Particles" and arg.prob == True]
+    if len(x) > 1:
+        #print([int(part.num) for part in x])
+        num_ar = [int(part.num) for part in x]       # num values given by the user
+        num_list = np.cumsum(num_ar/np.sum(num_ar))  #relative prob of particle creation weighted by the nums
+        sample = np.random.uniform(0,1,[np.sum(num_ar)])
+        num_prob = [len(np.where(sample <= part)[0]) for part in num_list]
+        shift    = [0]+num_prob[:len(num_prob)-1]
+        num_prob = np.array(num_prob)-np.array(shift) #removing the values that came first in num_list
+        for i in range(len(x)):
+            x[i].num = num_prob[i]
+        #print([int(part.num) for part in x])
+    else:
+        pass
+           
 def make_system():
     #Create instance of system
     system = System()
-    #Sets system properties  
+    #Sets system properties 
+    creation_prob(argumentos)
     for argumento in argumentos:
+        print(argumento)
         argumento.assign_to_system(system)
     system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance) 
  
@@ -304,6 +321,7 @@ def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
 #resets particles' initial position for a given system
 def reroll_system(system):
     system.reset_particles()
+    creation_prob(argumentos)
     for argumento in argumentos:
         class_name = argumento.__class__.__name__
         if (class_name == "Create_Particles"):
