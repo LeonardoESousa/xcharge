@@ -91,13 +91,17 @@ def interface(available, number, system, kwargs):
 
 ##CLASS FOR GENERATING PARTICLES IN THE SYSTEM###########################################
 class Create_Particles():
-    def __init__(self,kind, num, method, prob, **kwargs):
+    def __init__(self,kind, num, method, **kwargs):
         self.kind   = kind
         self.num    = num
         self.method = method
-        self.prob   = prob
         self.argv   = kwargs
-
+        self.num_default = num
+        #if the user wants parcticle creation be mediated by uniform probability
+        try:
+            self.prob   = kwargs["prob"]
+        except:
+            self.prob = "False"
     def assign_to_system(self,system):
         selected = self.method(range(len(system.X)),self.num, system, self.argv)
         Particula = getattr(sys.modules[__name__], self.kind.title())

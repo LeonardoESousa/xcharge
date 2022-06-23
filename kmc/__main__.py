@@ -50,7 +50,7 @@ argumentos = []
 for name, value in vars(param).items():
     if hasattr(value, 'assign_to_system'):        
         argumentos.append(value)
-        print(name,hasattr(value, 'make'))
+        #print(name,hasattr(value, 'make'))
 
 #getting all essential info from user's input
 n_proc              = param.n_proc
@@ -141,11 +141,12 @@ try:
 except:
     distance =  regular_distance 
 
+#samples a set particles according to a probability
 def creation_prob(args):
     x = [arg for arg in args if arg.__class__.__name__ == "Create_Particles" and arg.prob == True]
     if len(x) > 1:
         #print([int(part.num) for part in x])
-        num_ar = [int(part.num) for part in x]       # num values given by the user
+        num_ar = [int(part.num_default) for part in x]       # num values given by the user
         num_list = np.cumsum(num_ar/np.sum(num_ar))  #relative prob of particle creation weighted by the nums
         sample = np.random.uniform(0,1,[np.sum(num_ar)])
         num_prob = [len(np.where(sample <= part)[0]) for part in num_list]
@@ -163,7 +164,7 @@ def make_system():
     #Sets system properties 
     creation_prob(argumentos)
     for argumento in argumentos:
-        print(argumento)
+        #print(argumento)
         argumento.assign_to_system(system)
     system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance) 
  
