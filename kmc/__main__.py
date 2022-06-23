@@ -23,33 +23,22 @@ import subprocess
 if (sys.argv[1] == "dash"):
     working_dir = os.getcwd()+'/'
     pip_dir = [x for x in os.popen('pip show kmc').read().split('\n') if 'Location:' in x][0].split()[1]
-
     
     #“When a man is denied the right to live the life he believes in, he has no choice but to become an outlaw.” ― Nelson Mandela
     # I had no choice.
-    print()
-    path = os.getcwd()
-    r = "path_bash=\'"+ path +"\'\\n\","
-    dash_path = pip_dir+"/kmc/Dashboard_KMC.ipynb"
-    with open(dash_path, "r")  as f:
-        for line in f:
-            
-            if "path_bash=" in line:
-                l=line.split("=")[1]
-    l = "path_bash="+l   
     
-    with open(dash_path, "rt") as f:            
-        data = f.read()
-        data = data.replace(l, r+'\n')
-    
-    with open(dash_path, "wt") as f:
-        f.write(data)
-         
-    print("Running Dashboard... Destination:" + path)
-    s = "voila "+pip_dir+"/kmc/Dashboard_KMC.ipynb --Voila.tornado_settings=\"{'websocket_max_message_size': 209715200}\""    
+    path_file= "pathfile.txt"
+    pip_path = pip_dir+'/kmc/'
+    with open(pip_path+path_file,'w') as p:
+        print(pip_path+path_file)
+        p.write(working_dir)
+
+    s = "voila "+pip_dir+"/kmc/Dashboard_KMC.ipynb --Voila.tornado_settings=\"{'websocket_max_message_size': 209715200}\""
     p = subprocess.run(s, shell=True, check=True)
     p.wait()
     sys.exit()
+    
+    
     
 #importing param module
 working_dir = os.getcwd()+'/'
