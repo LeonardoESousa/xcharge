@@ -87,7 +87,7 @@ pip3 install .
 ```bash
 pip3 install kmc
 ```
-If you encounter any error, we recommend you visit our page of [troubleshooting solutions](https://github.com/LeonardoESousa/xcharge/wiki/Troubleshoot-Install)
+If you encounter any error, we recommend you to visit our page of [troubleshooting solutions](https://github.com/LeonardoESousa/xcharge/wiki/Troubleshoot-Install)
 ## How to Use
 
 1) Construct your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples)
@@ -113,7 +113,7 @@ kmc your_input.py
 
 ### Parallelization
 
-Set the number of rounds as you wish and assign to n_proc the number of avaliable cores (-1 if you want to use the entire machine). Then, turn off the animation_mode. Your input should look something like
+Set the number of rounds as you wish and assign to n_proc the number of avaliable cores. Then, turn off the animation_mode. Your input should look something like
 ```python
 animation_mode = False
 rounds = 10000  # repeating the dynamics 10000 times 
@@ -134,7 +134,7 @@ kmc your_input.py
 
 At any terminal, enter
 ```bash
-dash
+kmc dash
 ```
 Click in <em> Upload </em>, choose you file and press <em>Read File </em>.
 
