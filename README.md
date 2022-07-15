@@ -83,10 +83,13 @@ git clone https://github.com/LeonardoESousa/KMC
 cd KMC/
 pip3 install .
 ```
+<!--
 (Auto installation)
 ```bash
 pip3 install kmc
 ```
+-->
+
 If you encounter any error, we recommend you to visit our page of [troubleshooting solutions](https://github.com/LeonardoESousa/xcharge/wiki/Troubleshoot-Install)
 ## How to Use
 
