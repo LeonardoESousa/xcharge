@@ -2,6 +2,7 @@ import numpy as np
 import random
 from kmc.particles import *
 import sys
+from collections import Counter
 
 # Personalized errors
 class randomized_error(Exception):
@@ -102,6 +103,25 @@ class Create_Particles():
         Particula = getattr(sys.modules[__name__], self.kind.title())
         particles = [Particula(number) for number in selected]
         system.set_particles(particles)
+        
+class Create_Particles_PROB():
+    def __init__(self, probs, num, method, **kwargs):
+        self.num    = num
+        self.method = method
+        self.probs  = probs
+        self.argv   = kwargs
+    def assign_to_system(self,system):
+        coin      = [random.uniform(0,1) for num in range(self.num)]
+        type_part = [part[0] for part in self.probs]
+        prob      = [part[1] for part in self.probs]
+        cum_sum   = np.cumsum(prob/np.sum(prob))
+        x         = [ type_part[np.where(random.uniform(0,1) <= cum_sum)[0][0]] for n in range(self.num)]
+        pop       = Counter(x)       
+        for part in pop:		
+            selected = self.method(range(len(system.X)),pop[part], system, self.argv)
+            Particula = getattr(sys.modules[__name__], part)
+            particles = [Particula(number) for number in selected]
+            system.set_particles(particles)
 #########################################################################################
 
 ##CLASSES TO ASSIGN ENERGIES TO LATTICE##################################################	

@@ -306,7 +306,7 @@ def reroll_system(system):
     system.reset_particles()
     for argumento in argumentos:
         class_name = argumento.__class__.__name__
-        if (class_name == "Create_Particles"):
+        if (class_name in ["Create_Particles","Create_Particles_PROB"]):
             argumento.assign_to_system(system)
     
     '''
