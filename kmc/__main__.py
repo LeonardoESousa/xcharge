@@ -16,6 +16,7 @@ import importlib
 warnings.filterwarnings("ignore")   
 from tqdm.contrib.concurrent import thread_map, process_map
 import subprocess
+import inspect
 #from joblib import Parallel, delayed
 
 #importing param module
@@ -26,7 +27,7 @@ spec.loader.exec_module(param)
 
 argumentos = []  
 for name, value in vars(param).items():
-    if hasattr(value, 'assign_to_system'):        
+    if hasattr(value, 'assign_to_system') and not inspect.isclass(value): #getting only instancied classes         
         argumentos.append(value)
         #print(name,hasattr(value, 'make'))
 

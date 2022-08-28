@@ -90,7 +90,82 @@ class ForsterT:
         particle.kill('tts',system,system.t1,'converted')
         system.set_particles([Singlet(local)])
 #########################################################################################
+##FORSTER ANNIHILATION RADIUS#########################################################
+class Annihilation_Radius:
+    def __init__(self,dic):
+        self.dic   = dic
+    def assign_to_system(self,system):
+        system.append_annihi_radius(self.dic)
+class Forster_Annirad:
+    def __init__(self,**kwargs):
+        self.kind = 'jump'
+        self.Rf = kwargs['Rf']
+        self.lifetime = kwargs['life']
+        self.mu = kwargs['mu']
+        self.alpha = 1.15*0.53
 
+
+    def rate(self,**kwargs):
+        r      = kwargs['r']
+        system = kwargs['system']
+        ex     = kwargs['particle']
+        mats   = system.mats    
+        local  = ex.position    
+        mat = mats[local]
+        
+        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
+        
+        #solution #1 (brute force but elegant)
+        '''  
+        for p in system.particles: # sweeping over the other particles and changing the Forster radius when applicable
+            try:
+                annihi_dics      = system.annihi_radius
+                annihi_dic       = annihi_dics['singlet',p.species]
+                Rf[p.position]   = annihi_dic[(mat,mats[p.position])]
+            except:
+                pass
+        '''    
+        
+        #solution #2 (smart search but ugly)
+        #'''
+        ss = [[p.position,mats[p.position]] for p in system.particles if p.species == 'singlet']
+        try:         
+            for ele in ss:
+                Rf[ele[0]] = system.annihi_radius['singlet','singlet'][(mat,ele[1])] 
+        except:
+            pass
+        #'''
+        
+        #solution #3 : make a new forster class that englobes default and anni rates.
+        # putting here the idea so I will not forget:
+        
+        #class Forster:
+        #   def __init__(self,**kwargs):
+        #   ...
+        #   self.annihi = kwargs['SS']
+        #   
+        #   
+        #   try:
+        #       self.annihi
+	#       rate == rate_anni
+	#   except:
+	#       rate == rate_default
+	#
+	
+	
+        #k = len([ x for x in Rf if x == 0]) #debug tool
+        #print(k,Rf)        
+        
+        
+        x = (Rf/(self.alpha*self.mu[mat] + r))
+        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
+        taxa[r == 0] = 0
+        return taxa
+
+
+    def action(self,particle,system,local):
+        particle.move(local,system)
+#########################################################################################
 ##FORSTER TRANSFER WITH ORIENTATION FACTORS ON THE FLY###################################
 class ForsterKappa:
     def __init__(self,**kwargs):

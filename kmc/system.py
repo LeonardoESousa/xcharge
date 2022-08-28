@@ -13,7 +13,8 @@ class System:
         self.time = 0
         self.potential_time = -1
         self.IT = 0 #number of steps
-        
+        self.annihi_radius = {}
+                
     def set_morph(self,X,Y,Z,Mats):
         self.X = X
         self.Y = Y
@@ -54,6 +55,9 @@ class System:
     def count_particles(self):
         return len(self.particles)
     
+    def append_annihi_radius(self,new_radius):
+        self.annihi_radius.update(new_radius) 
+   
     def set_medium(self,eps_rel):
         self.eps_rel = eps_rel
         self.epsilon = eps_rel*epsilon_vaccum

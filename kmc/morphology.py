@@ -88,8 +88,6 @@ def interface(available, number, system, kwargs):
     selected = random.sample(new_available,number)        
     return selected            
 
-
-
 ##CLASS FOR GENERATING PARTICLES IN THE SYSTEM###########################################
 class Create_Particles():
     def __init__(self,kind, num, method, **kwargs):
