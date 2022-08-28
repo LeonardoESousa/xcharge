@@ -16,30 +16,8 @@ import importlib
 warnings.filterwarnings("ignore")   
 from tqdm.contrib.concurrent import thread_map, process_map
 import subprocess
-
 #from joblib import Parallel, delayed
 
-#dashboard option
-if (sys.argv[1] == "dash"):
-    working_dir = os.getcwd()+'/'
-    pip_dir = [x for x in os.popen('pip show kmc').read().split('\n') if 'Location:' in x][0].split()[1]
-    
-    #“When a man is denied the right to live the life he believes in, he has no choice but to become an outlaw.” ― Nelson Mandela
-    # I had no choice.
-    
-    path_file= "pathfile.txt"
-    pip_path = pip_dir+'/kmc/'
-    with open(pip_path+path_file,'w') as p:
-        print(pip_path+path_file)
-        p.write(working_dir)
-
-    s = "voila "+pip_dir+"/kmc/Dashboard_KMC.ipynb --Voila.tornado_settings=\"{'websocket_max_message_size': 209715200}\""
-    p = subprocess.run(s, shell=True, check=True)
-    p.wait()
-    sys.exit()
-    
-    
-    
 #importing param module
 working_dir = os.getcwd()+'/'
 spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
