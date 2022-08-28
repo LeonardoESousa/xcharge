@@ -137,7 +137,7 @@ kmc your_input.py
 
 At any terminal, enter
 ```bash
-kmc dash
+dash
 ```
 Click in <em> Upload </em>, choose you file and press <em>Read File </em>.
 
