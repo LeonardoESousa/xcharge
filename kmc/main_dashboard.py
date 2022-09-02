@@ -1,10 +1,10 @@
 import os
 import shutil
 
-working_dir = os.getcwd()+'/'
-pip_dir = [x for x in os.popen('pip show kmc').read().split('\n') if 'Location:' in x][0].split()[1]
-pip_dir = pip_dir+'/kmc/'
 def main():
+	working_dir = os.getcwd()+'/'
+	pip_dir = [x for x in os.popen('pip show kmc').read().split('\n') if 'Location:' in x][0].split()[1]
+	pip_dir = pip_dir+'/kmc/'
 	#print(working_dir)
 	#print(pip_dir)
 	with open(pip_dir+'pathfile.txt','w') as f:

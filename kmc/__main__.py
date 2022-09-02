@@ -4,6 +4,7 @@ from kmc.rates import *
 from kmc.particles import *
 from kmc.system import System
 from kmc.bimolecular import *
+from kmc.main_dashboard import main as main_dash
 import sys
 import warnings
 import os
@@ -17,13 +18,21 @@ warnings.filterwarnings("ignore")
 from tqdm.contrib.concurrent import thread_map, process_map
 import subprocess
 import inspect
+
 #from joblib import Parallel, delayed
+
+if sys.argv[1] == 'dash':
+    main_dash()
+
 
 #importing param module
 working_dir = os.getcwd()+'/'
 spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
 param = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(param)
+
+
+
 
 argumentos = []  
 for name, value in vars(param).items():
