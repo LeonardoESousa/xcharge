@@ -99,7 +99,7 @@ def get_widgets_per_particle(min_energy,max_energy,unique_mats,unique_death,uniq
             description='Status',
             disabled=False,
         )
-    return energy,mats,deaths,status
+    return [mats,energy,deaths,status]
 
 
 #gathers the personalized info to construct the widgets
@@ -118,7 +118,8 @@ def join_widgets(dataframe,particle):
     return [particle,energy, mats, deaths,status]
     
 #wraps death,status,mats and enegy widgets in a single big box  
-def make_boxes(deaths,status,mats,energy):
+def make_boxes(wids):
+    deaths,status,mats,energy = wids[2],wids[3],wids[0],wids[1]
     left_box  = widgets.VBox([deaths,status])
     right_box = widgets.VBox([mats,energy])
     ui = widgets.HBox([left_box,right_box])  
