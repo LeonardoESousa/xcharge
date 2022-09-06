@@ -31,8 +31,7 @@ class Particles:
         x, y, z  = X[self.position],Y[self.position],Z[self.position]
         mat = Mats[self.position]
         energy = energies[self.position]
-        texto = '{0:<15.6e}  {1:<10.2f}  {2:<10.2f}  {3:<10.2f}  {4:<10}  {5:<10.4f}  {6:<10}  {7:<10.2f}  {8:<10.2f}  {9:<10.2f}  {10:<11}  {11:<10}'.format(
-                       time,self.Dx,self.Dy,self.Dz,self.species,energy,mat,x,y,z,causamortis,self.status)
+        texto = f'{time:.0f},{self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f},{self.species},{energy:.2f},{mat:.0f},{x:.0f},{y:.0f},{z:.0f},{causamortis},{self.status}'
         self.report += texto+'\n'
     
     def kill(self,causamortis,system,energies,result):
