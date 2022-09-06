@@ -187,7 +187,6 @@ def step_ani(system):
         system.IT += 1
         Ss = system.particles.copy()
         random.shuffle(Ss)
-        X,Y,Z = system.X, system.Y, system.Z     
         R = np.array([decision(s,system) for s in Ss])
         system.time += (1/max(R))*np.log(1/random.uniform(0,1))
         jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
@@ -205,7 +204,6 @@ def step_nonani(system):
         system.IT += 1
         Ss = system.particles.copy()
         random.shuffle(Ss)
-        X,Y,Z = system.X, system.Y, system.Z     
         R = np.array([decision(s,system) for s in Ss])
         system.time += (1/max(R))*np.log(1/random.uniform(0,1))
         jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
@@ -226,11 +224,12 @@ else:
 
 #Prints Spectra
 def spectra(system):
-    if os.path.isfile("Simulation_"+system.identifier+".txt") == False:
-        with open("Simulation_"+system.identifier+".txt", "w") as f:
+    filename = f"Simulation_{system.identifier}.txt"
+    if os.path.isfile(filename) == False:
+        with open(filename, "w") as f:
             texto = "Time,DeltaX,DeltaY,DeltaZ,Type,Energy,Location,FinalX,FinalY,FinalZ,CausaMortis,Status"
             f.write(texto+"\n") 
-    with open("Simulation_"+system.identifier+".txt", "a") as f:   
+    with open(filename, "a") as f:   
         for s in system.dead:
             texto = s.write()
             f.write(texto)
