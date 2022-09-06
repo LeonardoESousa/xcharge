@@ -229,11 +229,11 @@ def spectra(system):
         with open(filename, "w") as f:
             texto = "Time,DeltaX,DeltaY,DeltaZ,Type,Energy,Location,FinalX,FinalY,FinalZ,CausaMortis,Status"
             f.write(texto+"\n") 
+    texto = ''
+    for s in system.dead:
+        texto += s.write()
     with open(filename, "a") as f:   
-        for s in system.dead:
-            texto = s.write()
-            f.write(texto)
-        f.write("END\n")
+        f.write(texto+'END\n')
         
 def animate(num,system,ax,marker_option,rotate): 
     Ss = step(system)
