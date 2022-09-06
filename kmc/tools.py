@@ -126,7 +126,7 @@ def make_boxes(wids):
     return ui    
     
 def trpl(times,bin_num=100):
-    hist, bins = np.histogram(times, bins=np.logspace(0,np.log10(max(times)), bin_num),density=True)    
+    hist, bins = np.histogram(times, bins=np.logspace(-1,np.log10(max(times)), bin_num),density=True)    
     bins = bins[:-1] +(bins[1:] - bins[:-1])/2
     return  hist, bins
     
