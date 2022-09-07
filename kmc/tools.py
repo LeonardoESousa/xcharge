@@ -132,11 +132,26 @@ def trpl(times,bin_num=100):
     
     
 def spectrum(dx,gran):
-    hist, bins = np.histogram(dx,bins=np.linspace(min(dx),max(dx),int((max(dx)-min(dx))/gran)),density=True)
+    num = int((max(dx)-min(dx))/gran)
+    if num == 0:
+        bins = 1
+    else:
+        bins = np.linspace(min(dx),max(dx),num)    
+    hist, bins = np.histogram(dx,bins=bins,density=True)
     bins = bins[:-1] + (bins[1:] - bins[:-1])/2    
     return hist,bins
     
-    
+def drift(data):
+    t  = data['Time'].to_numpy(dtype=float)
+    dx = data['DeltaX'].to_numpy()
+    dy = data['DeltaY'].to_numpy()
+    dz = data['DeltaZ'].to_numpy()
+    mux = np.mean(dx/t)
+    muy = np.mean(dy/t)
+    muz = np.mean(dz/t)
+    return np.array([mux,muy,muz])
+
+
 ################  
 # HISTOGRAM FUNCS
 
