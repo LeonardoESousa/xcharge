@@ -151,6 +151,12 @@ def drift(data):
     muz = np.mean(dz/t)
     return np.array([mux,muy,muz])
 
+def get_peak(hist,bins):
+    ind   = np.where(hist == max(hist))[0][0]
+    peak  = bins[ind]
+    return peak
+
+
 
 ################  
 # HISTOGRAM FUNCS
