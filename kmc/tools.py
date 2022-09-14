@@ -22,7 +22,7 @@ def get_bound(max_val,min_val):
         boundary_min   = .1
     else:
         boundary_min   = -.1
-        return min_val*(1+boundary_min),max_val*(1+boundary_max)
+    return min_val*(1+boundary_min),max_val*(1+boundary_max)
 
 ##################################################################
 #### Filtering funcs
