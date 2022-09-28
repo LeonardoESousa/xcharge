@@ -1,20 +1,15 @@
 import numpy as np
 import random
-from kmc.rates import *
-from kmc.particles import *
 from kmc.system import System
-from kmc.bimolecular import *
-from kmc.main_dashboard import main as main_dash
+import kmc.bimolecular
 import sys
 import warnings
+warnings.filterwarnings("ignore") 
 import os
 import copy
 import matplotlib.pyplot as plt
 from matplotlib import animation
-import shutil
-from mpl_toolkits.mplot3d import Axes3D
-import importlib
-warnings.filterwarnings("ignore")   
+import importlib  
 from tqdm.contrib.concurrent import thread_map, process_map
 import subprocess
 import inspect
@@ -22,12 +17,15 @@ import inspect
 #from joblib import Parallel, delayed
 
 if sys.argv[1] == 'dash':
-    main_dash()
+    path = os.path.join(os.path.dirname(__file__),"Dashboard_KMC.ipynb")
+    path = r"{} ".format(path)
+    option = r'--Voila.tornado_settings={}'.format('''{'websocket_max_message_size': 209715200}''')
+    subprocess.call(['voila',path,option])
+
 
 
 #importing param module
-working_dir = os.getcwd()+'/'
-spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
+spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], os.path.join(os.getcwd(),sys.argv[1]))
 param = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(param)
 
@@ -193,7 +191,7 @@ def step_ani(system):
         for jump in jumps:
             if Ss[jump] in system.particles:
                 Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-                bi_func(system,bimolec_funcs_array,Ss[jump].destination)
+                bi_func(system,kmc.bimolecular.bimolec_funcs_array,Ss[jump].destination)
         return Ss       
     Ss = system.particles.copy()
     for s in Ss:
@@ -210,7 +208,7 @@ def step_nonani(system):
         for jump in jumps:
             if Ss[jump] in system.particles:
                 Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-                bi_func(system,bimolec_funcs_array,Ss[jump].destination)       
+                bi_func(system,kmc.bimolecular.bimolec_funcs_array,Ss[jump].destination)       
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
