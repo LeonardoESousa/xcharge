@@ -21,7 +21,7 @@ REQUIRES_PYTHON = '>=3.6.0'
 VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
-REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib<=3.5.0', 'tqdm', 'voila', 'ipywidgets<=7.7.2', 'pandas', 'IPython','Ipympl==0.7.0']
+REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib<=3.5.0', 'tqdm']
 
 # What packages are optional?
 EXTRAS = {

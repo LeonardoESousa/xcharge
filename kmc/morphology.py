@@ -305,6 +305,11 @@ class ReadLattice():
 
 
 class Lattice():
+    '''Arguments:
+    num_sites:   number of sites in the lattice (integer)
+    vector:      3-element list with distance between sites in x,y and z directions in Å (list)
+    disorder:    3-element list with standard deviation of distances between sites in x,y and z directions in Å (list)
+    composition: n-element list with the proportion of each of the n different materials in the lattice  (list)'''
     def __init__(self,num_sites,vector,disorder,composition): #initializing the lattice class with some basic info given by the user
         self.num_sites   = num_sites
         self.vector      = vector
@@ -361,6 +366,7 @@ def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
     return neighbors        
 
 class Lattice_BHJ():
+    '''Arguments'''
     def __init__(self,n_loops,cutoff,num_sites,vector,disorder,composition):
         self.n_loops     = n_loops
         self.cutoff      = cutoff
@@ -453,7 +459,8 @@ def multiply_lattice(lattice,n_times_ar,delta):
     return np.unique(new_lattice,axis=0)
     
     
-class Bilayer():    
+class Bilayer():  
+    '''Arguments'''  
     def __init__(self,axis,num_sites,vector,disorder,composition):
         self.axis        = axis       
         self.num_sites   = num_sites
@@ -606,7 +613,8 @@ def make_teeth(X,Y,Z,Mats,size_saw,width_saw,ps,list_set,dr,nums,disorder):
                 sorte = random.uniform(0,1)
                 chosen = np.where(sorte < ps)[0][0]
                 Mats.append(chosen)             
-class Saw():    
+class Saw():  
+    '''Arguments'''  
     def __init__(self,size_saw,width_saw,num_sites,vector,disorder,composition):
 
         self.num_sites   = num_sites

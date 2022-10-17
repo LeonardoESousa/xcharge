@@ -11,18 +11,10 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 import importlib  
 from tqdm.contrib.concurrent import thread_map, process_map
-import subprocess
 import inspect
+import kmc.variables
 
 #from joblib import Parallel, delayed
-
-if sys.argv[1] == 'dash':
-    path = os.path.join(os.path.dirname(__file__),"Dashboard_KMC.ipynb")
-    path = r"{} ".format(path)
-    option = r'--Voila.tornado_settings={}'.format('''{'websocket_max_message_size': 209715200}''')
-    subprocess.call(['voila',path,option])
-
-
 
 #importing param module
 spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], os.path.join(os.getcwd(),sys.argv[1]))
@@ -39,52 +31,28 @@ for name, value in vars(param).items():
         #print(name,hasattr(value, 'make'))
 
 #getting all essential info from user's input
-n_proc              = param.n_proc
-rounds              = param.rounds
 monomolecular       = param.monomolecular
 processes           = param.processes
 
-# Dealing with user-default options
-try:
-    identifier     = param.identifier   
-except:
-    identifier = spec.name
-try:
-    animation_mode = param.animation_mode
-except:
-    animation_mode = False
-try:
-    save_animation = param.save_animation
-except:
-    save_animation = False
-try:
-    animation_exten = param.animation_exten
-except:
-    animation_exten = "gif"
-try:
-    time_limit = param.time_limit
-except:
-    time_limit = np.inf
-try:
-    pause = param.pause
-except:
-    pause = False
-try:
-    marker_type = param.marker_type
-except:
-    marker_type = 1
-try:
-    rotate = param.rotate
-except:
-    rotate = False
-try:
-    frozen_lattice  = param.frozen
-except:
-    frozen_lattice = False
-try:
-    bimolec  = param.bimolec
-except:
-    bimolec  = False       
+def set_variables(name):
+    try:
+        return getattr(param, name)
+    except:
+        return getattr(kmc.variables, name)
+
+identifier     = set_variables('identifier')     
+animation_mode = set_variables('animation_mode') 
+save_animation = set_variables('save_animation') 
+animation_exten= set_variables('animation_exten')
+time_limit     = set_variables('time_limit')     
+pause          = set_variables('pause')          
+marker_type    = set_variables('marker_type')    
+rotate         = set_variables('rotate')         
+frozen_lattice = set_variables('frozen_lattice') 
+bimolec        = set_variables('bimolec')  
+periodic       = set_variables('periodic')          
+n_proc         = set_variables('n_proc')
+rounds         = set_variables('rounds')
 #####
 
 
@@ -119,14 +87,10 @@ def periodic_distance(system,local):
     dz[maskz] = -1*(system.Lz - abs(dz))[maskz]
     return dx, dy, dz
 
-try:
-    if param.periodic:
-        distance = periodic_distance
-    else:
-        distance =  regular_distance    
-except:
-    distance =  regular_distance 
-
+if periodic:
+    distance = periodic_distance
+else:
+    distance =  regular_distance    
             
 def make_system():
     #Create instance of system
