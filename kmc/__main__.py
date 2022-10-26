@@ -122,12 +122,11 @@ def decision(s,system):
     r = np.sqrt(dx*dx + dy*dy + dz*dz)
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
-    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s) for transfer in hop]
+    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s) for transfer in hop] 
 
     try:
-        locais    = np.array([np.where(random.uniform(0,1) <= np.cumsum(x/np.sum(x)))[0][0] for x in jump_rate]).astype(int)
+        locais    = np.array([np.argmax(random.uniform(0,1) <= np.cumsum(x/np.sum(x))) for x in jump_rate])
         jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
-        #jump_rate = np.array([max(jump_rate[i]) for i in np.arange(len(locais))])
     except:
         locais    = np.array([local])
         jump_rate = np.array([0])
@@ -150,12 +149,11 @@ def step_ani(system):
         Ss = system.particles.copy()
         random.shuffle(Ss)
         R = np.array([decision(s,system) for s in Ss])
-        system.time += (1/max(R))*np.log(1/random.uniform(0,1))
-        jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
-        for jump in jumps:
-            if Ss[jump] in system.particles:
-                Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-                bi_func(system,kmc.bimolecular.bimolec_funcs_array,Ss[jump].destination)
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))
+        for s in Ss:
+            if s in system.particles:
+                s.process.action(s,system,s.destination)   
+                bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
         return Ss       
     Ss = system.particles.copy()
     for s in Ss:
@@ -167,12 +165,11 @@ def step_nonani(system):
         Ss = system.particles.copy()
         random.shuffle(Ss)
         R = np.array([decision(s,system) for s in Ss])
-        system.time += (1/max(R))*np.log(1/random.uniform(0,1))
-        jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
-        for jump in jumps:
-            if Ss[jump] in system.particles:
-                Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-                bi_func(system,kmc.bimolecular.bimolec_funcs_array,Ss[jump].destination)       
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))
+        for s in Ss:
+            if s in system.particles:
+                s.process.action(s,system,s.destination)   
+                bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
