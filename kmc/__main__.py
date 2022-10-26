@@ -82,9 +82,9 @@ def periodic_distance(system,local):
     maskx = 2*abs(dx) > system.Lx
     masky = 2*abs(dy) > system.Ly
     maskz = 2*abs(dz) > system.Lz
-    dx[maskx] = -1*(system.Lx - abs(dx))[maskx]
-    dy[masky] = -1*(system.Ly - abs(dy))[masky]
-    dz[maskz] = -1*(system.Lz - abs(dz))[maskz]
+    dx[maskx] = -1*np.sign(dx[maskx])*(system.Lx - abs(dx))[maskx]
+    dy[masky] = -1*np.sign(dy[masky])*(system.Ly - abs(dy))[masky]
+    dz[maskz] = -1*np.sign(dz[maskz])*(system.Lz - abs(dz))[maskz]
     return dx, dy, dz
 
 if periodic:
