@@ -123,24 +123,20 @@ def decision(s,system):
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
     jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s) for transfer in hop] 
-
-    try:
-        locais    = np.array([np.argmax(random.uniform(0,1) <= np.cumsum(x/np.sum(x))) for x in jump_rate])
-        jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
-    except:
-        locais    = np.array([local])
-        jump_rate = np.array([0])
-
-    mono_rate = np.array([m.rate(material=system.mats[local]) for m in mono])
-    jump_rate = np.append(jump_rate,mono_rate)
-    locais2   = np.zeros(len(mono_rate)) + local
-    locais    = np.append(locais,locais2.astype(int))
-    labels = hop+mono 
-
-    jump = np.where(random.uniform(0,1) <= np.cumsum(jump_rate/np.sum(jump_rate)))[0][0]
-    s.process = labels[jump]
-    s.destination = locais[jump]
-    return np.sum(jump_rate)
+    mono_rate = [m.rate(material=system.mats[local]) for m in mono]
+    jump_rate.append(mono_rate)
+    sizes     = np.array([len(i) for i in jump_rate])
+    jump_rate = np.concatenate(jump_rate)
+    labels    = hop+mono 
+    soma      = np.sum(jump_rate)
+    jump      = np.argmax(random.uniform(0,1) <= np.cumsum(jump_rate/soma))
+    destino   = np.argmax(np.cumsum(sizes)-1 >= jump)
+    s.process = labels[destino]
+    if destino < len(hop):
+        s.destination = jump - np.sum(sizes[:destino])
+    else:
+        s.destination = local
+    return soma
 
 ########ITERATION FUNCTIONS#######################################################
 def step_ani(system): 
