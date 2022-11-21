@@ -139,6 +139,7 @@ def decision(s,system):
     return soma
 
 ########ITERATION FUNCTIONS#######################################################
+''' 
 def step_ani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
@@ -154,7 +155,7 @@ def step_ani(system):
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
-  
+ 
 def step_nonani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
@@ -162,10 +163,73 @@ def step_nonani(system):
         random.shuffle(Ss)
         R = np.array([decision(s,system) for s in Ss])
         system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))
+        #ideia annirad: olhar cada par de particulas e ver se o raio corresponde ao que foi colocado no input, se não, arrumar
         for s in Ss:
             if s in system.particles:
                 s.process.action(s,system,s.destination)   
                 bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
+    Ss = system.particles.copy()
+    for s in Ss:
+        s.kill('alive',system,system.s1,'alive')
+'''
+'''
+#ideia        
+def step_nonani(system): 
+    while system.count_particles() > 0 and system.time < system.time_limit:
+        system.IT += 1
+        Ss = system.particles.copy()
+        random.shuffle(Ss)
+        #ideia annirad: olhar cada par de particulas e ver se o raio corresponde ao que foi colocado no input, se não, arrumar
+        R = []
+        for s in Ss:
+            if s in system.particles:
+                Rs = decision(s,system)
+                checar se tem particula onde vou pular
+                se sim, voltar pro Rs. Se n continua
+                s.process.action(s,system,s.destination)
+                bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
+    system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+    Ss = system.particles.copy()
+    for s in Ss:
+        s.kill('alive',system,system.s1,'alive')
+'''      
+#ideia        
+def step_nonani(system): 
+    while system.count_particles() > 0 and system.time < system.time_limit:
+        system.IT += 1
+        Ss = system.particles.copy()
+        random.shuffle(Ss)
+        #ideia annirad: olhar cada par de particulas e ver se o raio corresponde ao que foi colocado no input, se não, arrumar
+        R = []
+        for s in Ss:
+            if s in system.particles:
+                Rs = decision(s,system)
+                s.process.action(s,system,s.destination)
+                bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
+                R.append(Rs)
+        R = np.array(R)
+        print(R)
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+    Ss = system.particles.copy()
+    for s in Ss:
+        s.kill('alive',system,system.s1,'alive')
+ 
+def step_ani(system):
+    while system.count_particles() > 0 and system.time < system.time_limit:
+        system.IT += 1
+        Ss = system.particles.copy()
+        random.shuffle(Ss)
+        #ideia annirad: olhar cada par de particulas e ver se o raio corresponde ao que foi colocado no input, se não, arrumar
+        R = []
+        for s in Ss:
+            if s in system.particles:
+                Rs = decision(s,system)
+                s.process.action(s,system,s.destination)
+                bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
+                R.append(Rs)
+        R = np.array(R)
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))
+        return Ss
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
@@ -297,7 +361,7 @@ def run_animation():
     fig.canvas.mpl_connect('draw_event', lambda event: pause_plot(event, pause)) #pausing if pause = True at the first frame
    
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate],
-                                    interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)  
+                                    interval=150, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)  
                              
                                        
     return ani 

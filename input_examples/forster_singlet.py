@@ -28,8 +28,8 @@ periodic           = False              # if you want periodic boundary conditio
 
 ##FORSTER RADII (Å)
 r00   = 25   #Forster radius material 0 --> material 0 (Angstrom)    
-r01   = 0   #material 0 --> material 1      
-r10   = 0       
+r01   = 25   #material 0 --> material 1      
+r10   = 25       
 r11   = 25     
 radii = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
