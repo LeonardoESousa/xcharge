@@ -193,13 +193,11 @@ def step_nonani(system):
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
 '''      
-#ideia        
 def step_nonani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
         Ss = system.particles.copy()
         random.shuffle(Ss)
-        #ideia annirad: olhar cada par de particulas e ver se o raio corresponde ao que foi colocado no input, se não, arrumar
         R = []
         for s in Ss:
             if s in system.particles:
@@ -208,7 +206,6 @@ def step_nonani(system):
                 bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
                 R.append(Rs)
         R = np.array(R)
-        print(R)
         system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
     Ss = system.particles.copy()
     for s in Ss:
@@ -219,7 +216,6 @@ def step_ani(system):
         system.IT += 1
         Ss = system.particles.copy()
         random.shuffle(Ss)
-        #ideia annirad: olhar cada par de particulas e ver se o raio corresponde ao que foi colocado no input, se não, arrumar
         R = []
         for s in Ss:
             if s in system.particles:
