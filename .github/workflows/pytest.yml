@@ -8,7 +8,9 @@ jobs:
       - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
       - name: Install KMC
       - run: |
-        python3 -m pip install --upgrade pip; pip3 install .
+        python3 -m pip install --upgrade pip
+      - run: |
+        pip3 install .
       - name: Test with pytest
       - run: |
         pytest
