@@ -12,6 +12,8 @@ jobs:
       - run: |
           cd ../../
       - run: |
+          pwd
+      - run: |
           pip3 install .
       - name: Test with pytest
         run: |
