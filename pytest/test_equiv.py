@@ -7,7 +7,6 @@ import numpy as np
 import io
 import pytest
 import sys
-
 ##################################
 txt_files = [i for i in os.listdir('.') if (os.path.isfile(i)) and ('.txt' in i.lower())]
 for txt in txt_files:
@@ -32,67 +31,63 @@ def run_job(config_test,log_name):
 		command = "kmc "+log_name+' '+label+' '+param
 		subprocess.run(command, shell=True)
 	return [(lab)]
-
-###### EQUIVALENCE TEST ######	
-log_name1    = "input_test1.py"
-config_test1 = [[1000,10],[10000,1]] # 1000 rounds 10 ex, 10000 rounds 1 ex...
-simuls = run_job(config_test1,log_name1)
+	
 def cond(array,cutoff):
 	for x in array:
 		if x > cutoff:
 			return False
 	return True
-	
-@pytest.mark.parametrize("simuls",simuls)
-def test_fluor(simuls):
-	avgs = []
-	for simul in simuls:
-		data = pd.read_csv(simul)
-		data = data[data.Time != 'END']
-		fluor = data['Time'].to_numpy(float)/1000
-		avg = np.mean(fluor)
-		avgs.append(avg)
+####################################	
+###### EQUIVALENCE TEST ############	
 
-	ref = 3
-	print()
-	print('test fluor')
-	print(avgs)
-	avgs = [ abs((av-ref)/ref) for av in avgs]
-	print(avgs)
-	assert cond(avgs,0.3) == True
-	
+#preparing equiv test
+log_name1    = "input_test1.py"
+config_test1 = [[100,10],[1000,1]] # 1000 rounds 10 ex, 10000 rounds 1 ex...
+simuls1 = run_job(config_test1,log_name1)
 
-@pytest.mark.parametrize("simuls",simuls)
-def test_ld(simuls):
-	avgs = []
-	for simul in simuls:
-		ds = get_ds(simul)
-		ld = np.sqrt(np.mean(ds))
-		avgs.append(ld)
-	std = np.std(avgs)
-	print()
-	print('test ld')	
-	print('ld: ',avgs)
-	print('std:',std)
-	assert std <= 0.2
-	
-########### RF tests #########
+#preparing Rf test
 log_name2    = "input_test2.py"
 config_test2 = [[1],[10],[25]] #1 ex, 10 ex, 100 ex
 simuls2 = run_job(config_test2,log_name2)
-@pytest.mark.parametrize("simuls",simuls2)
-def test_Rfs(simuls):
-	avgs = []
-	for simul in simuls:
-		ds = get_ds(simul)
-		ld = np.sqrt(np.mean(ds))
-		avgs.append(ld)
-	std = np.std(avgs)
-	print()
-	print('test Rfs')
-	print('ld: ',avgs)
-	print('std:',std)	
-	assert std <= 0.1
+
+jobs = [simuls1,simuls2]
+@pytest.mark.parametrize("jobs",[simuls1])
+def test_fluor(jobs):
+	for simuls in jobs:
+		print()
+		print('Fluor test with:')
+		print(simuls)
+		avgs = []
+		for simul in simuls:
+			data = pd.read_csv(simul)
+			data = data[data.Time != 'END']
+			fluor = data['Time'].to_numpy(float)/1000
+			avg = np.mean(fluor)
+			avgs.append(avg)
+
+		ref = 3
+		print('values:',avgs)
+		avgs = [ abs((av-ref)/ref) for av in avgs]
+		print('result :',avgs)
+		assert cond(avgs,0.3) == True
+	
+
+@pytest.mark.parametrize("jobs",jobs)
+def test_ld(jobs):
+	for simuls in jobs:
+		print()
+		print('LD test with:')
+		print(simuls)
+		avgs = []
+		for simul in simuls:
+			ds = get_ds(simul)
+			ld = np.sqrt(np.mean(ds))
+			avgs.append(ld)
+		std = np.std(avgs)	
+		print('ld: ',avgs)
+		print('std:',std)
+		assert std <= 0.4
+	
 
 ####### Diffusion test #######
 
@@ -114,48 +109,31 @@ def get_min_max(simuls):
 	min_ds = min([min(d) for d in ds_arr])
 	max_ds = max([max(d) for d in ds_arr])
 	return min_ds, max_ds
-	
-@pytest.mark.parametrize("simuls",simuls)
-def test_diff_rounds(simuls):
-	hist_arr = []
-	gran = 1.5
-	min_ds, max_ds = get_min_max(simuls)
-	for simul in simuls:
-		ds = get_ds(simul)
-		hists, binss = spectrum(ds,gran,min_ds,max_ds)
-		hist_arr.append(hists)
-	
-	ref_hist = hist_arr[0]
-	N        = len(ref_hist)
-	rms_arr  = []
-	for i in range(1,len(hist_arr)):
-		rms = np.array([(1/N)*(ref_hist[k]-hist_arr[i][k])**2 for k in range(len(ref_hist))])
-		rms = np.sqrt(rms)
-		rms_arr.append(rms)
-	print()
-	print('test diffusion rounds')
-	#print('rms: ', rms)
-	assert max(rms) <= 1E-3
+#####################################
 
-@pytest.mark.parametrize("simuls",simuls2)
-def test_diff_rf(simuls):
-	hist_arr = []
-	gran = 1.5
-	min_ds, max_ds = get_min_max(simuls)
-	for simul in simuls:
-		ds = get_ds(simul)
-		hists, binss = spectrum(ds,gran,min_ds,max_ds)
-		hist_arr.append(hists)
 	
-	ref_hist = hist_arr[0]
-	N        = len(ref_hist)
-	rms_arr  = []
-	for i in range(1,len(hist_arr)):
-		rms = np.array([(1/N)*(ref_hist[k]-hist_arr[i][k])**2 for k in range(len(ref_hist))])
-		rms = np.sqrt(rms)
-		rms_arr.append(rms)
-	print()
-	print('test diffusion Rf')
-	#print('rms: ', rms)
-	assert max(rms) <= 1E-3
+@pytest.mark.parametrize("jobs",jobs)
+def test_diff(jobs):
+	for simuls in jobs:
+		print()
+		print('Diffusion test with:')
+		print(simuls)
+		hist_arr = []
+		gran = 1.5
+		min_ds, max_ds = get_min_max(simuls)
+		for simul in simuls:
+			ds = get_ds(simul)
+			hists, binss = spectrum(ds,gran,min_ds,max_ds)
+			hist_arr.append(hists)
+		ref_hist = hist_arr[0]
+		rms_arr  = []
+		for i in range(1,len(hist_arr)):
+			#removing the 0s of histogram
+			rms = np.array([(ref_hist[k]-hist_arr[i][k])**2 for k in range(len(ref_hist)) if ref_hist[k] != 0 and hist_arr[i][k] !=0 ])
+			rms = (1/len(rms))*sum(rms)
+			rms = np.sqrt(rms)
+			rms_arr.append(rms)
+		print('rms: ', max(rms_arr))
+		assert max(rms_arr) <= 1E-2
+
 
