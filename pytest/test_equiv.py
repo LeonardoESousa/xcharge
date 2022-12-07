@@ -134,6 +134,6 @@ def test_diff(jobs):
 			rms = np.sqrt(rms)
 			rms_arr.append(rms)
 		print('rms: ', max(rms_arr))
-		assert max(rms_arr) <= 1E-2
+		assert max(rms_arr) <= 1E-1
 
 
