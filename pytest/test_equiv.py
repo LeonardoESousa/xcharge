@@ -13,7 +13,7 @@ for txt in txt_files:
 	os.remove(txt) 
 	
 def get_ds(simul):
-	data = pd.read_csv(simul)
+	data = pd.read_csv(simul,comment='#')
 	data = data[data.Time != 'END']
 	dx = data['DeltaX'].to_numpy()/10
 	dy = data['DeltaY'].to_numpy()/10
