@@ -13,16 +13,34 @@ import importlib
 from tqdm.contrib.concurrent import thread_map, process_map
 import inspect
 import kmc.variables
-
+from importlib import metadata
 #from joblib import Parallel, delayed
+
+
+# Setting up the interface
+#clean way, but I dont trust it
+commit_msg = metadata.metadata('kmc')['Summary'].split('-')[-1]
+
+#hardcore way. Ugly but wont fail
+with open(os.path.dirname(__file__)+'/commit.txt','r') as f:
+	for line in f:
+		commit_msg = line
+		
+print('####################################################################')
+print('Xcharge: A Kinetic Monte Carlo Model for Exciton and Charge Dynamics')
+print('Repo link: '+metadata.metadata('kmc')['Home-page'])
+print('Authors  : '+ metadata.metadata('kmc')['Author'])
+print('Version  : '+  metadata.metadata('kmc')['VERSION'])
+print('Commit   : '+commit_msg.split('.py')[0]) 
+print()
+output_header='# Version  : '+  metadata.metadata('kmc')['VERSION']+'\n# Commit   : '+commit_msg.split('.py')[0]+'\n'
+### end interface
+
 
 #importing param module
 spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], os.path.join(os.getcwd(),sys.argv[1]))
 param = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(param)
-
-
-
 
 argumentos = []  
 for name, value in vars(param).items():
@@ -182,6 +200,7 @@ def spectra(system):
     filename = f"Simulation_{system.identifier}.txt"
     if os.path.isfile(filename) == False:
         with open(filename, "w") as f:
+            f.write(output_header)
             texto = "Time,DeltaX,DeltaY,DeltaZ,Type,Energy,Location,FinalX,FinalY,FinalZ,CausaMortis,Status"
             f.write(texto+"\n") 
     texto = ''

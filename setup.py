@@ -7,19 +7,28 @@
 import io
 import os
 import sys
+import subprocess
 from shutil import rmtree
+import shutil
 
 from setuptools import find_packages, setup, Command
 
 # Package meta-data.
 NAME = 'KMC'
-DESCRIPTION = 'Kinetic Monte Carlo'
+
 URL = 'https://github.com/LeonardoESousa/KMC'
 EMAIL = 'leonardo.sousa137@gmail.com'
 AUTHOR = 'Leonardo Evaristo de Sousa and Tiago de Sousa Araújo Cassiano'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.1.0'
+VERSION = '0.0.1'
+#moving commit.txt to kmc folder
+COMMIT  = str(subprocess.Popen("git log -1 --pretty=%B", shell=True,stdout=subprocess.PIPE).stdout.read()).split("\'")[1].split('\\n')[0] 
+with open('commit.txt','w') as f:
+	f.write(COMMIT)
+shutil.move('commit.txt', 'kmc/commit.txt')
 
+
+DESCRIPTION = 'Kinetic Monte Carlo - '+COMMIT
 # What packages are required for this module to be executed?
 REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib<=3.5.0', 'tqdm']
 
