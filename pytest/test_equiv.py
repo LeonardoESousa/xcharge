@@ -59,7 +59,7 @@ def test_fluor(jobs):
 		print(simuls)
 		avgs = []
 		for simul in simuls:
-			data = pd.read_csv(simul)
+			data = pd.read_csv(simul,comment='#')
 			data = data[data.Time != 'END']
 			fluor = data['Time'].to_numpy(float)/1000
 			avg = np.mean(fluor)
