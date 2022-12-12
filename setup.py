@@ -30,7 +30,7 @@ shutil.move('commit.txt', 'kmc/commit.txt')
 
 DESCRIPTION = 'Kinetic Monte Carlo - '+COMMIT
 # What packages are required for this module to be executed?
-REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib<=3.5.0', 'tqdm']
+REQUIRED = ['numpy', 'scipy' , 'joblib', 'matplotlib<=3.5.0', 'tqdm', 'importlib_metadata']
 
 # What packages are optional?
 EXTRAS = {

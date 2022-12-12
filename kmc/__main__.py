@@ -13,7 +13,10 @@ import importlib
 from tqdm.contrib.concurrent import thread_map, process_map
 import inspect
 import kmc.variables
-from importlib import metadata
+try:
+    from importlib import metadata
+except ImportError: # for Python<3.8
+    import importlib_metadata as metadata
 #from joblib import Parallel, delayed
 
 
