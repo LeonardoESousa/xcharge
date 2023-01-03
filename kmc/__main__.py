@@ -144,14 +144,14 @@ def decision(s,system):
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
     jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s) for transfer in hop] 
-    mono_rate = [m.rate(material=system.mats[local]) for m in mono]
-    jump_rate.append(mono_rate)
+    mono_rate = [[m.rate(material=system.mats[local])] for m in mono]
+    jump_rate.extend(mono_rate)
     sizes     = np.array([len(i) for i in jump_rate])
     jump_rate = np.concatenate(jump_rate)
     labels    = hop+mono 
     soma      = np.sum(jump_rate)
     jump      = np.argmax(random.uniform(0,1) <= np.cumsum(jump_rate/soma))
-    destino   = np.argmax(np.cumsum(sizes)-1 >= jump)
+    destino   = np.argmax(np.cumsum(sizes) -1 >= jump)
     s.process = labels[destino]
     if destino < len(hop):
         s.destination = jump - np.sum(sizes[:destino])
