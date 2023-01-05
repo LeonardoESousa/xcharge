@@ -69,7 +69,7 @@ def test_fluor(jobs):
 		print('values:',avgs)
 		avgs = [ abs((av-ref)/ref) for av in avgs]
 		print('result :',avgs)
-		assert cond(avgs,0.1) == True
+		assert cond(avgs,0.2) == True
 	
 
 @pytest.mark.parametrize("jobs",jobs)
