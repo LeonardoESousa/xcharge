@@ -42,12 +42,12 @@ def cond(array,cutoff):
 
 #preparing equiv test
 log_name1    = "input_test1.py"
-config_test1 = [[100,10],[1000,1]] # 1000 rounds 10 ex, 10000 rounds 1 ex...
+config_test1 = [[100,10],[125,4],[1000,1]] # 1000 rounds 10 ex, 10000 rounds 1 ex...
 simuls1 = run_job(config_test1,log_name1)
 
 #preparing Rf test
 log_name2    = "input_test2.py"
-config_test2 = [[1],[10],[25]] #1 ex, 10 ex, 100 ex
+config_test2 = [[1],[10],[25],[35]] #1 ex, 10 ex, 100 ex
 simuls2 = run_job(config_test2,log_name2)
 
 jobs = [simuls1,simuls2]
@@ -69,7 +69,7 @@ def test_fluor(jobs):
 		print('values:',avgs)
 		avgs = [ abs((av-ref)/ref) for av in avgs]
 		print('result :',avgs)
-		assert cond(avgs,0.3) == True
+		assert cond(avgs,0.1) == True
 	
 
 @pytest.mark.parametrize("jobs",jobs)
@@ -134,6 +134,6 @@ def test_diff(jobs):
 			rms = np.sqrt(rms)
 			rms_arr.append(rms)
 		print('rms: ', max(rms_arr))
-		assert max(rms_arr) <= 1E-1
+		assert max(rms_arr) <= 5E-2
 
 
