@@ -54,10 +54,14 @@ class System:
     
     def count_particles(self):
         return len(self.particles)
-    
+        
     def append_annihi_radius(self,new_radius):
+        #updating annihi dic for each instance called
         self.annihi_radius.update(new_radius) 
-   
+        key  = list(new_radius.keys())[0]
+        val  = new_radius[key]
+        self.annihi_radius.update({(key[1],key[0]):val}) #adding the exchange dictionary
+
     def set_medium(self,eps_rel):
         self.eps_rel = eps_rel
         self.epsilon = eps_rel*epsilon_vaccum

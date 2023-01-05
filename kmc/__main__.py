@@ -160,33 +160,39 @@ def decision(s,system):
     return soma
 
 ########ITERATION FUNCTIONS#######################################################
-def step_ani(system): 
-    while system.count_particles() > 0 and system.time < system.time_limit:
-        system.IT += 1
-        Ss = system.particles.copy()
-        random.shuffle(Ss)
-        R = np.array([decision(s,system) for s in Ss])
-        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))
-        for s in Ss:
-            if s in system.particles:
-                s.process.action(s,system,s.destination)   
-                bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
-        return Ss       
-    Ss = system.particles.copy()
-    for s in Ss:
-        s.kill('alive',system,system.s1,'alive')
-  
 def step_nonani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
         Ss = system.particles.copy()
         random.shuffle(Ss)
-        R = np.array([decision(s,system) for s in Ss])
-        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))
+        R = []
         for s in Ss:
             if s in system.particles:
-                s.process.action(s,system,s.destination)   
+                Rs = decision(s,system)
+                s.process.action(s,system,s.destination)
                 bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
+                R.append(Rs)
+        R = np.array(R)
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+    Ss = system.particles.copy()
+    for s in Ss:
+        s.kill('alive',system,system.s1,'alive')
+ 
+def step_ani(system):
+    while system.count_particles() > 0 and system.time < system.time_limit:
+        system.IT += 1
+        Ss = system.particles.copy()
+        random.shuffle(Ss)
+        R = []
+        for s in Ss:
+            if s in system.particles:
+                Rs = decision(s,system)
+                s.process.action(s,system,s.destination)
+                bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
+                R.append(Rs)
+        R = np.array(R)
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))
+        return Ss
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')

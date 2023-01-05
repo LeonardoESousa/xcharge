@@ -12,13 +12,13 @@ from kmc.particles import *
 ###BASIC PARAMETERS######################################################################
 identifier         = 'forster_singlet' #output identifier
 time_limit         = np.inf# in PS
-animation_mode     = False
+animation_mode     = True
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False             # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 5000     # Number of rounds
+rounds             = 1     # Number of rounds
 n_proc             = 1     # Number of cores to be used
 frozen             = True              # if you want for the lattice to remain the same for all rounds
 periodic           = False              # if you want periodic boundary conditions
@@ -45,16 +45,17 @@ mus = {0:mu0,1:mu1}
 
 ##EXCITION TRANSFER RATES
 forster   = Forster_Annirad(Rf=radii,life=lifetimes,mu=mus)
-SS = Annihilation_Radius({('singlet','singlet'):{(0,0):0,(0,1):25,(1,1):25,(1,0):25}})
-TT = Annihilation_Radius({('triplet','triplet'):{(0,0):0,(0,1):0,(1,1):0,(1,0):0}})
+#SS = Annihilation_Radius({('singlet','singlet'):{(0,0):30,(0,1):0,(1,1):0,(1,0):0}})
+#TT = Annihilation_Radius({('triplet','triplet'):{(0,0):0,(0,1):0,(1,1):0,(1,0):0}})
+TS = Annihilation_Radius({('triplet','singlet'):{(0,0):0,(0,1):0,(1,1):0,(1,0):0}})
 
 ##FLUORESCENCE RATES
 fluor     = Fluor(life=lifetimes)
 
 ###PROCESSES#############################################################################
 
-processes = {'singlet':[forster], 'triplet':[], 'electron':[],'hole':[]}
-monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
+processes = {'singlet':[forster], 'triplet':[forster], 'electron':[],'hole':[]}
+monomolecular = {'singlet':[fluor],'triplet':[fluor],'electron':[],'hole':[]}
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
@@ -67,7 +68,7 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-num_sites         = 100             #number of sites of the lattice
+num_sites         = 4             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell
 disorder          = [0.,0.,0.]   #std deviation from avg position
 composition       = [0.5,0.5]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice
@@ -75,8 +76,8 @@ lattice_func      = morphology.Lattice(num_sites,displacement,disorder,compositi
 
 #ENERGIES
 #Gaussian distribuitions
-t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
-s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
+t1s   = {0:(0,0.0), 1:(0,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
+s1s   = {0:(0,0.0), 1:(0,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
 a1 = morphology.Gaussian_energy(s1s)
 a2 = morphology.Gaussian_energy(t1s) 
@@ -85,7 +86,7 @@ a2 = morphology.Gaussian_energy(t1s)
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
 exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1])
-
+excitont   = morphology.Create_Particles('triplet', 1, method, mat=[0,1])
 #########################################################################################
 
 ##BIMOLECULAR OPTIONS###################################################################
