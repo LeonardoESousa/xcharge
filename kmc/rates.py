@@ -13,13 +13,19 @@ hbar           = 6.582e-16       #Reduced Planck's constant
 ###RATES#################################################################################    
 
 ##FUNCTION FOR SETTING RADII#############################################################
-def raios(num,Rf,mat,lifetime,mats):
-    Raios = np.empty(num)
-    Raios.fill(Rf[(mat,mat)])
-    materiais = [i for i in lifetime.keys() if i != mat]
-    for m in materiais:
-        Raios[mats == m] =  Rf[(mat,m)]
-    return Raios
+
+def raios(num,Rf, mat, lifetime, mats):
+  # Initialize the Raios array with the value of Rf[(mat,mat)]
+  Raios = np.empty(num)
+  Raios.fill(Rf[(mat,mat)])
+
+  # Use NumPy's where function to set the values of Raios for the other materials
+  for m in lifetime.keys():
+    if m != mat:
+      Raios = np.where(mats == m, Rf[(mat,m)], Raios)
+
+  return Raios
+
 
 def raios_dist(num,Rf,mat,lifetime,mats):
     Raios = np.array(random.choices(Rf[(mat,mat)][:,0],Rf[(mat,mat)][:,1],k=num))
@@ -81,7 +87,7 @@ class ForsterT:
         
         Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
         x = (Rf/(self.alpha*self.mu[mat] + r))
-        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
+        taxa = x*x*x*x*x*x/self.lifetime[mat]
         taxa[r == 0] = 0
         return taxa
 
@@ -131,7 +137,7 @@ class Forster_Annirad:
             pass
         #print(system.annihi_radius,Rf)
         x = (Rf/(self.alpha*self.mu[mat] + r))
-        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
+        taxa = x*x*x*x*x*x/self.lifetime[mat]
         taxa[r == 0] = 0
         return taxa
 
@@ -166,7 +172,7 @@ class ForsterKappa:
         Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
         
         x = (Rf/(self.alpha*system.norma_mu[local] + r))
-        taxa = (1/self.lifetime[mat])*(kappa*kappa)*x*x*x*x*x*x
+        taxa = (kappa*kappa)*x*x*x*x*x*x/self.lifetime[mat]
         taxa[r == 0] = 0
         return taxa
 
@@ -200,7 +206,7 @@ class ForsterRedShift:
         s1s   = (s1s - s1s[local]) + abs(s1s - s1s[local]) 
         boltz = np.exp(-1*s1s/(2*kb*self.T)) 
         x = Rfs/(self.alpha*self.mu[mat] + r)
-        taxa  = (1/self.lifetime[mat])*x*x*x*x*x*x*boltz
+        taxa  = x*x*x*x*x*x*boltz/self.lifetime[mat]
         taxa[r == 0] = 0
         return taxa
 
@@ -227,7 +233,7 @@ class Dexter:
         
         Rd = raios(len(mats),self.Rd,mat,self.lifetime,mats)
         
-        taxa = (1/self.lifetime[mat])*np.exp((2*Rd/self.L[mat])*(1-r/Rd))
+        taxa = np.exp((2*Rd/self.L[mat])*(1-r/Rd))/self.lifetime[mat]
         taxa[r == 0] = 0
         return taxa
 
