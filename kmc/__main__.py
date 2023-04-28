@@ -96,33 +96,17 @@ def regular_distance(system,local):
     dz = system.Z - system.Z[local]
     return dx, dy, dz
 
-#def periodic_distance(system,local):
-#    dx = system.X - system.X[local]   
-#    dy = system.Y - system.Y[local]  
-#    dz = system.Z - system.Z[local]
-#    abs_dx = abs(dx)
-#    abs_dy = abs(dy)
-#    abs_dz = abs(dz)
-#    maskx = 2*abs_dx > system.Lx
-#    masky = 2*abs_dy > system.Ly
-#    maskz = 2*abs_dz > system.Lz
-#    dx[maskx] = -1*np.sign(dx[maskx])*(system.Lx - abs_dx)[maskx]
-#    dy[masky] = -1*np.sign(dy[masky])*(system.Ly - abs_dy)[masky]
-#    dz[maskz] = -1*np.sign(dz[maskz])*(system.Lz - abs_dz)[maskz]
-#    return dx, dy, dz
-
 def periodic_distance(system,local):
     dx = system.X - system.X[local]   
     dy = system.Y - system.Y[local]  
     dz = system.Z - system.Z[local]
-    
-    maskx = 2*abs(dx) > system.Lx
-    masky = 2*abs(dy) > system.Ly
-    maskz = 2*abs(dz) > system.Lz
-    dx[maskx] = -1*np.sign(dx[maskx])*(system.Lx - abs(dx))[maskx]
-    dy[masky] = -1*np.sign(dy[masky])*(system.Ly - abs(dy))[masky]
-    dz[maskz] = -1*np.sign(dz[maskz])*(system.Lz - abs(dz))[maskz]
-    return dx, dy, dz
+    if system.Lx > 0:
+        dx -= system.Lx*np.round(dx/system.Lx)   
+    if system.Ly > 0:
+        dy -= system.Ly*np.round(dy/system.Ly)  
+    if system.Lz > 0:
+        dz -= system.Lz*np.round(dz/system.Lz)
+    return dx,dy,dz
 
 if periodic:
     distance = periodic_distance
@@ -166,7 +150,7 @@ def decision(s,system):
     jump_rate = np.concatenate(jump_rate)
     labels    = hop+mono 
     soma      = np.sum(jump_rate)
-    jump      = np.argmax(random.uniform(0,1) <= np.nan_to_num(np.cumsum(jump_rate/soma),nan=1)) #np.inf rates turn into nan
+    jump      = np.argmax(random.uniform(0,1) <= np.cumsum(jump_rate/soma))#np.nan_to_num(np.cumsum(jump_rate/soma),nan=1)) #np.inf rates turn into nan
     destino   = np.argmax(np.cumsum(sizes) -1 >= jump)
     s.process = labels[destino]
     if destino < len(hop):

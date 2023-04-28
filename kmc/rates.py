@@ -59,7 +59,8 @@ class Forster:
         Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
         
         x = (Rf/(self.alpha*self.mu[mat] + r))
-        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
+        y = x*x
+        taxa = (1/self.lifetime[mat])*y*y*y
         taxa[r == 0] = 0
         return taxa
 
@@ -87,7 +88,8 @@ class ForsterT:
         
         Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
         x = (Rf/(self.alpha*self.mu[mat] + r))
-        taxa = x*x*x*x*x*x/self.lifetime[mat]
+        y = x*x,
+        taxa = (1/self.lifetime[mat])*y*y*y
         taxa[r == 0] = 0
         return taxa
 
@@ -137,7 +139,8 @@ class Forster_Annirad:
             pass
         #print(system.annihi_radius,Rf)
         x = (Rf/(self.alpha*self.mu[mat] + r))
-        taxa = x*x*x*x*x*x/self.lifetime[mat]
+        y = x*x
+        taxa = (1/self.lifetime[mat])*y*y*y
         taxa[r == 0] = 0
         return taxa
 
@@ -172,7 +175,8 @@ class ForsterKappa:
         Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
         
         x = (Rf/(self.alpha*system.norma_mu[local] + r))
-        taxa = (kappa*kappa)*x*x*x*x*x*x/self.lifetime[mat]
+        y = x*x
+        taxa = (kappa*kappa)*y*y*y*(1/self.lifetime[mat])
         taxa[r == 0] = 0
         return taxa
 
@@ -206,7 +210,8 @@ class ForsterRedShift:
         s1s   = (s1s - s1s[local]) + abs(s1s - s1s[local]) 
         boltz = np.exp(-1*s1s/(2*kb*self.T)) 
         x = Rfs/(self.alpha*self.mu[mat] + r)
-        taxa  = x*x*x*x*x*x*boltz/self.lifetime[mat]
+        y = x*x
+        taxa  = y*y*y*boltz*(1/self.lifetime[mat])
         taxa[r == 0] = 0
         return taxa
 
@@ -269,7 +274,7 @@ class Dissociation_electron:
         in_loc_rad = self.inv[mat]
         
         DEe = lumos - (homos[local] + s1s[local])
-        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-(DEe+abs(DEe))/(2*kb*self.T))
+        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -(DEe+abs(DEe))/(2*kb*self.T))
         taxae[r == 0] = 0
         return taxae
             
@@ -310,7 +315,7 @@ class Dissociation_hole:
         in_loc_rad = self.inv[mat]
         
         DEh = (lumos[local] - s1s[local]) - homos  
-        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-(DEh+abs(DEh))/(2*kb*self.T))
+        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -(DEh+abs(DEh))/(2*kb*self.T))
         taxah[r == 0] = 0
         return taxah
                  
@@ -368,9 +373,9 @@ class MillerAbrahams:
         AtH        = raios(len(r),self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
 
-        DE = corrected_energies(system,particle,r,dx,dy,dz) 
-        taxa = (1e-12)*(AtH)*np.exp(
-                               -(in_loc_rad*r+in_loc_rad*r))*np.exp(-DE/((kb*self.T+kb*self.T)))                           	               
+        DE = corrected_energies(system,particle,r,dx,dy,dz)                            	               
+        taxa = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -DE/(2*kb*self.T)) 
+        
         taxa[r == 0] = 0
         return taxa
  
