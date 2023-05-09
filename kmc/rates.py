@@ -2,6 +2,7 @@
 import numpy as np
 import random
 from kmc.particles import *
+import kmc.utils
 
 epsilon_vaccum = 8.854187e-12    #Permitivity in C/Vm
 e              = -1.60217662e-19 #Electron charge    
@@ -36,13 +37,22 @@ def raios_dist(num,Rf,mat,lifetime,mats):
     return Raios
 
 
+#function to convert dictionary with (i,j) keys to ixj array
+def dict_to_array(d):
+    keys = d.keys()
+    num_keys = len(set(key[0] for key in keys))
+    radius = np.empty((num_keys,num_keys))
+    for key in keys:
+        radius[key[0],key[1]] = d[key]
+    return radius
+
 #########################################################################################
 
 ##STANDARD FORSTER TRANSFER RATE#########################################################
 class Forster:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.Rf = kwargs['Rf']
+        self.Rf = dict_to_array(kwargs['Rf'])
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
         self.alpha = 1.15*0.53
@@ -54,14 +64,9 @@ class Forster:
         ex     = kwargs['particle']
         mats   = system.mats    
         local  = ex.position    
-        mat = mats[local]
-        
-        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
-        
-        x = (Rf/(self.alpha*self.mu[mat] + r))
-        y = x*x
-        taxa = (1/self.lifetime[mat])*y*y*y
-        taxa[r == 0] = 0
+        mat = int(mats[local])
+        num = len(mats)
+        taxa = kmc.utils.forster(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat])
         return taxa
 
 
@@ -73,7 +78,7 @@ class Forster:
 class ForsterT:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.Rf = kwargs['Rf']
+        self.Rf = dict_to_array(kwargs['Rf'])
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
         self.alpha = 1.15*0.53
@@ -84,13 +89,9 @@ class ForsterT:
         ex     = kwargs['particle']
         mats   = system.mats 
         local  = ex.position 
-        mat = mats[local]
-        
-        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
-        x = (Rf/(self.alpha*self.mu[mat] + r))
-        y = x*x,
-        taxa = (1/self.lifetime[mat])*y*y*y
-        taxa[r == 0] = 0
+        mat = int(mats[local])
+        num = len(mats)
+        taxa = kmc.utils.forster(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat])
         return taxa
 
     def action(self,particle,system,local):
@@ -147,6 +148,35 @@ class Forster_Annirad:
 
     def action(self,particle,system,local):
         particle.move(local,system)
+
+
+class Forster_Annirad2:
+    def __init__(self,**kwargs):
+        self.kind = 'jump'
+        self.Rf = dict_to_array(kwargs['Rf'])
+        self.lifetime = kwargs['life']
+        self.mu = kwargs['mu']
+        self.alpha = 1.15*0.53
+        self.anni_rad = kwargs['anni_rad']
+
+    def rate(self,**kwargs):
+        r      = kwargs['r']
+        system = kwargs['system']
+        ex     = kwargs['particle']
+        mats   = system.mats    
+        local  = ex.position    
+        mat = mats[local]
+        num = len(mats)
+        ss = [(p.position,self.anni_rad[(mat,mats[p.position])][p.species]) for p in system.particles if p.identity != ex.identity]
+        replace_pos   = np.array([ele[0] for ele in ss],dtype=int)
+        replace_raios = np.array([ele[1] for ele in ss],dtype=np.double)
+        mum = len(replace_pos)
+        taxa = kmc.utils.forster_anni(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat], replace_pos, replace_raios, mum)
+        return taxa
+
+
+    def action(self,particle,system,local):
+        particle.move(local,system)       
 #########################################################################################
 ##FORSTER TRANSFER WITH ORIENTATION FACTORS ON THE FLY###################################
 class ForsterKappa:

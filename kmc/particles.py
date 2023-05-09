@@ -1,6 +1,5 @@
 import numpy as np
 import random
-import sys
 
 class Particles:
     def __init__(self,species,initial):
@@ -17,10 +16,10 @@ class Particles:
         self.Dz = 0
         
     def move(self,local,system):
-        Dx, Dy, Dz = system.distance(system,self.position)
-        self.Dx += Dx[local]
-        self.Dy += Dy[local]
-        self.Dz += Dz[local]
+        Dx, Dy, Dz = system.distance(system,self.position,local)
+        self.Dx += Dx
+        self.Dy += Dy
+        self.Dz += Dz
         self.position = local
         
 

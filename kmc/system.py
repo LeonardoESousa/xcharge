@@ -1,5 +1,5 @@
 import numpy as np
-
+import kmc.utils
 epsilon_vaccum =  8.854187e-12   #Permitivity in C/Vm
 e              = -1.60217662e-19 #Electron charge    
 kb             = 8.617e-5        #Boltzmann constant
@@ -23,6 +23,7 @@ class System:
         self.Ly = max(Y) - min(Y)
         self.Lz = max(Z) - min(Z)
         self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
+        Mats = np.array(Mats,dtype=int)
         self.mats = Mats
         self.uniq = np.unique(Mats)       
 
@@ -86,7 +87,7 @@ class System:
             for s in self.particles:
                 if s.charge != 0:
                     dx, dy, dz = self.distance(self, s.position)
-                    r = np.sqrt(dx*dx + dy*dy + dz*dz)*(1e-10)
+                    r = kmc.utils.distances(dx,dy,dz,len(dx))*(1e-10) #np.sqrt(dx*dx + dy*dy + dz*dz)*(1e-10)
                     r[r == 0] = np.inf
                     potential += s.charge*abs(e)/(4*np.pi*self.epsilon*r)
             self.potential = potential
