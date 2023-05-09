@@ -23,7 +23,7 @@ class System:
         self.Ly = max(Y) - min(Y)
         self.Lz = max(Z) - min(Z)
         self.R = np.hstack((X[:,np.newaxis], Y[:,np.newaxis], Z[:,np.newaxis]))
-        Mats = np.array(Mats,dtype=int)
+        Mats = np.array(Mats,dtype=np.int32)
         self.mats = Mats
         self.uniq = np.unique(Mats)       
 

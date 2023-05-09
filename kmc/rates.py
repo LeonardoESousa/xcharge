@@ -168,7 +168,7 @@ class Forster_Annirad2:
         mat = mats[local]
         num = len(mats)
         ss = [(p.position,self.anni_rad[(mat,mats[p.position])][p.species]) for p in system.particles if p.identity != ex.identity]
-        replace_pos   = np.array([ele[0] for ele in ss],dtype=int)
+        replace_pos   = np.array([ele[0] for ele in ss],dtype=np.int32)
         replace_raios = np.array([ele[1] for ele in ss],dtype=np.double)
         mum = len(replace_pos)
         taxa = kmc.utils.forster_anni(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat], replace_pos, replace_raios, mum)
