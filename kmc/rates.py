@@ -88,7 +88,7 @@ class ForsterT:
         
         Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
         x = (Rf/(self.alpha*self.mu[mat] + r))
-        y = x*x,
+        y = x*x
         taxa = (1/self.lifetime[mat])*y*y*y
         taxa[r == 0] = 0
         return taxa
