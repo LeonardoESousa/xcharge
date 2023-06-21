@@ -22,11 +22,8 @@ cpdef forster(double[:] Rf,int[:] mats,int num, double alpha_mu, double[:] r, do
     for i in range(num):
       if r[i] != 0:  
         ratio = Rf[mats[i]]/(alpha_mu+r[i])  
-        if ratio > 0.333:
-          ratio = ratio*ratio
-          taxas_view[i] = ratio*ratio*ratio*emi_rate
-        else:
-          taxas_view[i] = 0.0
+        ratio = ratio*ratio
+        taxas_view[i] = ratio*ratio*ratio*emi_rate
       else:
         taxas_view[i] = 0.0
     return taxas  
@@ -42,20 +39,15 @@ cpdef forster_anni(double[:] Rf,int[:] mats,int num, double alpha_mu, double[:] 
     for i in range(num):
       if r[i] != 0:
         ratio = Rf[mats[i]]/(alpha_mu+r[i])  
-        if ratio > 0.333:
-          ratio = ratio*ratio
-          taxas_view[i] = ratio*ratio*ratio*emi_rate
-        else:
-          taxas_view[i] = 0.0
+        ratio = ratio*ratio
+        taxas_view[i] = ratio*ratio*ratio*emi_rate
       else:
         taxas_view[i] = 0.0
     for i in range(mum):
       ratio = replace_raios[i]/(alpha_mu+r[replace_view[i]])
-      if ratio > 0.333:
-        ratio = ratio*ratio
-        taxas_view[replace_view[i]] = ratio*ratio*ratio*emi_rate   
-      else: 
-        taxas_view[replace_view[i]] = 0
+      ratio = ratio*ratio
+      taxas_view[replace_view[i]] = ratio*ratio*ratio*emi_rate   
+
     return taxas  
 
 @cython.boundscheck(False)  # Deactivate bounds checking
