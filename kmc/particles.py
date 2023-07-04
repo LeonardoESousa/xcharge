@@ -30,9 +30,15 @@ class Particles:
         x, y, z  = X[self.position],Y[self.position],Z[self.position]
         mat = Mats[self.position]
         energy = energies[self.position]
-        texto = f'{time:.0f},{self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f},{self.species},{energy:.2f},{mat:.0f},{x:.0f},{y:.0f},{z:.0f},{causamortis},{self.status}'
+        self.texto = f'TEMPO,{self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f},{self.species},{energy:.2f},{mat:.0f},{x:.0f},{y:.0f},{z:.0f},{causamortis},{self.status}'
+        
+    def stamp_time(self,system):
+        time = system.time
+        texto = self.texto
+        texto = texto.replace('TEMPO',f'{time:.0f}') #f'{time:.0f},'
         self.report += texto+'\n'
-    
+        self.texto = ''
+
     def kill(self,causamortis,system,energies,result):
         self.status = result
         self.make_text(system,energies,causamortis)

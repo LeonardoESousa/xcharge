@@ -175,7 +175,7 @@ def step_nonani(system):
         system.IT += 1
         Ss = system.particles.copy()
         random.shuffle(Ss)
-        R, dests = [],[]
+        R, dests  = [],[]
         for s in Ss:
             if s in system.particles:
                 Rs = decision(s,system)
@@ -186,6 +186,11 @@ def step_nonani(system):
                     dests.append(s.destination)  
         R = np.array(R)
         system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+        for s in Ss:
+            try:
+                s.stamp_time(system)
+            except:
+                pass                  
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
@@ -202,10 +207,15 @@ def step_ani(system):
                 if s.destination not in dests:
                     s.process.action(s,system,s.destination)
                     bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
-                    R.append(Rs)
-                    dests.append(s.destination)    
+                    R.append(Rs)  
+                    dests.append(s.destination)  
         R = np.array(R)
-        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+        for s in Ss:
+            try:
+                s.stamp_time(system)
+            except:
+                pass
         return Ss
     Ss = system.particles.copy()
     for s in Ss:
