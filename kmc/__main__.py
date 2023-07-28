@@ -132,7 +132,6 @@ def make_system():
     system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance) 
  
     return system 
-syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
     
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,anni_dict,local):
@@ -320,6 +319,7 @@ def RUN(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE IS RECAL
     return system
 
 def RUN_FREEZE(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE REMAINS INTACT
+    syst = dynamic[1]
     system = reroll_system(copy.deepcopy(syst)) 
     step(system)
     return system
@@ -382,10 +382,13 @@ def main():
         filename = open_log()      
         if not frozen_lattice: # at every round, the entire lattice is recalculated
             run = RUN
+            args = [(i) for i in range(rounds)]
         else:# at every round, only particle creation is recalculated
+            syst = make_system()
             run = RUN_FREEZE
+            args = [(i, syst) for i in range(rounds)]
         with open(filename, "a") as f:
-            for result in tqdm.tqdm(p.imap(run, range(rounds)),total=rounds):
+            for result in tqdm.tqdm(p.imap(run, args),total=rounds):
                 spectra(result,f)        
 
 
