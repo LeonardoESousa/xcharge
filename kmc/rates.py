@@ -99,58 +99,9 @@ class ForsterT:
         particle.kill('tts',system,system.t1,'converted')
         system.set_particles([Singlet(local)])
 #########################################################################################
+
 ##FORSTER ANNIHILATION RADIUS#########################################################
-class Annihilation_Radius:
-    def __init__(self,dic):
-        self.dic     = dic
-    def assign_to_system(self,system):
-        system.append_annihi_radius(self.dic)
-
 class Forster_Annirad:
-    def __init__(self,**kwargs):
-        self.kind = 'jump'
-        self.Rf = kwargs['Rf']
-        self.lifetime = kwargs['life']
-        self.mu = kwargs['mu']
-        self.alpha = 1.15*0.53
-
-
-    def rate(self,**kwargs):
-        r      = kwargs['r']
-        system = kwargs['system']
-        ex     = kwargs['particle']
-        mats   = system.mats    
-        local  = ex.position    
-        mat = mats[local]
-        
-        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
-        
-        #Annihilation radius procedure
-        ex_type = ex.species
-        ss = [[p.position,mats[p.position],(ex_type,p.species)] for p in system.particles if ((ex_type,p.species) in list(system.annihi_radius.keys())) and (p.identity != ex.identity)] #filtering the particles pairs defined in annihi_radius.keys()
-        #print(list(system.annihi_radius.keys()),ss)
-        try:         
-            for ele in ss:
-                type1 = ele[2][0]
-                type2 = ele[2][1]
-                #print(type1,type2)
-                Rf[ele[0]] = system.annihi_radius[type1,type2][(mat,ele[1])]
-                #print(Rf[ele[0]], type1,type2)
-        except:
-            pass
-        #print(system.annihi_radius,Rf)
-        x = (Rf/(self.alpha*self.mu[mat] + r))
-        y = x*x
-        taxa = (1/self.lifetime[mat])*y*y*y
-        taxa[r == 0] = 0
-        return taxa
-
-
-    def action(self,particle,system,local):
-        particle.move(local,system)
-
-
-class Forster_Annirad2:
     def __init__(self,**kwargs):
         self.kind = 'jump'
         self.Rf = dict_to_array(kwargs['Rf'])
@@ -254,7 +205,7 @@ class ForsterRedShift:
 class Dexter:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.Rd = kwargs['Rd']
+        self.Rd = dict_to_array(kwargs['Rd'])
         self.lifetime = kwargs['life']
         self.L = kwargs['L']
        
@@ -264,12 +215,9 @@ class Dexter:
         ex     = kwargs['particle']
         mats   = system.mats  
         local  = ex.position  
-        mat = mats[local]
-        
-        Rd = raios(len(mats),self.Rd,mat,self.lifetime,mats)
-        
-        taxa = np.exp((2*Rd/self.L[mat])*(1-r/Rd))/self.lifetime[mat]
-        taxa[r == 0] = 0
+        mat    = int(mats[local])
+        num = len(mats)
+        taxa = kmc.utils.dexter(self.Rd[mat,:],1/self.L[mat],1/self.lifetime[mat], mats,num, r)
         return taxa
 
     def action(self,particle,system,local):

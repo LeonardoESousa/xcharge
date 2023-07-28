@@ -65,3 +65,19 @@ cpdef jump(double[:] jump_rate, int num, double random_number):
         if random_number <= cumsum[i]:
             return soma,i
 
+
+from libc.math cimport exp
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
+cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, double[:] r):
+    taxas = np.empty(num)
+    cdef double [:] taxas_view = taxas 
+    cdef double ratio
+    cdef int i
+    for i in range(num):
+      if r[i] != 0:  
+        ratio = Rd[mats[i]]*invL
+        taxas_view[i] = ratio*ratio*exp(2*invL*(Rd[mats[i]]-r[i]))*emi_rate
+      else:
+        taxas_view[i] = 0.0
+    return taxas

@@ -1868,6 +1868,7 @@ static PyObject *__pyx_f_3kmc_5utils_distances(__Pyx_memviewslice, __Pyx_memview
 static PyObject *__pyx_f_3kmc_5utils_forster(__Pyx_memviewslice, __Pyx_memviewslice, int, double, __Pyx_memviewslice, double, int __pyx_skip_dispatch); /*proto*/
 static PyObject *__pyx_f_3kmc_5utils_forster_anni(__Pyx_memviewslice, __Pyx_memviewslice, int, double, __Pyx_memviewslice, double, __Pyx_memviewslice, __Pyx_memviewslice, int, int __pyx_skip_dispatch); /*proto*/
 static PyObject *__pyx_f_3kmc_5utils_jump(__Pyx_memviewslice, int, double, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_f_3kmc_5utils_dexter(__Pyx_memviewslice, double, double, __Pyx_memviewslice, int, __Pyx_memviewslice, int __pyx_skip_dispatch); /*proto*/
 static struct __pyx_array_obj *__pyx_array_new(PyObject *, Py_ssize_t, char *, char *, char *); /*proto*/
 static void *__pyx_align_pointer(void *, size_t); /*proto*/
 static PyObject *__pyx_memoryview_new(PyObject *, int, int, __Pyx_TypeInfo *); /*proto*/
@@ -1919,6 +1920,7 @@ static PyObject *__pyx_builtin_IndexError;
 static const char __pyx_k_O[] = "O";
 static const char __pyx_k_c[] = "c";
 static const char __pyx_k_r[] = "r";
+static const char __pyx_k_Rd[] = "Rd";
 static const char __pyx_k_Rf[] = "Rf";
 static const char __pyx_k_dx[] = "dx";
 static const char __pyx_k_dy[] = "dy";
@@ -1931,6 +1933,7 @@ static const char __pyx_k_num[] = "num";
 static const char __pyx_k_obj[] = "obj";
 static const char __pyx_k_base[] = "base";
 static const char __pyx_k_dict[] = "__dict__";
+static const char __pyx_k_invL[] = "invL";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_mats[] = "mats";
 static const char __pyx_k_mode[] = "mode";
@@ -2036,6 +2039,7 @@ static PyObject *__pyx_kp_s_MemoryView_of_r_object;
 static PyObject *__pyx_n_b_O;
 static PyObject *__pyx_kp_s_Out_of_bounds_on_buffer_access_a;
 static PyObject *__pyx_n_s_PickleError;
+static PyObject *__pyx_n_s_Rd;
 static PyObject *__pyx_n_s_Rf;
 static PyObject *__pyx_n_s_TypeError;
 static PyObject *__pyx_kp_s_Unable_to_convert_item_to_object;
@@ -2068,6 +2072,7 @@ static PyObject *__pyx_n_s_getstate;
 static PyObject *__pyx_kp_s_got_differing_extents_in_dimensi;
 static PyObject *__pyx_n_s_id;
 static PyObject *__pyx_n_s_import;
+static PyObject *__pyx_n_s_invL;
 static PyObject *__pyx_n_s_itemsize;
 static PyObject *__pyx_kp_s_itemsize_0_for_cython_array;
 static PyObject *__pyx_n_s_jump_rate;
@@ -2124,6 +2129,7 @@ static PyObject *__pyx_pf_3kmc_5utils_distances(CYTHON_UNUSED PyObject *__pyx_se
 static PyObject *__pyx_pf_3kmc_5utils_2forster(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_Rf, __Pyx_memviewslice __pyx_v_mats, int __pyx_v_num, double __pyx_v_alpha_mu, __Pyx_memviewslice __pyx_v_r, double __pyx_v_emi_rate); /* proto */
 static PyObject *__pyx_pf_3kmc_5utils_4forster_anni(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_Rf, __Pyx_memviewslice __pyx_v_mats, int __pyx_v_num, double __pyx_v_alpha_mu, __Pyx_memviewslice __pyx_v_r, double __pyx_v_emi_rate, __Pyx_memviewslice __pyx_v_replace_pos, __Pyx_memviewslice __pyx_v_replace_raios, int __pyx_v_mum); /* proto */
 static PyObject *__pyx_pf_3kmc_5utils_6jump(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_jump_rate, int __pyx_v_num, double __pyx_v_random_number); /* proto */
+static PyObject *__pyx_pf_3kmc_5utils_8dexter(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_Rd, double __pyx_v_invL, double __pyx_v_emi_rate, __Pyx_memviewslice __pyx_v_mats, int __pyx_v_num, __Pyx_memviewslice __pyx_v_r); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(struct __pyx_array_obj *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_array___pyx_pf_15View_dot_MemoryView_5array_4__dealloc__(struct __pyx_array_obj *__pyx_v_self); /* proto */
@@ -3398,6 +3404,7 @@ static PyObject *__pyx_f_3kmc_5utils_jump(__Pyx_memviewslice __pyx_v_jump_rate, 
  *         if random_number <= cumsum[i]:
  *             return soma,i             # <<<<<<<<<<<<<<
  * 
+ * 
  */
       __Pyx_XDECREF(__pyx_r);
       __pyx_t_1 = PyFloat_FromDouble(__pyx_v_soma); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 66, __pyx_L1_error)
@@ -3552,6 +3559,331 @@ static PyObject *__pyx_pf_3kmc_5utils_6jump(CYTHON_UNUSED PyObject *__pyx_self, 
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_jump_rate, 1);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "kmc/utils.pyx":72
+ * @cython.boundscheck(False)  # Deactivate bounds checking
+ * @cython.wraparound(False)   # Deactivate negative indexing.
+ * cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, double[:] r):             # <<<<<<<<<<<<<<
+ *     taxas = np.empty(num)
+ *     cdef double [:] taxas_view = taxas
+ */
+
+static PyObject *__pyx_pw_3kmc_5utils_9dexter(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_3kmc_5utils_dexter(__Pyx_memviewslice __pyx_v_Rd, double __pyx_v_invL, double __pyx_v_emi_rate, __Pyx_memviewslice __pyx_v_mats, int __pyx_v_num, __Pyx_memviewslice __pyx_v_r, CYTHON_UNUSED int __pyx_skip_dispatch) {
+  PyObject *__pyx_v_taxas = NULL;
+  __Pyx_memviewslice __pyx_v_taxas_view = { 0, 0, { 0 }, { 0 }, { 0 } };
+  double __pyx_v_ratio;
+  int __pyx_v_i;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  __Pyx_memviewslice __pyx_t_5 = { 0, 0, { 0 }, { 0 }, { 0 } };
+  int __pyx_t_6;
+  int __pyx_t_7;
+  int __pyx_t_8;
+  Py_ssize_t __pyx_t_9;
+  int __pyx_t_10;
+  Py_ssize_t __pyx_t_11;
+  Py_ssize_t __pyx_t_12;
+  Py_ssize_t __pyx_t_13;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("dexter", 0);
+
+  /* "kmc/utils.pyx":73
+ * @cython.wraparound(False)   # Deactivate negative indexing.
+ * cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, double[:] r):
+ *     taxas = np.empty(num)             # <<<<<<<<<<<<<<
+ *     cdef double [:] taxas_view = taxas
+ *     cdef double ratio
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 73, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_empty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 73, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_num); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 73, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_4 = NULL;
+  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
+    __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
+    if (likely(__pyx_t_4)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+      __Pyx_INCREF(__pyx_t_4);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_3, function);
+    }
+  }
+  __pyx_t_1 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_4, __pyx_t_2) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 73, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_v_taxas = __pyx_t_1;
+  __pyx_t_1 = 0;
+
+  /* "kmc/utils.pyx":74
+ * cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, double[:] r):
+ *     taxas = np.empty(num)
+ *     cdef double [:] taxas_view = taxas             # <<<<<<<<<<<<<<
+ *     cdef double ratio
+ *     cdef int i
+ */
+  __pyx_t_5 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(__pyx_v_taxas, PyBUF_WRITABLE); if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_v_taxas_view = __pyx_t_5;
+  __pyx_t_5.memview = NULL;
+  __pyx_t_5.data = NULL;
+
+  /* "kmc/utils.pyx":77
+ *     cdef double ratio
+ *     cdef int i
+ *     for i in range(num):             # <<<<<<<<<<<<<<
+ *       if r[i] != 0:
+ *         ratio = Rd[mats[i]]*invL
+ */
+  __pyx_t_6 = __pyx_v_num;
+  __pyx_t_7 = __pyx_t_6;
+  for (__pyx_t_8 = 0; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
+    __pyx_v_i = __pyx_t_8;
+
+    /* "kmc/utils.pyx":78
+ *     cdef int i
+ *     for i in range(num):
+ *       if r[i] != 0:             # <<<<<<<<<<<<<<
+ *         ratio = Rd[mats[i]]*invL
+ *         taxas_view[i] = ratio*ratio*exp(2*invL*(Rd[mats[i]]-r[i]))*emi_rate
+ */
+    __pyx_t_9 = __pyx_v_i;
+    __pyx_t_10 = (((*((double *) ( /* dim=0 */ (__pyx_v_r.data + __pyx_t_9 * __pyx_v_r.strides[0]) ))) != 0.0) != 0);
+    if (__pyx_t_10) {
+
+      /* "kmc/utils.pyx":79
+ *     for i in range(num):
+ *       if r[i] != 0:
+ *         ratio = Rd[mats[i]]*invL             # <<<<<<<<<<<<<<
+ *         taxas_view[i] = ratio*ratio*exp(2*invL*(Rd[mats[i]]-r[i]))*emi_rate
+ *       else:
+ */
+      __pyx_t_9 = __pyx_v_i;
+      __pyx_t_11 = (*((int *) ( /* dim=0 */ (__pyx_v_mats.data + __pyx_t_9 * __pyx_v_mats.strides[0]) )));
+      __pyx_v_ratio = ((*((double *) ( /* dim=0 */ (__pyx_v_Rd.data + __pyx_t_11 * __pyx_v_Rd.strides[0]) ))) * __pyx_v_invL);
+
+      /* "kmc/utils.pyx":80
+ *       if r[i] != 0:
+ *         ratio = Rd[mats[i]]*invL
+ *         taxas_view[i] = ratio*ratio*exp(2*invL*(Rd[mats[i]]-r[i]))*emi_rate             # <<<<<<<<<<<<<<
+ *       else:
+ *         taxas_view[i] = 0.0
+ */
+      __pyx_t_9 = __pyx_v_i;
+      __pyx_t_11 = (*((int *) ( /* dim=0 */ (__pyx_v_mats.data + __pyx_t_9 * __pyx_v_mats.strides[0]) )));
+      __pyx_t_12 = __pyx_v_i;
+      __pyx_t_13 = __pyx_v_i;
+      *((double *) ( /* dim=0 */ (__pyx_v_taxas_view.data + __pyx_t_13 * __pyx_v_taxas_view.strides[0]) )) = (((__pyx_v_ratio * __pyx_v_ratio) * exp(((2.0 * __pyx_v_invL) * ((*((double *) ( /* dim=0 */ (__pyx_v_Rd.data + __pyx_t_11 * __pyx_v_Rd.strides[0]) ))) - (*((double *) ( /* dim=0 */ (__pyx_v_r.data + __pyx_t_12 * __pyx_v_r.strides[0]) ))))))) * __pyx_v_emi_rate);
+
+      /* "kmc/utils.pyx":78
+ *     cdef int i
+ *     for i in range(num):
+ *       if r[i] != 0:             # <<<<<<<<<<<<<<
+ *         ratio = Rd[mats[i]]*invL
+ *         taxas_view[i] = ratio*ratio*exp(2*invL*(Rd[mats[i]]-r[i]))*emi_rate
+ */
+      goto __pyx_L5;
+    }
+
+    /* "kmc/utils.pyx":82
+ *         taxas_view[i] = ratio*ratio*exp(2*invL*(Rd[mats[i]]-r[i]))*emi_rate
+ *       else:
+ *         taxas_view[i] = 0.0             # <<<<<<<<<<<<<<
+ *     return taxas
+ */
+    /*else*/ {
+      __pyx_t_12 = __pyx_v_i;
+      *((double *) ( /* dim=0 */ (__pyx_v_taxas_view.data + __pyx_t_12 * __pyx_v_taxas_view.strides[0]) )) = 0.0;
+    }
+    __pyx_L5:;
+  }
+
+  /* "kmc/utils.pyx":83
+ *       else:
+ *         taxas_view[i] = 0.0
+ *     return taxas             # <<<<<<<<<<<<<<
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(__pyx_v_taxas);
+  __pyx_r = __pyx_v_taxas;
+  goto __pyx_L0;
+
+  /* "kmc/utils.pyx":72
+ * @cython.boundscheck(False)  # Deactivate bounds checking
+ * @cython.wraparound(False)   # Deactivate negative indexing.
+ * cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, double[:] r):             # <<<<<<<<<<<<<<
+ *     taxas = np.empty(num)
+ *     cdef double [:] taxas_view = taxas
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __PYX_XDEC_MEMVIEW(&__pyx_t_5, 1);
+  __Pyx_AddTraceback("kmc.utils.dexter", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_taxas);
+  __PYX_XDEC_MEMVIEW(&__pyx_v_taxas_view, 1);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3kmc_5utils_9dexter(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_3kmc_5utils_8dexter[] = "dexter(double[:] Rd, double invL, double emi_rate, int[:] mats, int num, double[:] r)";
+static PyObject *__pyx_pw_3kmc_5utils_9dexter(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  __Pyx_memviewslice __pyx_v_Rd = { 0, 0, { 0 }, { 0 }, { 0 } };
+  double __pyx_v_invL;
+  double __pyx_v_emi_rate;
+  __Pyx_memviewslice __pyx_v_mats = { 0, 0, { 0 }, { 0 }, { 0 } };
+  int __pyx_v_num;
+  __Pyx_memviewslice __pyx_v_r = { 0, 0, { 0 }, { 0 }, { 0 } };
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("dexter (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_Rd,&__pyx_n_s_invL,&__pyx_n_s_emi_rate,&__pyx_n_s_mats,&__pyx_n_s_num,&__pyx_n_s_r,0};
+    PyObject* values[6] = {0,0,0,0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  6: values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+        CYTHON_FALLTHROUGH;
+        case  5: values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+        CYTHON_FALLTHROUGH;
+        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+        CYTHON_FALLTHROUGH;
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        CYTHON_FALLTHROUGH;
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_Rd)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_invL)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("dexter", 1, 6, 6, 1); __PYX_ERR(0, 72, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  2:
+        if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_emi_rate)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("dexter", 1, 6, 6, 2); __PYX_ERR(0, 72, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  3:
+        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_mats)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("dexter", 1, 6, 6, 3); __PYX_ERR(0, 72, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  4:
+        if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_num)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("dexter", 1, 6, 6, 4); __PYX_ERR(0, 72, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  5:
+        if (likely((values[5] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_r)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("dexter", 1, 6, 6, 5); __PYX_ERR(0, 72, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "dexter") < 0)) __PYX_ERR(0, 72, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 6) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
+      values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
+      values[5] = PyTuple_GET_ITEM(__pyx_args, 5);
+    }
+    __pyx_v_Rd = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_Rd.memview)) __PYX_ERR(0, 72, __pyx_L3_error)
+    __pyx_v_invL = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_invL == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L3_error)
+    __pyx_v_emi_rate = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_emi_rate == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L3_error)
+    __pyx_v_mats = __Pyx_PyObject_to_MemoryviewSlice_ds_int(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_mats.memview)) __PYX_ERR(0, 72, __pyx_L3_error)
+    __pyx_v_num = __Pyx_PyInt_As_int(values[4]); if (unlikely((__pyx_v_num == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L3_error)
+    __pyx_v_r = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_r.memview)) __PYX_ERR(0, 72, __pyx_L3_error)
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("dexter", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 72, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("kmc.utils.dexter", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_3kmc_5utils_8dexter(__pyx_self, __pyx_v_Rd, __pyx_v_invL, __pyx_v_emi_rate, __pyx_v_mats, __pyx_v_num, __pyx_v_r);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3kmc_5utils_8dexter(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_Rd, double __pyx_v_invL, double __pyx_v_emi_rate, __Pyx_memviewslice __pyx_v_mats, int __pyx_v_num, __Pyx_memviewslice __pyx_v_r) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("dexter", 0);
+  __Pyx_XDECREF(__pyx_r);
+  if (unlikely(!__pyx_v_Rd.memview)) { __Pyx_RaiseUnboundLocalError("Rd"); __PYX_ERR(0, 72, __pyx_L1_error) }
+  if (unlikely(!__pyx_v_mats.memview)) { __Pyx_RaiseUnboundLocalError("mats"); __PYX_ERR(0, 72, __pyx_L1_error) }
+  if (unlikely(!__pyx_v_r.memview)) { __Pyx_RaiseUnboundLocalError("r"); __PYX_ERR(0, 72, __pyx_L1_error) }
+  __pyx_t_1 = __pyx_f_3kmc_5utils_dexter(__pyx_v_Rd, __pyx_v_invL, __pyx_v_emi_rate, __pyx_v_mats, __pyx_v_num, __pyx_v_r, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("kmc.utils.dexter", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __PYX_XDEC_MEMVIEW(&__pyx_v_Rd, 1);
+  __PYX_XDEC_MEMVIEW(&__pyx_v_mats, 1);
+  __PYX_XDEC_MEMVIEW(&__pyx_v_r, 1);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
@@ -17330,6 +17662,7 @@ static PyMethodDef __pyx_methods[] = {
   {"forster", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_3kmc_5utils_3forster, METH_VARARGS|METH_KEYWORDS, __pyx_doc_3kmc_5utils_2forster},
   {"forster_anni", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_3kmc_5utils_5forster_anni, METH_VARARGS|METH_KEYWORDS, __pyx_doc_3kmc_5utils_4forster_anni},
   {"jump", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_3kmc_5utils_7jump, METH_VARARGS|METH_KEYWORDS, __pyx_doc_3kmc_5utils_6jump},
+  {"dexter", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_3kmc_5utils_9dexter, METH_VARARGS|METH_KEYWORDS, __pyx_doc_3kmc_5utils_8dexter},
   {0, 0, 0, 0}
 };
 
@@ -17394,6 +17727,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_b_O, __pyx_k_O, sizeof(__pyx_k_O), 0, 0, 0, 1},
   {&__pyx_kp_s_Out_of_bounds_on_buffer_access_a, __pyx_k_Out_of_bounds_on_buffer_access_a, sizeof(__pyx_k_Out_of_bounds_on_buffer_access_a), 0, 0, 1, 0},
   {&__pyx_n_s_PickleError, __pyx_k_PickleError, sizeof(__pyx_k_PickleError), 0, 0, 1, 1},
+  {&__pyx_n_s_Rd, __pyx_k_Rd, sizeof(__pyx_k_Rd), 0, 0, 1, 1},
   {&__pyx_n_s_Rf, __pyx_k_Rf, sizeof(__pyx_k_Rf), 0, 0, 1, 1},
   {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
   {&__pyx_kp_s_Unable_to_convert_item_to_object, __pyx_k_Unable_to_convert_item_to_object, sizeof(__pyx_k_Unable_to_convert_item_to_object), 0, 0, 1, 0},
@@ -17426,6 +17760,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_got_differing_extents_in_dimensi, __pyx_k_got_differing_extents_in_dimensi, sizeof(__pyx_k_got_differing_extents_in_dimensi), 0, 0, 1, 0},
   {&__pyx_n_s_id, __pyx_k_id, sizeof(__pyx_k_id), 0, 0, 1, 1},
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
+  {&__pyx_n_s_invL, __pyx_k_invL, sizeof(__pyx_k_invL), 0, 0, 1, 1},
   {&__pyx_n_s_itemsize, __pyx_k_itemsize, sizeof(__pyx_k_itemsize), 0, 0, 1, 1},
   {&__pyx_kp_s_itemsize_0_for_cython_array, __pyx_k_itemsize_0_for_cython_array, sizeof(__pyx_k_itemsize_0_for_cython_array), 0, 0, 1, 0},
   {&__pyx_n_s_jump_rate, __pyx_k_jump_rate, sizeof(__pyx_k_jump_rate), 0, 0, 1, 1},
@@ -18114,12 +18449,12 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "kmc/utils.pyx":55
+  /* "kmc/utils.pyx":72
  * @cython.boundscheck(False)  # Deactivate bounds checking
  * @cython.wraparound(False)   # Deactivate negative indexing.
- * cpdef jump(double[:] jump_rate, int num, double random_number):             # <<<<<<<<<<<<<<
- *     cdef double soma
- *     cdef double [:] cumsum = np.empty(num)
+ * cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, double[:] r):             # <<<<<<<<<<<<<<
+ *     taxas = np.empty(num)
+ *     cdef double [:] taxas_view = taxas
  */
   __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
