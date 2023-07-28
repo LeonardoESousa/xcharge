@@ -20,8 +20,9 @@ marker_type        = 1     # marker type used at the animation processs ( 0 = ba
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = int(sys.argv[3])     # Number of rounds
 n_proc             = 10#5     # Number of cores to be used
-frozen             = True              # if you want for the lattice to remain the same for all rounds
+frozen_lattice     = True              # if you want for the lattice to remain the same for all rounds
 periodic           = False              # if you want periodic boundary conditions
+bimolec            = False  # Turn on annihilation
 #########################################################################################
 
 ###SINGLET EXCITONS######################################################################
@@ -82,8 +83,4 @@ a2 = morphology.Gaussian_energy(t1s)
 method    = morphology.randomized
 exciton   = morphology.Create_Particles('singlet', int(sys.argv[4]), method, mat=[0])
 
-#########################################################################################
-
-##BIMOLECULAR OPTIONS###################################################################
-bimolec               = False  # Turn on annihilation
 #########################################################################################

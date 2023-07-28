@@ -13,7 +13,7 @@ marker_type        = 1     # marker type used at the animation processs ( 0 = ba
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 1000  # Number of rounds
 n_proc             = 10#5     # Number of cores to be used
-frozen             = True
+frozen_lattice     = True
 bimolec            = False # Turn on annihilation
 periodic           = False
 #########################################################################################
