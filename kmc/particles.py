@@ -9,6 +9,7 @@ class Particles:
         self.status   = 'alive'
         self.identity = random.uniform(0,5)
         self.report   = ''
+        self.texto    = ''
         self.process  = None
         self.destination  = None
         self.Dx = 0
@@ -32,11 +33,12 @@ class Particles:
         self.texto = f'TEMPO,{self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f},{self.species},{energy:.2f},{mat:.0f},{x:.0f},{y:.0f},{z:.0f},{causamortis},{self.status}'
         
     def stamp_time(self,system):
-        texto = self.texto
-        texto = texto.replace('TEMPO',f'{system.time:.0f}')
-        self.report += texto+'\n'
-        self.texto = ''
-
+        if self.texto != '':
+            texto = self.texto
+            texto = texto.replace('TEMPO',f'{system.time:.0f}')
+            self.report += texto+'\n'
+            self.texto = ''
+        
     def kill(self,causamortis,system,energies,result):
         self.status = result
         self.make_text(system,energies,causamortis)

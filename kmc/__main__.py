@@ -149,7 +149,6 @@ def decision(s,system):
     kind = s.species      
     local= s.position        
     dx, dy, dz = distance(system,local)
-    #r = np.sqrt(dx*dx + dy*dy + dz*dz)
     r = kmc.utils.distances(dx,dy,dz,len(dx))
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
@@ -186,13 +185,11 @@ def step_nonani(system):
         R = np.array(R)
         system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
         for s in Ss:
-            try:
-                s.stamp_time(system)
-            except:
-                pass                  
+            s.stamp_time(system)                   
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
+        s.stamp_time(system)
  
 def step_ani(system):
     while system.count_particles() > 0 and system.time < system.time_limit:
@@ -211,14 +208,12 @@ def step_ani(system):
         R = np.array(R)
         system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
         for s in Ss:
-            try:
-                s.stamp_time(system)
-            except:
-                pass
+            s.stamp_time(system)
         return Ss
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
+        s.stamp_time(system)
 ##########################################################################################
 
 if animation_mode:
