@@ -62,9 +62,9 @@ class Forster:
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.mats    
-        local  = ex.position    
-        mat = int(mats[local])
+        mats   = kwargs['mats']
+        local  = ex.position  
+        mat    = kwargs['matlocal']
         num = len(mats)
         taxa = kmc.utils.forster(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat])
         return taxa
@@ -87,9 +87,9 @@ class ForsterT:
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.mats 
-        local  = ex.position 
-        mat = int(mats[local])
+        mats   = kwargs['mats']
+        local  = ex.position  
+        mat    = kwargs['matlocal']
         num = len(mats)
         taxa = kmc.utils.forster(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat])
         return taxa
@@ -114,11 +114,13 @@ class Forster_Annirad:
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.mats    
-        local  = ex.position    
-        mat = mats[local]
+        mats   = kwargs['mats']
+        cut    = kwargs['cut']
+        local  = ex.position  
+        mat    = kwargs['matlocal']
         num = len(mats)
-        ss = [(p.position,self.anni_rad[(mat,mats[p.position])][p.species]) for p in system.particles if p.identity != ex.identity]
+        relevant_particles = [p for p in system.particles if p.identity != ex.identity and p.position in cut]
+        ss = [(np.where(cut == p.position)[0][0],self.anni_rad[(mat,system.mats[p.position])][p.species]) for p in relevant_particles]
         replace_pos   = np.array([ele[0] for ele in ss],dtype=np.int32)
         replace_raios = np.array([ele[1] for ele in ss],dtype=np.double)
         mum = len(replace_pos)
@@ -142,9 +144,9 @@ class Dexter:
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.mats  
+        mats   = kwargs['mats']
         local  = ex.position  
-        mat    = int(mats[local])
+        mat    = kwargs['matlocal']
         num = len(mats)
         taxa = kmc.utils.dexter(self.Rd[mat,:],1/self.L[mat],1/self.lifetime[mat], mats,num, r)
         return taxa
@@ -165,9 +167,8 @@ class Dissociation_electron:
         system   = kwargs['system']
         r        = kwargs['r']
         particle = kwargs['particle']
-        local    = particle.position 
-        mats     = system.mats        
-        mat      = mats[local]
+        mats   = kwargs['mats']
+        mat    = kwargs['matlocal']
         num      = len(mats)
 
         lumos = np.copy(system.lumo)
@@ -207,10 +208,10 @@ class Dissociation_hole:
         r        = kwargs['r']
         particle = kwargs['particle']
         local    = particle.position 
-        mats     = system.mats        
-        mat      = mats[local]
+        mats   = kwargs['mats']
+        mat    = kwargs['matlocal']
         num      = len(mats)
-
+        
         lumos = np.copy(system.lumo)
         homos = np.copy(system.homo)
         if particle.species   == 'singlet':
@@ -274,8 +275,9 @@ class MillerAbrahams:
         dy        = kwargs['dy']
         dz        = kwargs['dz']
         particle  = kwargs['particle']
-        mats      = system.mats        
-        mat       = mats[particle.position]
+        mats   = kwargs['mats']
+        mat    = kwargs['matlocal']
+        num      = len(mats)        
         
         AtH        = raios(len(r),self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]

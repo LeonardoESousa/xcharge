@@ -73,6 +73,7 @@ bimolec        = set_variables('bimolec')
 periodic       = set_variables('periodic')          
 n_proc         = set_variables('n_proc')
 rounds         = set_variables('rounds')
+cutoff         = set_variables('cutoff')
 #####
 
 
@@ -150,19 +151,25 @@ def decision(s,system):
     local= s.position        
     dx, dy, dz = distance(system,local)
     r = kmc.utils.distances(dx,dy,dz,len(dx))
+    cut = np.where(r < cutoff)[0]
+    r = r[cut]
+    dx = dx[cut]
+    dy = dy[cut]
+    dz = dz[cut]
+    mats = system.mats[cut]
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
-    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s) for transfer in hop] 
+    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s,mats=mats,matlocal=system.mats[local],cut=cut) for transfer in hop] 
     mono_rate = [[m.rate(material=system.mats[local])] for m in mono]
     jump_rate.extend(mono_rate)   
     sizes     = np.array([len(i) for i in jump_rate])
     jump_rate = np.concatenate(jump_rate)
-    labels    = hop+mono 
+    labels    = hop+mono
     soma, jump = kmc.utils.jump(jump_rate,len(jump_rate),random.uniform(0,1))
     destino   = np.argmax(np.cumsum(sizes) -1 >= jump)
     s.process = labels[destino]
     if destino < len(hop):
-        s.destination = jump - np.sum(sizes[:destino])
+        s.destination = cut[int(jump - np.sum(sizes[:destino]))]
     else:
         s.destination = local
     return soma
