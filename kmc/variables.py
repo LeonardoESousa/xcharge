@@ -21,5 +21,3 @@ EPSILON_0 = 8.854187e-12  # Permitivity in C/Vm
 E = -1.60217662e-19  # Electron charge
 KB = 8.617e-5  # Boltzmann constant
 HBAR = 6.582e-16  # Reduced Planck's constant
-
-

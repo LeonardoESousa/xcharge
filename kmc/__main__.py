@@ -325,10 +325,10 @@ def animate(num, system, ax, marker_option, do_rotate):
     by_label = dict(sorted(by_label.items(), key=lambda x: x[0]))
     plt.legend(by_label.values(), by_label.keys())
     ax.text2D(
-        0.03, 0.98, f"Time: {system.time:.2e}", transform=ax.transAxes
+        0.03, 0.98, f"Time: {system.time:.2e} ps", transform=ax.transAxes
     )  # time
     ax.text2D(
-        0.03, 0.94,f"{len(system.particles):.0f} particles", transform=ax.transAxes
+        0.03, 0.94,f"Particles: {len(system.particles):.0f}", transform=ax.transAxes
     )  # npart
 
     ax.set_xlabel("X (Å)")

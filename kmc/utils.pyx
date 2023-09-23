@@ -81,3 +81,23 @@ cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, doubl
       else:
         taxas_view[i] = 0.0
     return taxas
+
+from libc.math cimport exp
+from libc.math cimport sqrt
+@cython.boundscheck(False)  # Deactivate bounds checking
+@cython.wraparound(False)   # Deactivate negative indexing.
+cpdef marcus(double[:] coupling,double[:] energy,double reorg, double prefactor, int[:] mats,int num, double site_energy, double kbt, double decay, double[:] r):
+    taxas = np.empty(num)
+    cdef double [:] taxas_view = taxas 
+    cdef double constant
+    cdef double deltae
+    cdef double lambda_term = 4*reorg*kbt
+    cdef int i
+    for i in range(num):
+      if r[i] != 0:  
+        deltae = energy[mats[i]]-site_energy
+        constant = prefactor*coupling[mats[i]]*coupling[mats[i]]/sqrt(3.1415*lambda_term)
+        taxas_view[i] = constant*exp(-r[i]*decay -deltae*deltae/lambda_term)
+      else:
+        taxas_view[i] = 0.0
+    return taxas    

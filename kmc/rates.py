@@ -185,6 +185,50 @@ class Dexter:
 
 #########################################################################################
 
+
+##STANDARD DEXTER TRANSFER RATE##########################################################
+class Marcus:
+    def __init__(self, **kwargs):
+        self.kind = "jump"
+        self.coupling = dict_to_array(kwargs["coupling"])
+        self.reorg = kwargs["reorg"]
+        self.level = kwargs["level"]
+        self.kbt = kwargs["temperature"] * KB
+        self.decay = kwargs["decay"]
+        self.prefactor = 1e-12 * 2 * np.pi / HBAR
+        
+
+    def rate(self, **kwargs):
+        system = kwargs["system"]
+        cut = kwargs["cut"]
+        r = kwargs["r"]
+        particle = kwargs["particle"]
+        mats = kwargs["mats"]
+        mat = kwargs["matlocal"]
+        num = len(mats)
+        energy = getattr(system, self.level, None)
+        site_energy = energy[particle.position]
+        taxa = kmc.utils.marcus(
+            self.coupling[mat, :],
+            energy[cut],
+            self.reorg[mat],
+            self.prefactor,
+            mats,
+            num,
+            site_energy,
+            self.kbt,
+            self.decay,
+            r,
+        )
+        return taxa
+
+    def action(self, particle, system, local):
+        particle.move(local, system)
+
+
+#########################################################################################
+
+
 # MONOMOLECULAR RATES#####################################################################
 
 
