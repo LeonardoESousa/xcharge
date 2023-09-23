@@ -74,13 +74,13 @@ lattice_func      = morphology.Lattice(num_sites,displacement,disorder,compositi
 t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), disperison (eV)
 s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
-a1 = morphology.Gaussian_energy(s1s)
-a2 = morphology.Gaussian_energy(t1s) 
+a1 = morphology.GaussianEnergy(s1s)
+a2 = morphology.GaussianEnergy(t1s) 
 #########################################################################################
 
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', int(sys.argv[4]), method, mat=[0])
+exciton   = morphology.CreateParticles('singlet', int(sys.argv[4]), method, mat=[0])
 
 #########################################################################################

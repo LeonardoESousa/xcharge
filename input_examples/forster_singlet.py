@@ -1,5 +1,5 @@
 ############################################################
-# forster_singlet.py.                                        
+# forster_singlet.py.
 # This example illustrates the simulation of singlet excitons.
 # 1 singlet exciton.
 # 2 Materials.
@@ -11,8 +11,9 @@ from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
 identifier         = 'forster_singlet' #output identifier
+cutoff             = 20     # cutoff distance for rates (Å)
 time_limit         = np.inf # in ps
-animation_mode     = False  # if you want to see the animation
+animation_mode     = True   # if you want to see the animation
 save_animation     = False  # if you want to save the animation
 animation_exten    = 'gif'  # possible options ('gif' and 'mp4')
 rotate             = False  # True = animation rotates, False = remains fixed
@@ -28,10 +29,10 @@ bimolec            = False  # Turn on annihilation
 ###SINGLET EXCITONS######################################################################
 
 ##FORSTER RADII (Å)
-r00   = 25  #Forster radius material 0 --> material 0 (Angstrom)    
-r01   = 0   #material 0 --> material 1      
-r10   = 0       
-r11   = 25     
+r00   = 25  #Forster radius material 0 --> material 0 (Angstrom)
+r01   = 0   #material 0 --> material 1
+r10   = 0
+r11   = 25
 radii = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
 ##FLUORESCENCE LIFETIMES (PS)
@@ -52,18 +53,11 @@ fluor     = Fluor(life=lifetimes)
 
 ###PROCESSES#############################################################################
 
-processes = {'singlet':[forster], 'triplet':[], 'electron':[],'hole':[]}
+processes = {'singlet':[forster], 'triplet':[forster], 'electron':[],'hole':[]}
 monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
-
-##Morphology functions
-
-#Reading a file name that contains your lattice
-#file = 'lattice.example'
-#lattice_func = morphology.ReadLattice(file)
-
 
 # Creating a new lattice at each new round
 num_sites         = 100             #number of sites of the lattice
@@ -77,12 +71,12 @@ lattice_func      = morphology.Lattice(num_sites,displacement,disorder,compositi
 t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} # Peak emission energy (eV), disperison (eV)
 s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, dispersion (eV)
 
-a1 = morphology.Gaussian_energy(s1s)
-a2 = morphology.Gaussian_energy(t1s) 
+a1 = morphology.GaussianEnergy(s1s)
+a2 = morphology.GaussianEnergy(t1s)
 #########################################################################################
 
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1]) # creates 1 singlet exciton randomly at either material 0 or 1
+exciton   = morphology.CreateParticles(['singlet','triplet'], [1,3], 5, method, mat=[0]) # creates 1 singlet exciton randomly at either material 0 or 1
 #########################################################################################
