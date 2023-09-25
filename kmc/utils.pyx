@@ -1,7 +1,8 @@
 import numpy as np
 cimport cython
-
 from libc.math cimport sqrt
+from libc.math cimport exp
+
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 cpdef distances(double[:] dx, double[:] dy, double[:] dz, int num):
@@ -66,7 +67,6 @@ cpdef jump(double[:] jump_rate, int num, double random_number):
             return soma,i
 
 
-from libc.math cimport exp
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, double[:] r):
@@ -82,8 +82,7 @@ cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, doubl
         taxas_view[i] = 0.0
     return taxas
 
-from libc.math cimport exp
-from libc.math cimport sqrt
+
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 cpdef marcus(double[:] coupling,double[:] energy,double reorg, double prefactor, int[:] mats,int num, double site_energy, double kbt, double decay, double[:] r):

@@ -197,7 +197,6 @@ class Marcus:
         self.decay = kwargs["decay"]
         self.prefactor = 1e-12 * 2 * np.pi / HBAR
         
-
     def rate(self, **kwargs):
         system = kwargs["system"]
         cut = kwargs["cut"]
