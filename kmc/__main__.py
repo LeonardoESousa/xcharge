@@ -312,7 +312,7 @@ def animate(num, system, ax, marker_option, do_rotate):
                 )
             if marker_option == 0:
                 ax.scatter(xs, ys, zs, color=s.color, s=100, alpha=1, label=s.species)
-    except IndexError:
+    except (IndexError,TypeError):
         pass
 
     if do_rotate:  # rotating the animation by an angle of IT
