@@ -6,6 +6,7 @@ import numpy as np
 import kmc.particles
 import kmc.utils
 import kmc.variables
+import random
 
 EPSILON_0 = kmc.variables.EPSILON_0  # Permitivity in C/Vm
 E = kmc.variables.E  # Electron charge
@@ -224,12 +225,141 @@ class Marcus:
     def action(self, particle, system, local):
         particle.move(local, system)
 
+#########################################################################################
+from nemo.tools import gauss
+from nemo.analysis import x_values
+from scipy.interpolate import interp1d
+
+def radius(x_d, y_d, x_a, y_a,kappa2):
+    
+    # Speed of light
+    c = 299792458  # m/s
+
+    # Finds the edges of interpolation
+    minA = min(x_a)
+    minD = min(x_d)
+    maxA = max(x_a)
+    maxD = max(x_d)
+    MIN = max(minA, minD)
+    MAX = min(maxA, maxD)
+
+    if MIN > MAX:
+        return 0
+    X = np.linspace(MIN, MAX, 1000)
+    f1 = interp1d(x_a, y_a, kind="cubic")
+    f2 = interp1d(x_d, y_d, kind="cubic")
+    
+    YA = f1(X)
+    YD = f2(X)
+    
+    # Calculates the overlap
+    Overlap = YA * YD / (X**4)
+
+    
+    # Integrates overlap
+    IntOver = np.trapz(Overlap, X)
+    #print(f'Overlap integral: {IntOver}')
+    
+
+    # Calculates radius sixth power
+    c *= 1e10
+    const = (HBAR**3) * (9 * (c**4) * kappa2) / (8 * np.pi)
+    radius6 = const * IntOver
+    #print(f'Forster radius sixth power: {radius6}')
+    return radius6
+
 
 #########################################################################################
+
+class DynamicForster:
+    def __init__(self, **kwargs):
+        self.kind = "jump"
+        self.excited = kwargs["excited"]
+        self.keys = list(self.excited.keys())
+        self.ground = kwargs["ground"]
+        self.kappa = kwargs["kappa"]
+    
+    def rate(self, **kwargs):
+        r = kwargs["r"]
+        system = kwargs["system"]
+        static = system.static
+        particle = kwargs["particle"]
+        if particle.conformer is None:
+            particle.conformer = random.choice(self.keys)
+        engs_s1, sigma_s1, diff_rate  = self.excited[particle.conformer]
+        engs_s1 += static[particle.position]
+        x_s1 = x_values(np.array([engs_s1]), np.array([sigma_s1]))
+        emission = diff_rate*gauss(x_s1, engs_s1, sigma_s1)
+        #mats = kwargs["mats"]
+        #mat = kwargs["matlocal"]
+        #num = len(mats)
+        cut = kwargs["cut"]
+        acceptors = system.s0[cut]
+        static = static[cut]
+        taxa = np.zeros(len(acceptors))
+        for j in range(len(acceptors)):
+            if r[j] == 0:
+                taxa[j] = 0
+            else:    
+                engs_s0, sigma_s0, cross_section = self.ground[acceptors[j]]
+                engs_s0 += static[j]
+                x_s0 = x_values(np.array([engs_s0]), np.array([sigma_s0]))
+                absorption = cross_section*gauss(x_s0, engs_s0, sigma_s0)
+                taxa[j] = radius(x_s0, absorption, x_s1, emission ,self.kappa)/r[j]**6  
+        return 1e-12*taxa
+
+    def action(self, particle, system, local):
+        particle.conformer = random.choice(self.keys)
+        particle.move(local, system)
 
 
 # MONOMOLECULAR RATES#####################################################################
 
+class DynamicFluor:
+    def __init__(self, **kwargs):
+        self.kind = "fluor"
+        self.excited = kwargs["excited"]
+    
+    def rate(self, **kwargs):
+        particle = kwargs["particle"]
+        _, _, diff_rate  = self.excited[particle.conformer]
+        return 1e-12*diff_rate/HBAR
+
+    def action(self, particle, system, local):
+        site_energy = system.static[local]
+        mean_energy = site_energy + self.excited[particle.conformer][0]
+        #sample from gaussian distribution with np.random.normal(mean, std)
+        particle_energy = np.random.normal(mean_energy, self.excited[particle.conformer][1])
+        particle.kill(self.kind, system, particle_energy, "dead")
+
+class NonAdiabatic:
+    def __init__(self, **kwargs):
+        self.kind = 'nonadiabatic'
+        self.frequency = kwargs['frequency']
+        self.conformers = kwargs['conformers']
+
+    def rate(self, **kwargs):
+        return self.frequency
+
+    def action(self, particle, system, local):
+        particle.conformer = random.choice(self.conformers)
+
+class NonAdiabaticGround:
+    def __init__(self, **kwargs):
+        self.kind = 'nonadiabatic'
+        self.frequency = kwargs['frequency']
+        self.conformers = kwargs['conformers']
+
+    def rate(self, **kwargs):
+        return self.frequency
+
+    def action(self, particle, system, local):
+        if len(system.particles) == 1:
+            particle.kill(self.kind, system, 0, "dead")
+        else:    
+            print(system.s0[local])
+            self.conformers.assign_to_system(system)
+            print(system.s0[local])
 
 ##FLUORESCENCE RATE######################################################################
 class Fluor:

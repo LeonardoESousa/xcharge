@@ -22,12 +22,11 @@ class Particles:
         self.Dz += Dz
         self.position = local
 
-    def make_text(self, system, energies, causamortis):
+    def make_text(self, system, energy, causamortis):
         X, Y, Z = system.X, system.Y, system.Z
         Mats = system.mats
         x, y, z = X[self.position], Y[self.position], Z[self.position]
         mat = Mats[self.position]
-        energy = energies[self.position]
         self.texto = f"TEMPO,{self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f},{self.species},{energy:.2f},{mat:.0f},{x:.0f},{y:.0f},{z:.0f},{causamortis},{self.status}"
 
     def stamp_time(self, system):
@@ -37,9 +36,9 @@ class Particles:
             self.report += texto + "\n"
             self.texto = ""
 
-    def kill(self, causamortis, system, energies, result):
+    def kill(self, causamortis, system, energy, result):
         self.status = result
-        self.make_text(system, energies, causamortis)
+        self.make_text(system, energy, causamortis)
         system.remove(self)
 
     def write(self):
@@ -52,6 +51,7 @@ class Singlet(Particles):
         self.charge = 0
         self.color = "orange"
         self.marker = "$S_1$"
+        self.conformer = None
 
 
 class Triplet(Particles):
@@ -76,3 +76,11 @@ class Hole(Particles):
         self.charge = 1
         self.color = "blue"
         self.marker = "$h^+$"
+
+class Ghost(Particles):
+    def __init__(self, initial):
+        Particles.__init__(self, "ghost", initial)
+        self.charge = 0
+        self.color = "black"
+        self.marker = "$G$"
+        

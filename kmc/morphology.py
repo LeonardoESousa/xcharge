@@ -1,7 +1,7 @@
 import sys
 import random
 import numpy as np
-from kmc.particles import Singlet, Triplet, Electron, Hole
+from kmc.particles import Singlet, Triplet, Electron, Hole, Ghost
 
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
@@ -68,6 +68,20 @@ class GaussianEnergy:
 
 #########################################################################################
 
+##CLASSES TO ASSIGN ENERGIES TO LATTICE##################################################
+class Conformers:
+    def __init__(self, conformers, level):
+        self.conformers = list(conformers.keys())
+        self.level = level
+
+    def assign_to_system(self, system):
+        N = len(system.mats)
+        # sample N numbers from the conformers
+        s1 = np.random.choice(self.conformers, N)
+        system.set_energies(s1, self.level)
+
+
+#########################################################################################
 
 class Lattice:
     """Arguments:

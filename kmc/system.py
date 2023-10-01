@@ -53,7 +53,7 @@ class System:
     def set_particles(self, Ss):
         try:
             self.particles += Ss
-        except AttributeError:
+        except (TypeError,AttributeError):
             self.particles = Ss
 
     def reset_particles(self):
