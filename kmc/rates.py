@@ -227,45 +227,24 @@ class Marcus:
 
 #########################################################################################
 from nemo.tools import gauss
-from nemo.analysis import x_values
-from scipy.interpolate import interp1d
 
-def radius(x_d, y_d, x_a, y_a,kappa2):
-    
-    # Speed of light
-    c = 299792458  # m/s
+# Speed of light
+C = 299792458 # m/s
+C *= 1e10 # Å/s 
+CONST = (HBAR**3) * (9 * (C**4)) / (8 * np.pi)
+CONST *= 1e-12
 
-    # Finds the edges of interpolation
-    minA = min(x_a)
-    minD = min(x_d)
-    maxA = max(x_a)
-    maxD = max(x_d)
-    MIN = max(minA, minD)
-    MAX = min(maxA, maxD)
-
-    if MIN > MAX:
-        return 0
-    X = np.linspace(MIN, MAX, 1000)
-    f1 = interp1d(x_a, y_a, kind="cubic")
-    f2 = interp1d(x_d, y_d, kind="cubic")
-    
-    YA = f1(X)
-    YD = f2(X)
-    
+def radius(X, YD, YA,kappa2):
     # Calculates the overlap
-    Overlap = YA * YD / (X**4)
+    X4 = X*X
+    X4 = X4*X4
+    Overlap = YA * YD / (X4)
 
-    
     # Integrates overlap
     IntOver = np.trapz(Overlap, X)
-    #print(f'Overlap integral: {IntOver}')
     
-
     # Calculates radius sixth power
-    c *= 1e10
-    const = (HBAR**3) * (9 * (c**4) * kappa2) / (8 * np.pi)
-    radius6 = const * IntOver
-    #print(f'Forster radius sixth power: {radius6}')
+    radius6 = kappa2 * CONST * IntOver
     return radius6
 
 
@@ -278,6 +257,7 @@ class DynamicForster:
         self.keys = list(self.excited.keys())
         self.ground = kwargs["ground"]
         self.kappa = kwargs["kappa"]
+        self.x = np.linspace(0.01, 10, 500)
     
     def rate(self, **kwargs):
         r = kwargs["r"]
@@ -288,25 +268,29 @@ class DynamicForster:
             particle.conformer = random.choice(self.keys)
         engs_s1, sigma_s1, diff_rate  = self.excited[particle.conformer]
         engs_s1 += static[particle.position]
-        x_s1 = x_values(np.array([engs_s1]), np.array([sigma_s1]))
-        emission = diff_rate*gauss(x_s1, engs_s1, sigma_s1)
-        #mats = kwargs["mats"]
-        #mat = kwargs["matlocal"]
-        #num = len(mats)
+        emission = diff_rate*gauss(self.x, engs_s1, sigma_s1)
         cut = kwargs["cut"]
         acceptors = system.s0[cut]
         static = static[cut]
         taxa = np.zeros(len(acceptors))
-        for j in range(len(acceptors)):
-            if r[j] == 0:
-                taxa[j] = 0
-            else:    
+        for j, dist in enumerate(r):
+            if dist != 0:
                 engs_s0, sigma_s0, cross_section = self.ground[acceptors[j]]
                 engs_s0 += static[j]
-                x_s0 = x_values(np.array([engs_s0]), np.array([sigma_s0]))
-                absorption = cross_section*gauss(x_s0, engs_s0, sigma_s0)
-                taxa[j] = radius(x_s0, absorption, x_s1, emission ,self.kappa)/r[j]**6  
-        return 1e-12*taxa
+                absorption = cross_section*gauss(self.x, engs_s0, sigma_s0)
+                dist6 = dist*dist*dist
+                dist6 = dist6*dist6
+                taxa[j] = radius(self.x, absorption, emission ,self.kappa)/dist6
+        
+        #for j in range(len(acceptors)):
+        #    if r[j] != 0:
+        #        engs_s0, sigma_s0, cross_section = self.ground[acceptors[j]]
+        #        engs_s0 += static[j]
+        #        absorption = cross_section*gauss(self.x, engs_s0, sigma_s0)
+        #        dist = r[j]*r[j]
+        #        dist = dist*dist*dist
+        #        taxa[j] = radius(self.x, absorption, emission ,self.kappa)/dist  
+        return taxa
 
     def action(self, particle, system, local):
         particle.conformer = random.choice(self.keys)
@@ -357,10 +341,8 @@ class NonAdiabaticGround:
         if len(system.particles) == 1:
             particle.kill(self.kind, system, 0, "dead")
         else:    
-            print(system.s0[local])
             self.conformers.assign_to_system(system)
-            print(system.s0[local])
-
+            
 ##FLUORESCENCE RATE######################################################################
 class Fluor:
     def __init__(self, **kwargs):
