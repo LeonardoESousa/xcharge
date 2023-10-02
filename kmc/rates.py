@@ -353,7 +353,7 @@ class Fluor:
         return 1 / self.lifetime[kwargs["material"]]
 
     def action(self, particle, system, local):
-        particle.kill(self.kind, system, system.s1, "dead")
+        particle.kill(self.kind, system, system.s1[local], "dead")
 
 
 #########################################################################################
@@ -369,7 +369,7 @@ class Phosph:
         return 1 / self.lifetime[kwargs["material"]]
 
     def action(self, particle, system, local):
-        particle.kill(self.kind, system, system.t1, "dead")
+        particle.kill(self.kind, system, system.t1[local], "dead")
 
 
 #########################################################################################
@@ -385,7 +385,7 @@ class Nonrad:
         return self.taxa[kwargs["material"]]
 
     def action(self, particle, system, local):
-        particle.kill(self.kind, system, system.s1, "dead")
+        particle.kill(self.kind, system, system.s1[local], "dead")
 
 
 #########################################################################################
@@ -405,10 +405,10 @@ class ISC:
     def action(self, particle, system, local):
         if particle.species == "singlet":
             system.set_particles([kmc.particles.Triplet(particle.position)])
-            particle.kill(self.kind, system, system.s1, "converted")
+            particle.kill(self.kind, system, system.s1[local], "converted")
         elif particle.species == "triplet":
             system.set_particles([kmc.particles.Singlet(particle.position)])
-            particle.kill("r" + self.kind, system, system.s1, "converted")
+            particle.kill("r" + self.kind, system, system.s1[local], "converted")
 
 
 #########################################################################################
