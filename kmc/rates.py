@@ -339,7 +339,7 @@ class NonAdiabaticGround:
 
     def action(self, particle, system, local):
         if len(system.particles) == 1:
-            particle.kill(self.kind, system, 0, "dead")
+            system.remove(particle)
         else:    
             self.conformers.assign_to_system(system)
             

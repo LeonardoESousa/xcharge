@@ -212,17 +212,17 @@ def step_noanimation(system):
         random.shuffle(Ss)
         R, dests = [], []
         for s in Ss:
-            if s in system.particles:
-                Rs = decision(s, system)
-                if s.destination not in dests:
-                    s.process.action(s, system, s.destination)
-                    bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
-                    R.append(Rs)
-                    dests.append(s.destination)
+            Rs = decision(s, system)    
+            R.append(Rs)
         R = np.array(R)
-        system.time += np.mean((1 / R) * np.log(1 / random.uniform(0, 1)))
-        for s in Ss:
-            s.stamp_time(system)
+        system.time += (1 / np.max(R)) * np.log(1 / random.uniform(0, 1))
+        R /= np.max(R)
+        die_cast = random.uniform(0,1)
+        for j, s in enumerate(Ss):
+            if die_cast <= R[j] and s in system.particles and s.destination not in dests:
+                s.process.action(s, system, s.destination)
+                dests.append(s.destination)
+                bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
     Ss = system.particles.copy()
     for s in Ss:
         s.kill("alive", system, system.s1, "alive")
@@ -236,17 +236,17 @@ def step_animation(system):
         random.shuffle(Ss)
         R, dests = [], []
         for s in Ss:
-            if s in system.particles:
-                Rs = decision(s, system)
-                if s.destination not in dests:
-                    s.process.action(s, system, s.destination)
-                    bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
-                    R.append(Rs)
-                    dests.append(s.destination)
+            Rs = decision(s, system)    
+            R.append(Rs)
         R = np.array(R)
-        system.time += np.mean((1 / R) * np.log(1 / random.uniform(0, 1)))
-        for s in Ss:
-            s.stamp_time(system)
+        system.time += (1 / np.max(R)) * np.log(1 / random.uniform(0, 1))
+        R /= np.max(R)
+        die_cast = random.uniform(0,1)
+        for j, s in enumerate(Ss):
+            if die_cast <= R[j] and s in system.particles and s.destination not in dests:
+                s.process.action(s, system, s.destination)
+                dests.append(s.destination)
+                bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
         return Ss
     Ss = system.particles.copy()
     for s in Ss:

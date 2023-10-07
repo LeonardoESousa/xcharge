@@ -8,7 +8,6 @@ class Particles:
         self.status = "alive"
         self.identity = random.uniform(0, 5)
         self.report = ""
-        self.texto = ""
         self.process = None
         self.destination = None
         self.Dx = 0
@@ -27,21 +26,9 @@ class Particles:
         Mats = system.mats
         x, y, z = X[self.position], Y[self.position], Z[self.position]
         mat = Mats[self.position]
-        print(f"{self.species} killed by {causamortis} at {system.time:.0f} ps")
-        print(f"Energy: {energy:.2f} eV")
-        print(f"Position: ({x:.0f},{y:.0f},{z:.0f})")
-        print(f"Material: {mat:.0f}")
-        print(f"Distance: ({self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f})")
-        print(f"Status: {self.status}")
-        self.texto = f"TEMPO,{self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f},{self.species},{energy:.2f},{mat:.0f},{x:.0f},{y:.0f},{z:.0f},{causamortis},{self.status}"
-
-    def stamp_time(self, system):
-        if self.texto != "":
-            texto = self.texto
-            texto = texto.replace("TEMPO", f"{system.time:.0f}")
-            self.report += texto + "\n"
-            self.texto = ""
-
+        self.report += f"{system.time:.0f},{self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f},{self.species},{energy:.2f},{mat:.0f},{x:.0f},{y:.0f},{z:.0f},{causamortis},{self.status}"
+        self.report += "\n"
+        
     def kill(self, causamortis, system, energy, result):
         self.status = result
         self.make_text(system, energy, causamortis)
