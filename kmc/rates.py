@@ -303,8 +303,12 @@ class DynamicFluor:
     def __init__(self, **kwargs):
         self.kind = "fluor"
         self.excited = kwargs["excited"]
+        self.keys = list(self.excited.keys())
     
     def rate(self, **kwargs):
+        particle = kwargs["particle"]
+        if particle.conformer is None:
+            particle.conformer = random.choice(self.keys)
         particle = kwargs["particle"]
         _, _, diff_rate  = self.excited[particle.conformer]
         return 1e-12*diff_rate/HBAR
