@@ -293,7 +293,6 @@ class DynamicForster:
         return taxa
 
     def action(self, particle, system, local):
-        particle.conformer = random.choice(self.keys)
         particle.move(local, system)
 
 
