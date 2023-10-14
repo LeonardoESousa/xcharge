@@ -28,7 +28,7 @@ bimolec            = False  # Turn on annihilation
 ###SINGLET EXCITONS######################################################################
 
 ##FORSTER RADII (Å)
-r00   = 20   #Forster radius material 0 --> material 0 (Angstrom)        
+r00   = 20   #Forster radius material 0 --> material 0 (Angstrom)
 radii = {(0,0):r00}
 
 ##FLUORESCENCE LIFETIMES (PS)
@@ -75,12 +75,12 @@ t1s   = {0:(3.7,0.0), 1:(3.7,0.0), 'level':'t1'} #(Peak emission energy (eV), di
 s1s   = {0:(6.1,0.0), 1:(6.1,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
 a1 = morphology.GaussianEnergy(s1s)
-a2 = morphology.GaussianEnergy(t1s) 
+a2 = morphology.GaussianEnergy(t1s)
 #########################################################################################
 
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.CreateParticles('singlet', int(sys.argv[4]), method, mat=[0])
+exciton   = morphology.CreateParticles(['singlet'],[1], int(sys.argv[4]), method, mat=[0])
 
 #########################################################################################

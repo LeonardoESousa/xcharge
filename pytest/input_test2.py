@@ -9,7 +9,7 @@ animation_mode     = False
 save_animation     = False # if you want to save the animation
 animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False # True = animation rotates, False = remains fixed
-marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
+marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols)
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 1000  # Number of rounds
 n_proc             = 10#5     # Number of cores to be used
@@ -40,13 +40,13 @@ t1s   = {0:(1.1,0.0), 1:(1.7,0.0), 'level':'t1'} #(Peak emission energy (eV), di
 s1s   = {0:(6.1,0.0), 1:(3.7,0.0), 'level':'s1'} # triplet energy, disperison (eV)
 
 a1 = morphology.GaussianEnergy(s1s)
-a2 = morphology.GaussianEnergy(t1s) 
+a2 = morphology.GaussianEnergy(t1s)
 #########################################################################################
 
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.CreateParticles('singlet', int(sys.argv[2]), method, mat=[0,1])
+exciton   = morphology.CreateParticles(['singlet'],[1], int(sys.argv[2]), method, mat=[0,1])
 
 #########################################################################################
 
@@ -54,10 +54,10 @@ exciton   = morphology.CreateParticles('singlet', int(sys.argv[2]), method, mat=
 ###SINGLET EXCITONS######################################################################
 
 ##FORSTER RADII (Å)
-r00   = 20   #Forster radius material 0 --> material 0 (Angstrom)    
-r01   = 20    #material 0 --> material 1      
-r10   = 10     
-r11   = 10    
+r00   = 20   #Forster radius material 0 --> material 0 (Angstrom)
+r01   = 20    #material 0 --> material 1
+r10   = 10
+r11   = 10
 radii = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
 ##FLUORESCENCE LIFETIMES (PS)
@@ -84,8 +84,4 @@ fluor     = Fluor(life=lifetimes)
 processes = {'singlet':[forster], 'triplet':[], 'electron':[],'hole':[]}
 monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 #########################################################################################
-
-
-
-   
 
