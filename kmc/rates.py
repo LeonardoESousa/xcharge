@@ -226,11 +226,13 @@ class Marcus:
         particle.move(local, system)
 
 #########################################################################################
-from nemo.tools import gauss
+def gauss(x_value, mean, std):
+    y_value = (1 / (np.sqrt(2 * np.pi) * std)) * np.exp(-0.5 * ((x_value - mean) / std) ** 2)
+    return y_value
 
 # Speed of light
 C = 299792458 # m/s
-C *= 1e10 # Å/s 
+C *= 1e10 # Å/s
 CONST = (HBAR**3) * (9 * (C**4)) / (8 * np.pi)
 CONST *= 1e-12
 
@@ -242,7 +244,7 @@ def radius(X, YD, YA,kappa2):
 
     # Integrates overlap
     IntOver = np.trapz(Overlap, X)
-    
+
     # Calculates radius sixth power
     radius6 = kappa2 * CONST * IntOver
     return radius6
@@ -258,7 +260,7 @@ class DynamicForster:
         self.ground = kwargs["ground"]
         self.kappa = kwargs["kappa"]
         self.x = np.linspace(0.01, 10, 500)
-    
+
     def rate(self, **kwargs):
         r = kwargs["r"]
         system = kwargs["system"]
@@ -281,15 +283,6 @@ class DynamicForster:
                 dist6 = dist*dist*dist
                 dist6 = dist6*dist6
                 taxa[j] = radius(self.x, absorption, emission ,self.kappa)/dist6
-        
-        #for j in range(len(acceptors)):
-        #    if r[j] != 0:
-        #        engs_s0, sigma_s0, cross_section = self.ground[acceptors[j]]
-        #        engs_s0 += static[j]
-        #        absorption = cross_section*gauss(self.x, engs_s0, sigma_s0)
-        #        dist = r[j]*r[j]
-        #        dist = dist*dist*dist
-        #        taxa[j] = radius(self.x, absorption, emission ,self.kappa)/dist  
         return taxa
 
     def action(self, particle, system, local):
@@ -303,7 +296,7 @@ class DynamicFluor:
         self.kind = "fluor"
         self.excited = kwargs["excited"]
         self.keys = list(self.excited.keys())
-    
+
     def rate(self, **kwargs):
         particle = kwargs["particle"]
         if particle.conformer is None:
