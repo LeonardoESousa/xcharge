@@ -6,7 +6,7 @@ import sys
 import warnings
 import os
 import copy
-import importlib
+import importlib.util
 import inspect
 import multiprocessing
 import tqdm
