@@ -345,7 +345,7 @@ class DynamicNonrad:
             particle.conformer = random.choice(self.keys)
         particle = kwargs["particle"]
         _, _, diff_rate  = self.excited[particle.conformer]
-        return diff_rate
+        return 1e-12*diff_rate
 
     def action(self, particle, system, local):
         site_energy = system.static[local]
@@ -368,7 +368,7 @@ class DynamicISC:
             particle.conformer = random.choice(self.keys)
         particle = kwargs["particle"]
         _, _, diff_rate  = self.excited[particle.conformer]
-        return diff_rate
+        return 1e-12*diff_rate
 
     def action(self, particle, system, local):
         site_energy = system.static[local]
