@@ -18,7 +18,9 @@ def ele_hol_recomb(Ss, system, superp):
 
 # singlet-singlet annihilation (ssa)
 def anni_sing(Ss, system, superp):
-    Ss[random.choices(superp)[0]].kill("ssa", system, system.s1, "dead")
+    s = Ss[random.choices(superp)[0]]
+    site_energy = system.static[s.destination]
+    s.kill("ssa", system, site_energy, "dead")
 
 
 bimolec_funcs_array = {

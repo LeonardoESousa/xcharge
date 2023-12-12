@@ -312,6 +312,37 @@ class DynamicFluor:
         particle_energy = np.random.normal(mean_energy, self.excited[particle.conformer][1])
         particle.kill(self.kind, system, particle_energy, "dead")
 
+##INTERSYSTEM CROSSING RATE##############################################################
+class DynamicISC:
+    def __init__(self, **kwargs):
+        self.kind = "isc"
+        self.map = {"singlet": "triplet", "triplet": "singlet"}
+        self.excited = kwargs["excited"]
+        self.keys = list(self.excited.keys())
+
+    def rate(self, **kwargs):
+        particle = kwargs["particle"]
+        if particle.conformer is None:
+            particle.conformer = random.choice(self.keys)
+        particle = kwargs["particle"]
+        _, _, diff_rate  = self.excited[particle.conformer]
+        return diff_rate
+
+    def action(self, particle, system, local):
+        site_energy = system.static[local]
+        mean_energy = site_energy + self.excited[particle.conformer][0]
+        #sample from gaussian distribution with np.random.normal(mean, std)
+        particle_energy = np.random.normal(mean_energy, self.excited[particle.conformer][1])
+        if particle.species == "singlet":
+            system.set_particles([kmc.particles.Triplet(particle.position)])
+            particle.kill(self.kind, system, particle_energy, "converted")
+        elif particle.species == "triplet":
+            system.set_particles([kmc.particles.Singlet(particle.position)])
+            particle.kill("r" + self.kind, system, particle_energy, "converted")
+
+
+#########################################################################################
+
 class NonAdiabatic:
     def __init__(self, **kwargs):
         self.kind = 'nonadiabatic'
@@ -336,9 +367,9 @@ class NonAdiabaticGround:
     def action(self, particle, system, local):
         if len(system.particles) == 1:
             system.remove(particle)
-        else:    
+        else:
             self.conformers.assign_to_system(system)
-            
+
 ##FLUORESCENCE RATE######################################################################
 class Fluor:
     def __init__(self, **kwargs):
