@@ -53,6 +53,7 @@ class Triplet(Particles):
         self.charge = 0
         self.color = "green"
         self.marker = "$T_1$"
+        self.conformer = None
 
 
 class Electron(Particles):
