@@ -463,4 +463,63 @@ class ISC:
             particle.kill('r'+self.kind,system,system.s1,'converted')
 #########################################################################################
 
+##DEFECTS MIGRATION RATE##############################################################
+class Migration:
+    def __init__(self,**kwargs):
+        self.kind = 'jump'
+        self.k = kwargs['k']
+        
 
+    def rate(self,**kwargs):
+        r      = kwargs['r']
+        system = kwargs['system']
+        ex     = kwargs['particle']
+        mats   = system.mats    
+        local  = ex.position    
+        mat = mats[local]
+        
+        taxa = raios(len(mats),self.k,mat,None,mats)
+        taxa[r == 0] = 0
+        return taxa
+
+
+    def action(self,particle,system,local):
+        particle.move(local,system)
+
+class DissociationFP:
+    def __init__(self,**kwargs):
+        self.kind = 'dissociation_fp'
+        self.k = kwargs['k']
+        
+    def rate(self,**kwargs):
+        system   = kwargs['system']
+        r        = kwargs['r']
+        particle = kwargs['particle']
+        local    = particle.position 
+        mats     = system.mats        
+        mat      = mats[local]
+        num      = len(mats)
+
+        
+        taxa        = raios(num,self.k,mat,self.inv,mats)
+        taxa[r == 0] = 0
+        return taxa
+                 
+    def action(self,particle,system,local):
+        I = Interstitial(particle.position)
+        V = Vacancy(local) 
+        system.set_particles([I,V])
+        particle.kill(self.kind,system,system.s1,'converted')
+#########################################################################################        
+
+class Annihilation:
+    def __init__(self,**kwargs):
+        self.kind = 'annihilation'
+        self.k = kwargs['k']
+
+    def rate(self,**kwargs):
+        return self.k[kwargs['material']]
+     
+    def action(self,particle,system,local):
+        particle.kill(self.kind,system,system.s1,'dead') 
+#########################################################################################

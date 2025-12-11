@@ -19,7 +19,13 @@ def ele_hol_recomb(Ss,system,superp):
 #singlet-singlet annihilation (ssa)   
 def anni_sing(Ss,system,superp):
     Ss[random.choices(superp)[0]].kill('ssa',system,system.s1,'dead')
-    
 
-bimolec_funcs_array = {('singlet','singlet'):anni_sing, ('electron','hole'):ele_hol_recomb}   
+
+def formation(Ss,system,superp):
+    system.set_particles([FrenkelPair(Ss[0].position)])
+
+    for i in superp:
+        Ss[i].kill('recomb',system,system.lumo,'converted')
+
+bimolec_funcs_array = {('singlet','singlet'):anni_sing, ('electron','hole'):ele_hol_recomb, ('interstitial','vacancy'):formation, ('vacancy','interstitial'):formation}   
 ############################################           

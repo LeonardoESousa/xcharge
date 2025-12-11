@@ -73,3 +73,24 @@ class Hole(Particles):
         self.charge = 1
         self.color  = "blue"
         self.marker = "$h^+$"
+
+class Vacancy(Particles):
+    def __init__(self,initial):
+        Particles.__init__(self,'vacancy',initial) 
+        self.charge = 0
+        self.color  = "black"
+        self.marker = "$V$"
+
+class Interstitial(Particles):
+    def __init__(self,initial):
+        Particles.__init__(self,'interstitial',initial) 
+        self.charge = 0
+        self.color  = "purple"
+        self.marker = "$I$"        
+
+class FrenkelPair(Particles):
+    def __init__(self,initial):
+        Particles.__init__(self,'frenkelpair',initial) 
+        self.charge = 0
+        self.color  = "brown"
+        self.marker = "$FP$"
