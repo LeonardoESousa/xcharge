@@ -92,7 +92,7 @@ class Interstitial(Particles):
         self.color  = "purple"
         self.marker = "$I$"        
 
-class FrenkelPair(Particles):
+class Frenkelpair(Particles):
     def __init__(self,initial):
         Particles.__init__(self,'frenkelpair',initial) 
         self.charge = 0

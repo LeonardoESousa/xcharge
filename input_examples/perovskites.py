@@ -10,15 +10,16 @@ from kmc.rates import *
 from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
-identifier         = 'forster_singlet' #output identifier
+identifier         = 'perovskites' #output identifier
+cutoff             = 10   # in Angstroms
 time_limit         = np.inf # in ps
 animation_mode     = True  # if you want to see the animation
 save_animation     = False  # if you want to save the animation
 animation_exten    = 'gif'  # possible options ('gif' and 'mp4')
 rotate             = False  # True = animation rotates, False = remains fixed
 marker_type        = 1      # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 5000   # Number of rounds
+pause              = True  # if you want that the annimation stops in the first frame (debug purposes)
+rounds             = 1   # Number of rounds
 n_proc             = 1      # Number of cores to be used
 frozen_lattice     = True   # if you want for the lattice to remain the same for all rounds
 periodic           = False  # if you want periodic boundary conditions
@@ -27,33 +28,24 @@ bimolec            = False  # Turn on annihilation
 
 ###SINGLET EXCITONS######################################################################
 
-##FORSTER RADII (Å)
-r00   = 25  #Forster radius material 0 --> material 0 (Angstrom)    
-r01   = 0   #material 0 --> material 1      
-r10   = 0       
-r11   = 25     
-radii = {(0,0):r00, (0,1):r01, (1,0):r10, (1,1):r11}
 
-##FLUORESCENCE LIFETIMES (PS)
-f0 = 2900 #lifetime of material 0
-f1 = 290  #lifetime of material 1
-lifetimes = {0:f0,1:f1}
+k_diss = {(0,0):0, (0,1):1e-5, (1,0):0, (1,1):0} # dissociation rates for each material combination
+dissociation = DissociationFP(k=k_diss)
 
-##TANSITION DIPOLE MOMENTS (a.u.)
-mu0 = 2.136
-mu1 = 5.543
-mus = {0:mu0,1:mu1}
+k_migration = {(0,0):1e-5, (0,1):0, (1,0):0, (1,1):1e-5} # migration rates for each material combination
+migration = Migration(k=k_migration)
 
-##EXCITION TRANSFER RATES
-forster   = Forster(Rf=radii,life=lifetimes,mu=mus)
+k_annihilation = {0:1e-8, 1:0} # annihilation rates for each material combination
+annihilation = Annihilation(k=k_annihilation)
 
-##FLUORESCENCE RATES
-fluor     = Fluor(life=lifetimes)
+
+k_formation = 1e-2 # formation rates for each material combination
+formation = Formation(k=k_formation)
 
 ###PROCESSES#############################################################################
 
-processes = {'singlet':[forster], 'triplet':[], 'electron':[],'hole':[]}
-monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
+processes = {'vacancy':[migration, formation], 'interstitial':[migration], 'frenkelpair':[dissociation]}
+monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair':[annihilation]}
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
@@ -84,5 +76,5 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('singlet', 1, method, mat=[0,1]) # creates 1 singlet exciton randomly at either material 0 or 1
+exciton   = morphology.Create_Particles('frenkelpair', 1, method, mat=[0]) # creates 1 singlet exciton randomly at either material 0 or 1
 #########################################################################################

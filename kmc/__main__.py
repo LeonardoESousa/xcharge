@@ -20,22 +20,14 @@ except ImportError: # for Python<3.8
 import multiprocessing 
 import tqdm
 # Setting up the interface
-#clean way, but I dont trust it
-commit_msg = metadata.metadata('kmc')['Summary'].split('-')[-1]
-
-#hardcore way. Ugly but wont fail
-with open(os.path.dirname(__file__)+'/commit.txt','r') as f:
-	for line in f:
-		commit_msg = line
 		
 print('####################################################################')
 print('Xcharge: A Kinetic Monte Carlo Model for Exciton and Charge Dynamics')
-print('Repo link: '+metadata.metadata('kmc')['Home-page'])
-print('Authors  : '+ metadata.metadata('kmc')['Author'])
+#print('Repo link: '+metadata.metadata('kmc')['Home-page'])
+#print('Authors  : '+ metadata.metadata('kmc')['Author'])
 print('Version  : '+  metadata.metadata('kmc')['VERSION'])
-print('Commit   : '+commit_msg.split('.py')[0]) 
 print()
-output_header='# Version  : '+  metadata.metadata('kmc')['VERSION']+'\n# Commit   : '+commit_msg.split('.py')[0]+'\n'
+output_header='# Version  : '+  metadata.metadata('kmc')['VERSION']+'\n'
 ### end interface
 
 

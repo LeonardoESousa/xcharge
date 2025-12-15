@@ -356,23 +356,37 @@ class ISC:
             particle.kill('r'+self.kind,system,system.s1,'converted')
 #########################################################################################
 
+
+def filter(num,ks, mat, mats, materials_list):
+  # Initialize the Raios array with the value of Rf[(mat,mat)]
+  taxas = np.empty(num)
+  taxas.fill(ks[(mat,mat)])
+
+  # Use NumPy's where function to set the values of Raios for the other materials
+  for m in materials_list:
+    if m != mat:
+      taxas = np.where(mats == m, ks[(mat,m)], taxas)
+
+  return taxas
+
+
 ##DEFECTS MIGRATION RATE##############################################################
 class Migration:
     def __init__(self,**kwargs):
         self.kind = 'jump'
         self.k = kwargs['k']
-        
+        self.materials_list = list(set([key[0] for key in self.k.keys()]))
 
     def rate(self,**kwargs):
         r      = kwargs['r']
         system = kwargs['system']
-        ex     = kwargs['particle']
-        mats   = system.mats    
-        local  = ex.position    
+        particle = kwargs['particle']
+        mats   = kwargs['mats']    
+        local = np.argwhere(r == 0)[0][0]
         mat = mats[local]
         
-        taxa = raios(len(mats),self.k,mat,None,mats)
-        taxa[r == 0] = 0
+        taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
+        taxa[local] = 0
         return taxa
 
 
@@ -383,19 +397,20 @@ class DissociationFP:
     def __init__(self,**kwargs):
         self.kind = 'dissociation_fp'
         self.k = kwargs['k']
+        self.materials_list = list(set([key[0] for key in self.k.keys()]))
         
     def rate(self,**kwargs):
         system   = kwargs['system']
         r        = kwargs['r']
         particle = kwargs['particle']
-        local    = particle.position 
-        mats     = system.mats        
+        local = np.argwhere(r == 0)[0][0]
+        mats     = kwargs['mats']        
         mat      = mats[local]
         num      = len(mats)
 
         
-        taxa        = raios(num,self.k,mat,self.inv,mats)
-        taxa[r == 0] = 0
+        taxa        = filter(num,self.k,mat,mats,self.materials_list)
+        taxa[local] = 0
         return taxa
                  
     def action(self,particle,system,local):
@@ -416,3 +431,46 @@ class Annihilation:
     def action(self,particle,system,local):
         particle.kill(self.kind,system,system.s1,'dead') 
 #########################################################################################
+
+class Formation:
+    def __init__(self, **kwargs):
+        self.kind = 'formation'
+        self.k = kwargs['k']
+
+    def rate(self, **kwargs):
+        system   = kwargs['system']
+        r        = kwargs['r']
+        mats     = kwargs['mats'] 
+        local = np.argwhere(r == 0)[0][0]  
+        mat      = mats[local]   # sliced neighbors
+        cut      = kwargs.get('cut')   # full-lattice indices of those neighbors
+        
+        if cut is None:
+            # Fallback: assume contiguous slice from 0
+            cut = np.arange(len(r))
+
+        # Set of full-lattice positions occupied by Interstitials
+        interstitial_sites = {p.position for p in system.particles if isinstance(p, Interstitial)}
+
+        # Boolean occupancy mask aligned with r/mats via cut
+        occupied = np.fromiter((site in interstitial_sites for site in cut),
+                               dtype=bool, count=len(r))
+
+        # Rate: k when destination has an insterstitial, else 0
+        taxa = np.where(occupied, self.k, 0.0)
+
+        # Never hop to self
+        taxa[r == 0] = 0
+        return taxa
+
+    def action(self, particle, system, local):
+        FP = Frenkelpair(local)
+        print('FP in', system.mats[local])
+        system.set_particles([FP])
+        particle.kill(self.kind, system, system.s1, 'converted')
+        for p in system.particles:
+            if isinstance(p, Interstitial) and p.position == local:
+                p.kill('interstitial', system, system.s1, 'converted')
+                break
+
+

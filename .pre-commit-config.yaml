@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: cythonize-kmc-utils
+        name: cythonize kmc/utils.pyx -> kmc/utils.c
+        entry: bash -c 'cython -3 kmc/utils.pyx -o kmc/utils.c && git add kmc/utils.c'
+        language: system
+        files: ^kmc/utils\.pyx$
+

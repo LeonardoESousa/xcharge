@@ -8,3 +8,5 @@ KMC.egg-info
 build
 mykmc
 *.ipynb
+envkmc
+*pyd

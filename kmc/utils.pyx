@@ -53,17 +53,22 @@ cpdef forster_anni(double[:] Rf,int[:] mats,int num, double alpha_mu, double[:] 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 cpdef jump(double[:] jump_rate, int num, double random_number):
-    cdef double soma
-    cdef double [:] cumsum = np.empty(num)
-    cdef double [:] jump_rate_view = jump_rate
+    cdef double soma = 0.0
+    if num == 0:
+        return 0.0, -1
+    cdef double[:] cumsum = np.empty(num)
+    cdef double[:] jump_rate_view = jump_rate
     cdef int i
     for i in range(num):
         soma += jump_rate_view[i]
         cumsum[i] = soma
-    random_number = random_number*soma
+    if soma <= 0:
+        return 0.0, -1
+    random_number = random_number * soma
     for i in range(num):
         if random_number <= cumsum[i]:
-            return soma,i
+            return soma, i
+
 
 
 from libc.math cimport exp

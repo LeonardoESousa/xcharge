@@ -1,3 +1,2 @@
 include README.md LICENSE
-include kmc/Dashboard_KMC.ipynb
-include kmc/commit.txt
+include kmc/utils.c

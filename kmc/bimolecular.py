@@ -22,7 +22,7 @@ def anni_sing(Ss,system,superp):
 
 
 def formation(Ss,system,superp):
-    system.set_particles([FrenkelPair(Ss[0].position)])
+    system.set_particles([Frenkelpair(Ss[0].position)])
 
     for i in superp:
         Ss[i].kill('recomb',system,system.lumo,'converted')
