@@ -2,6 +2,7 @@
 import numpy as np
 import random
 from kmc.particles import *
+import kmc.utils
 
 epsilon_vaccum = 8.854187e-12    #Permitivity in C/Vm
 e              = -1.60217662e-19 #Electron charge    
@@ -13,13 +14,19 @@ hbar           = 6.582e-16       #Reduced Planck's constant
 ###RATES#################################################################################    
 
 ##FUNCTION FOR SETTING RADII#############################################################
-def raios(num,Rf,mat,lifetime,mats):
-    Raios = np.empty(num)
-    Raios.fill(Rf[(mat,mat)])
-    materiais = [i for i in lifetime.keys() if i != mat]
-    for m in materiais:
-        Raios[mats == m] =  Rf[(mat,m)]
-    return Raios
+
+def raios(num,Rf, mat, lifetime, mats):
+  # Initialize the Raios array with the value of Rf[(mat,mat)]
+  Raios = np.empty(num)
+  Raios.fill(Rf[(mat,mat)])
+
+  # Use NumPy's where function to set the values of Raios for the other materials
+  for m in lifetime.keys():
+    if m != mat:
+      Raios = np.where(mats == m, Rf[(mat,m)], Raios)
+
+  return Raios
+
 
 def raios_dist(num,Rf,mat,lifetime,mats):
     Raios = np.array(random.choices(Rf[(mat,mat)][:,0],Rf[(mat,mat)][:,1],k=num))
@@ -30,13 +37,22 @@ def raios_dist(num,Rf,mat,lifetime,mats):
     return Raios
 
 
+#function to convert dictionary with (i,j) keys to ixj array
+def dict_to_array(d):
+    keys = d.keys()
+    num_keys = len(set(key[0] for key in keys))
+    radius = np.empty((num_keys,num_keys))
+    for key in keys:
+        radius[key[0],key[1]] = d[key]
+    return radius
+
 #########################################################################################
 
 ##STANDARD FORSTER TRANSFER RATE#########################################################
 class Forster:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.Rf = kwargs['Rf']
+        self.Rf = dict_to_array(kwargs['Rf'])
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
         self.alpha = 1.15*0.53
@@ -46,15 +62,11 @@ class Forster:
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.mats    
-        local  = ex.position    
-        mat = mats[local]
-        
-        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
-        
-        x = (Rf/(self.alpha*self.mu[mat] + r))
-        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
-        taxa[r == 0] = 0
+        mats   = kwargs['mats']
+        local  = ex.position  
+        mat    = kwargs['matlocal']
+        num = len(mats)
+        taxa = kmc.utils.forster(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat])
         return taxa
 
 
@@ -66,7 +78,7 @@ class Forster:
 class ForsterT:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.Rf = kwargs['Rf']
+        self.Rf = dict_to_array(kwargs['Rf'])
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
         self.alpha = 1.15*0.53
@@ -75,14 +87,11 @@ class ForsterT:
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.mats 
-        local  = ex.position 
-        mat = mats[local]
-        
-        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
-        x = (Rf/(self.alpha*self.mu[mat] + r))
-        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
-        taxa[r == 0] = 0
+        mats   = kwargs['mats']
+        local  = ex.position  
+        mat    = kwargs['matlocal']
+        num = len(mats)
+        taxa = kmc.utils.forster(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat])
         return taxa
 
     def action(self,particle,system,local):
@@ -90,157 +99,44 @@ class ForsterT:
         particle.kill('tts',system,system.t1,'converted')
         system.set_particles([Singlet(local)])
 #########################################################################################
+
 ##FORSTER ANNIHILATION RADIUS#########################################################
-class Annihilation_Radius:
-    def __init__(self,dic):
-        self.dic   = dic
-    def assign_to_system(self,system):
-        system.append_annihi_radius(self.dic)
 class Forster_Annirad:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.Rf = kwargs['Rf']
+        self.Rf = dict_to_array(kwargs['Rf'])
         self.lifetime = kwargs['life']
         self.mu = kwargs['mu']
         self.alpha = 1.15*0.53
-
+        self.anni_rad = kwargs['anni_rad']
 
     def rate(self,**kwargs):
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.mats    
-        local  = ex.position    
-        mat = mats[local]
-        
-        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
-        
-        #solution #1 (brute force but elegant)
-        '''  
-        for p in system.particles: # sweeping over the other particles and changing the Forster radius when applicable
-            try:
-                annihi_dics      = system.annihi_radius
-                annihi_dic       = annihi_dics['singlet',p.species]
-                Rf[p.position]   = annihi_dic[(mat,mats[p.position])]
-            except:
-                pass
-        '''    
-        
-        #solution #2 (smart search but ugly)
-        #'''
-        ss = [[p.position,mats[p.position]] for p in system.particles if p.species == 'singlet']
-        try:         
-            for ele in ss:
-                Rf[ele[0]] = system.annihi_radius['singlet','singlet'][(mat,ele[1])] 
-        except:
-            pass
-        #'''
-        
-        #solution #3 : make a new forster class that englobes default and anni rates.
-        # putting here the idea so I will not forget:
-        
-        #class Forster:
-        #   def __init__(self,**kwargs):
-        #   ...
-        #   self.annihi = kwargs['SS']
-        #   
-        #   
-        #   try:
-        #       self.annihi
-	#       rate == rate_anni
-	#   except:
-	#       rate == rate_default
-	#
-	
-	
-        #k = len([ x for x in Rf if x == 0]) #debug tool
-        #print(k,Rf)        
-        
-        
-        x = (Rf/(self.alpha*self.mu[mat] + r))
-        taxa = (1/self.lifetime[mat])*x*x*x*x*x*x
-        taxa[r == 0] = 0
-        return taxa
-
-
-    def action(self,particle,system,local):
-        particle.move(local,system)
-#########################################################################################
-##FORSTER TRANSFER WITH ORIENTATION FACTORS ON THE FLY###################################
-class ForsterKappa:
-    def __init__(self,**kwargs):
-        self.kind = 'jump'
-        self.Rf = kwargs['Rf']
-        self.lifetime = kwargs['life']
-        self.mu = kwargs['mu']
-        self.alpha = 1.15*0.53
-
-    def rate(self,**kwargs):
-        r      = kwargs['r']
-        system = kwargs['system']
-        ex     = kwargs['particle']
-        mats   = system.mats    
-        local  = ex.position    
-        mat = mats[local]
-        mus = np.copy(system.mu)
-
-        R = np.copy(system.R) 
-        dR = R - R[local,:]
-        modulo = np.sqrt(np.sum(dR*dR,axis=1))[:,np.newaxis]
-        dR /= modulo
-
-        kappa = np.inner(mus[local,:],mus) -  3*(np.inner(mus[local,:],dR)*(np.sum(mus*dR,axis=1)))  
-        Rf = raios(len(mats),self.Rf,mat,self.lifetime,mats)
-        
-        x = (Rf/(self.alpha*system.norma_mu[local] + r))
-        taxa = (1/self.lifetime[mat])*(kappa*kappa)*x*x*x*x*x*x
-        taxa[r == 0] = 0
-        return taxa
-
-    def action(self,particle,system,local):
-        particle.move(local,system)
-#########################################################################################
-
-##STANDARD FORSTER TRANSFER RATE#########################################################
-class ForsterRedShift:
-    def __init__(self,**kwargs):
-        self.kind = 'jump'
-        self.Rf = kwargs['Rf']
-        self.lifetime = kwargs['life']
-        self.mu = kwargs['mu']
-        self.T  = kwargs['T']
-        self.alpha = 1.15*0.53
-
-
-    def rate(self,**kwargs):
-        r      = kwargs['r']
-        system = kwargs['system']
-        ex     = kwargs['particle']
-        mats   = system.mats    
-        local  = ex.position    
-        mat = mats[local]
+        mats   = kwargs['mats']
+        cut    = kwargs['cut']
+        local  = ex.position  
+        mat    = kwargs['matlocal']
         num = len(mats)
-        
-        Rfs = raios_dist(num,self.Rf,mat,self.lifetime,mats)
-        
-        s1s   = np.copy(system.s1)
-        s1s   = (s1s - s1s[local]) + abs(s1s - s1s[local]) 
-        boltz = np.exp(-1*s1s/(2*kb*self.T)) 
-        x = Rfs/(self.alpha*self.mu[mat] + r)
-        taxa  = (1/self.lifetime[mat])*x*x*x*x*x*x*boltz
-        taxa[r == 0] = 0
+        relevant_particles = [p for p in system.particles if p.identity != ex.identity and p.position in cut]
+        ss = [(np.where(cut == p.position)[0][0],self.anni_rad[(mat,system.mats[p.position])][p.species]) for p in relevant_particles]
+        replace_pos   = np.array([ele[0] for ele in ss],dtype=np.int32)
+        replace_raios = np.array([ele[1] for ele in ss],dtype=np.double)
+        mum = len(replace_pos)
+        taxa = kmc.utils.forster_anni(self.Rf[mat,:],mats,num,self.alpha*self.mu[mat], r,1/self.lifetime[mat], replace_pos, replace_raios, mum)
         return taxa
 
 
     def action(self,particle,system,local):
-        particle.move(local,system)
+        particle.move(local,system)       
 #########################################################################################
 
 ##STANDARD DEXTER TRANSFER RATE##########################################################
 class Dexter:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.Rd = kwargs['Rd']
+        self.Rd = dict_to_array(kwargs['Rd'])
         self.lifetime = kwargs['life']
         self.L = kwargs['L']
        
@@ -248,14 +144,11 @@ class Dexter:
         r      = kwargs['r']
         system = kwargs['system']
         ex     = kwargs['particle']
-        mats   = system.mats  
+        mats   = kwargs['mats']
         local  = ex.position  
-        mat = mats[local]
-        
-        Rd = raios(len(mats),self.Rd,mat,self.lifetime,mats)
-        
-        taxa = (1/self.lifetime[mat])*np.exp((2*Rd/self.L[mat])*(1-r/Rd))
-        taxa[r == 0] = 0
+        mat    = kwargs['matlocal']
+        num = len(mats)
+        taxa = kmc.utils.dexter(self.Rd[mat,:],1/self.L[mat],1/self.lifetime[mat], mats,num, r)
         return taxa
 
     def action(self,particle,system,local):
@@ -274,9 +167,8 @@ class Dissociation_electron:
         system   = kwargs['system']
         r        = kwargs['r']
         particle = kwargs['particle']
-        local    = particle.position 
-        mats     = system.mats        
-        mat      = mats[local]
+        mats   = kwargs['mats']
+        mat    = kwargs['matlocal']
         num      = len(mats)
 
         lumos = np.copy(system.lumo)
@@ -290,7 +182,7 @@ class Dissociation_electron:
         in_loc_rad = self.inv[mat]
         
         DEe = lumos - (homos[local] + s1s[local])
-        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-(DEe+abs(DEe))/(2*kb*self.T))
+        taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -(DEe+abs(DEe))/(2*kb*self.T))
         taxae[r == 0] = 0
         return taxae
             
@@ -316,10 +208,10 @@ class Dissociation_hole:
         r        = kwargs['r']
         particle = kwargs['particle']
         local    = particle.position 
-        mats     = system.mats        
-        mat      = mats[local]
+        mats   = kwargs['mats']
+        mat    = kwargs['matlocal']
         num      = len(mats)
-
+        
         lumos = np.copy(system.lumo)
         homos = np.copy(system.homo)
         if particle.species   == 'singlet':
@@ -331,7 +223,7 @@ class Dissociation_hole:
         in_loc_rad = self.inv[mat]
         
         DEh = (lumos[local] - s1s[local]) - homos  
-        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r)*np.exp(-(DEh+abs(DEh))/(2*kb*self.T))
+        taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -(DEh+abs(DEh))/(2*kb*self.T))
         taxah[r == 0] = 0
         return taxah
                  
@@ -383,15 +275,16 @@ class MillerAbrahams:
         dy        = kwargs['dy']
         dz        = kwargs['dz']
         particle  = kwargs['particle']
-        mats      = system.mats        
-        mat       = mats[particle.position]
+        mats   = kwargs['mats']
+        mat    = kwargs['matlocal']
+        num      = len(mats)        
         
         AtH        = raios(len(r),self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
 
-        DE = corrected_energies(system,particle,r,dx,dy,dz) 
-        taxa = (1e-12)*(AtH)*np.exp(
-                               -(in_loc_rad*r+in_loc_rad*r))*np.exp(-DE/((kb*self.T+kb*self.T)))                           	               
+        DE = corrected_energies(system,particle,r,dx,dy,dz)                            	               
+        taxa = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -DE/(2*kb*self.T)) 
+        
         taxa[r == 0] = 0
         return taxa
  

@@ -1,27 +1,46 @@
 import numpy as np
 import random
-from kmc.rates import *
-from kmc.particles import *
 from kmc.system import System
-from kmc.bimolecular import *
+import kmc.bimolecular
 import sys
 import warnings
+warnings.filterwarnings("ignore") 
 import os
 import copy
 import matplotlib.pyplot as plt
 from matplotlib import animation
-import shutil
-from mpl_toolkits.mplot3d import Axes3D
-import importlib
-warnings.filterwarnings("ignore")   
-from tqdm.contrib.concurrent import thread_map, process_map
-import subprocess
+import importlib  
 import inspect
-#from joblib import Parallel, delayed
+import kmc.variables
+import kmc.utils
+try:
+    from importlib import metadata
+except ImportError: # for Python<3.8
+    import importlib_metadata as metadata
+import multiprocessing 
+import tqdm
+# Setting up the interface
+#clean way, but I dont trust it
+commit_msg = metadata.metadata('kmc')['Summary'].split('-')[-1]
+
+#hardcore way. Ugly but wont fail
+with open(os.path.dirname(__file__)+'/commit.txt','r') as f:
+	for line in f:
+		commit_msg = line
+		
+print('####################################################################')
+print('Xcharge: A Kinetic Monte Carlo Model for Exciton and Charge Dynamics')
+print('Repo link: '+metadata.metadata('kmc')['Home-page'])
+print('Authors  : '+ metadata.metadata('kmc')['Author'])
+print('Version  : '+  metadata.metadata('kmc')['VERSION'])
+print('Commit   : '+commit_msg.split('.py')[0]) 
+print()
+output_header='# Version  : '+  metadata.metadata('kmc')['VERSION']+'\n# Commit   : '+commit_msg.split('.py')[0]+'\n'
+### end interface
+
 
 #importing param module
-working_dir = os.getcwd()+'/'
-spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], working_dir+sys.argv[1])
+spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], os.path.join(os.getcwd(),sys.argv[1]))
 param = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(param)
 
@@ -32,52 +51,29 @@ for name, value in vars(param).items():
         #print(name,hasattr(value, 'make'))
 
 #getting all essential info from user's input
-n_proc              = param.n_proc
-rounds              = param.rounds
 monomolecular       = param.monomolecular
 processes           = param.processes
 
-# Dealing with user-default options
-try:
-    identifier     = param.identifier   
-except:
-    identifier = spec.name
-try:
-    animation_mode = param.animation_mode
-except:
-    animation_mode = False
-try:
-    save_animation = param.save_animation
-except:
-    save_animation = False
-try:
-    animation_exten = param.animation_exten
-except:
-    animation_exten = "gif"
-try:
-    time_limit = param.time_limit
-except:
-    time_limit = np.inf
-try:
-    pause = param.pause
-except:
-    pause = False
-try:
-    marker_type = param.marker_type
-except:
-    marker_type = 1
-try:
-    rotate = param.rotate
-except:
-    rotate = False
-try:
-    frozen_lattice  = param.frozen
-except:
-    frozen_lattice = False
-try:
-    bimolec  = param.bimolec
-except:
-    bimolec  = False       
+def set_variables(name):
+    try:
+        return getattr(param, name)
+    except:
+        return getattr(kmc.variables, name)
+
+identifier     = set_variables('identifier')     
+animation_mode = set_variables('animation_mode') 
+save_animation = set_variables('save_animation') 
+animation_exten= set_variables('animation_exten')
+time_limit     = set_variables('time_limit')     
+pause          = set_variables('pause')          
+marker_type    = set_variables('marker_type')    
+rotate         = set_variables('rotate')         
+frozen_lattice = set_variables('frozen_lattice') 
+bimolec        = set_variables('bimolec')  
+periodic       = set_variables('periodic')          
+n_proc         = set_variables('n_proc')
+rounds         = set_variables('rounds')
+cutoff         = set_variables('cutoff')
 #####
 
 
@@ -94,32 +90,39 @@ else:
     bi_func = passar
 
 
-def regular_distance(system,local):
-    dx = system.X - system.X[local]   
-    dy = system.Y - system.Y[local]  
-    dz = system.Z - system.Z[local]
-    return dx, dy, dz
-
-def periodic_distance(system,local):
-    dx = system.X - system.X[local]   
-    dy = system.Y - system.Y[local]  
-    dz = system.Z - system.Z[local]
-    maskx = 2*abs(dx) > system.Lx
-    masky = 2*abs(dy) > system.Ly
-    maskz = 2*abs(dz) > system.Lz
-    dx[maskx] = -1*(system.Lx - abs(dx))[maskx]
-    dy[masky] = -1*(system.Ly - abs(dy))[masky]
-    dz[maskz] = -1*(system.Lz - abs(dz))[maskz]
-    return dx, dy, dz
-
-try:
-    if param.periodic:
-        distance = periodic_distance
+def regular_distance(system,local,destination=None):
+    if destination is not None:
+        dx = system.X[destination] - system.X[local]   
+        dy = system.Y[destination] - system.Y[local]  
+        dz = system.Z[destination] - system.Z[local]
     else:
-        distance =  regular_distance    
-except:
-    distance =  regular_distance 
+        #dx,dy,dz = kmc.utils.distance(system.X,system.Y,system.Z,len(system.X),local)
+        dx = system.X - system.X[local]   
+        dy = system.Y - system.Y[local]  
+        dz = system.Z - system.Z[local]
+    return dx, dy, dz
 
+def periodic_distance(system,local,destination=None):
+    if destination is None:
+        dx = system.X - system.X[local]   
+        dy = system.Y - system.Y[local]  
+        dz = system.Z - system.Z[local]
+    else:
+        dx = system.X[destination] - system.X[local]   
+        dy = system.Y[destination] - system.Y[local]  
+        dz = system.Z[destination] - system.Z[local]
+    if system.Lx > 0:
+        dx -= system.Lx*np.round(dx/system.Lx)   
+    if system.Ly > 0:
+        dy -= system.Ly*np.round(dy/system.Ly)  
+    if system.Lz > 0:
+        dz -= system.Lz*np.round(dz/system.Lz)
+    return dx,dy,dz
+
+if periodic:
+    distance = periodic_distance
+else:
+    distance =  regular_distance    
             
 def make_system():
     #Create instance of system
@@ -130,7 +133,6 @@ def make_system():
     system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance) 
  
     return system 
-syst = make_system() #global system-type object to be used in frozen simulations, must be kept here!
     
 # runs the annihilations defined in anni_funcs_array                 
 def anni_general(system,anni_dict,local):
@@ -148,65 +150,77 @@ def decision(s,system):
     kind = s.species      
     local= s.position        
     dx, dy, dz = distance(system,local)
-    r = np.sqrt(dx*dx + dy*dy + dz*dz)
+    r = kmc.utils.distances(dx,dy,dz,len(dx))
+    cut = np.where(r < cutoff)[0]
+    r = r[cut]
+    dx = dx[cut]
+    dy = dy[cut]
+    dz = dz[cut]
+    mats = system.mats[cut]
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
-    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s) for transfer in hop]
-
-    try:
-        locais    = np.array([np.where(random.uniform(0,1) <= np.cumsum(x/np.sum(x)))[0][0] for x in jump_rate]).astype(int)
-        jump_rate = np.array([jump_rate[i][locais[i]] for i in np.arange(len(locais))])
-        #jump_rate = np.array([max(jump_rate[i]) for i in np.arange(len(locais))])
-    except:
-        locais    = np.array([local])
-        jump_rate = np.array([0])
-
-    mono_rate = np.array([m.rate(material=system.mats[local]) for m in mono])
-    jump_rate = np.append(jump_rate,mono_rate)
-    locais2   = np.zeros(len(mono_rate)) + local
-    locais    = np.append(locais,locais2.astype(int))
-    labels = hop+mono 
-
-    jump = np.where(random.uniform(0,1) <= np.cumsum(jump_rate/np.sum(jump_rate)))[0][0]
-    s.process = labels[jump]
-    s.destination = locais[jump]
-    return np.sum(jump_rate)
+    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s,mats=mats,matlocal=system.mats[local],cut=cut) for transfer in hop] 
+    mono_rate = [[m.rate(material=system.mats[local])] for m in mono]
+    jump_rate.extend(mono_rate)   
+    sizes     = np.array([len(i) for i in jump_rate])
+    jump_rate = np.concatenate(jump_rate)
+    labels    = hop+mono
+    soma, jump = kmc.utils.jump(jump_rate,len(jump_rate),random.uniform(0,1))
+    destino   = np.argmax(np.cumsum(sizes) -1 >= jump)
+    s.process = labels[destino]
+    if destino < len(hop):
+        s.destination = cut[int(jump - np.sum(sizes[:destino]))]
+    else:
+        s.destination = local
+    return soma
 
 ########ITERATION FUNCTIONS#######################################################
-def step_ani(system): 
-    while system.count_particles() > 0 and system.time < system.time_limit:
-        system.IT += 1
-        Ss = system.particles.copy()
-        random.shuffle(Ss)
-        X,Y,Z = system.X, system.Y, system.Z     
-        R = np.array([decision(s,system) for s in Ss])
-        system.time += (1/max(R))*np.log(1/random.uniform(0,1))
-        jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
-        for jump in jumps:
-            if Ss[jump] in system.particles:
-                Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-                bi_func(system,bimolec_funcs_array,Ss[jump].destination)
-        return Ss       
-    Ss = system.particles.copy()
-    for s in Ss:
-        s.kill('alive',system,system.s1,'alive')
-  
 def step_nonani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
         Ss = system.particles.copy()
         random.shuffle(Ss)
-        X,Y,Z = system.X, system.Y, system.Z     
-        R = np.array([decision(s,system) for s in Ss])
-        system.time += (1/max(R))*np.log(1/random.uniform(0,1))
-        jumps = np.where(random.uniform(0,1) <= R/max(R))[0]
-        for jump in jumps:
-            if Ss[jump] in system.particles:
-                Ss[jump].process.action(Ss[jump],system,Ss[jump].destination)   
-                bi_func(system,bimolec_funcs_array,Ss[jump].destination)       
+        R, dests  = [],[]
+        for s in Ss:
+            if s in system.particles:
+                Rs = decision(s,system)
+                if s.destination not in dests:
+                    s.process.action(s,system,s.destination)
+                    bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
+                    R.append(Rs)  
+                    dests.append(s.destination)  
+        R = np.array(R)
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+        for s in Ss:
+            s.stamp_time(system)                   
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
+        s.stamp_time(system)
+ 
+def step_ani(system):
+    while system.count_particles() > 0 and system.time < system.time_limit:
+        system.IT += 1
+        Ss = system.particles.copy()
+        random.shuffle(Ss)
+        R, dests = [], []
+        for s in Ss:
+            if s in system.particles:
+                Rs = decision(s,system)
+                if s.destination not in dests:
+                    s.process.action(s,system,s.destination)
+                    bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
+                    R.append(Rs)  
+                    dests.append(s.destination)  
+        R = np.array(R)
+        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+        for s in Ss:
+            s.stamp_time(system)
+        return Ss
+    Ss = system.particles.copy()
+    for s in Ss:
+        s.kill('alive',system,system.s1,'alive')
+        s.stamp_time(system)
 ##########################################################################################
 
 if animation_mode:
@@ -214,18 +228,21 @@ if animation_mode:
 else:
     step = step_nonani
 
+def open_log():
+    filename = f"Simulation_{identifier}.txt"
+    if os.path.isfile(filename) == False:
+        with open(filename, "w") as f:
+            f.write(output_header)
+            texto = "Time,DeltaX,DeltaY,DeltaZ,Type,Energy,Location,FinalX,FinalY,FinalZ,CausaMortis,Status"
+            f.write(texto+"\n") 
+    return filename
 
 #Prints Spectra
-def spectra(system):
-    if os.path.isfile("Simulation_"+system.identifier+".txt") == False:
-        with open("Simulation_"+system.identifier+".txt", "w") as f:
-            texto = "{0:<15}  {1:<10}  {2:<10}  {3:<10}  {4:<10}  {5:<10}  {6:<10}  {7:<10}  {8:<10}  {9:<10}  {10:<11}  {11:<10}".format("Time", "DeltaX", "DeltaY", "DeltaZ", "Type", "Energy", "Location" ,"FinalX", "FinalY", "FinalZ", "CausaMortis", 'Status')
-            f.write(texto+"\n") 
-    with open("Simulation_"+system.identifier+".txt", "a") as f:   
-        for s in system.dead:
-            texto = s.write()
-            f.write(texto)
-        f.write("END\n")
+def spectra(system,f):
+    texto = ''
+    for s in system.dead:
+        texto += s.write()
+    f.write(texto+f'END\n')
         
 def animate(num,system,ax,marker_option,rotate): 
     Ss = step(system)
@@ -295,17 +312,20 @@ def reroll_system(system):
     print(pp,system.s1)    
     '''
     return system
-            
+
+
 #RUN of a single round       
 def RUN(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE IS RECALCULATED
     system = make_system()
     step(system)
-    spectra(system)
- 
+    return system
+
 def RUN_FREEZE(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE REMAINS INTACT
-    system = reroll_system(copy.deepcopy(syst))  
+    syst = dynamic[1]
+    system = reroll_system(copy.deepcopy(syst)) 
     step(system)
-    spectra(system)
+    return system
+
 
 #setting up the animation object and adding responses to events    
 def run_animation():
@@ -359,13 +379,20 @@ def main():
                 ani.save(path, writer=writervideo)
         
         plt.show()
-    else:            
+    else:      
+        p = multiprocessing.Pool(n_proc) 
+        filename = open_log()      
         if not frozen_lattice: # at every round, the entire lattice is recalculated
-            #Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN)(_) for _ in range(rounds))
-            process_map(RUN,range(rounds),max_workers = n_proc)  
+            run = RUN
+            args = [(i) for i in range(rounds)]
         else:# at every round, only particle creation is recalculated
-            #Parallel(n_jobs=n_proc, backend = 'loky')(delayed(RUN_FREEZE)(_) for _ in range(rounds))
-            process_map(RUN_FREEZE,range(rounds),max_workers = n_proc) 
-                
+            syst = make_system()
+            run = RUN_FREEZE
+            args = [(i, syst) for i in range(rounds)]
+        with open(filename, "a") as f:
+            for result in tqdm.tqdm(p.imap(run, args),total=rounds):
+                spectra(result,f)        
+
+
 if __name__ == "__main__":
     sys.exit(main())        

@@ -1,6 +1,5 @@
 import numpy as np
 import random
-import sys
 
 class Particles:
     def __init__(self,species,initial):
@@ -10,6 +9,7 @@ class Particles:
         self.status   = 'alive'
         self.identity = random.uniform(0,5)
         self.report   = ''
+        self.texto    = ''
         self.process  = None
         self.destination  = None
         self.Dx = 0
@@ -17,24 +17,28 @@ class Particles:
         self.Dz = 0
         
     def move(self,local,system):
-        Dx, Dy, Dz = system.distance(system,self.position)
-        self.Dx += Dx[local]
-        self.Dy += Dy[local]
-        self.Dz += Dz[local]
+        Dx, Dy, Dz = system.distance(system,self.position,local)
+        self.Dx += Dx
+        self.Dy += Dy
+        self.Dz += Dz
         self.position = local
         
 
     def make_text(self,system,energies,causamortis):
-        time = system.time   
         X,Y,Z = system.X, system.Y, system.Z  
         Mats  = system.mats 
         x, y, z  = X[self.position],Y[self.position],Z[self.position]
         mat = Mats[self.position]
         energy = energies[self.position]
-        texto = '{0:<15.6e}  {1:<10.2f}  {2:<10.2f}  {3:<10.2f}  {4:<10}  {5:<10.4f}  {6:<10}  {7:<10.2f}  {8:<10.2f}  {9:<10.2f}  {10:<11}  {11:<10}'.format(
-                       time,self.Dx,self.Dy,self.Dz,self.species,energy,mat,x,y,z,causamortis,self.status)
-        self.report += texto+'\n'
-    
+        self.texto = f'TEMPO,{self.Dx:.0f},{self.Dy:.0f},{self.Dz:.0f},{self.species},{energy:.2f},{mat:.0f},{x:.0f},{y:.0f},{z:.0f},{causamortis},{self.status}'
+        
+    def stamp_time(self,system):
+        if self.texto != '':
+            texto = self.texto
+            texto = texto.replace('TEMPO',f'{system.time:.0f}')
+            self.report += texto+'\n'
+            self.texto = ''
+        
     def kill(self,causamortis,system,energies,result):
         self.status = result
         self.make_text(system,energies,causamortis)

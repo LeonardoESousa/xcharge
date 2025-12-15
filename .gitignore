@@ -6,4 +6,5 @@ git_commands
 __pycache__
 KMC.egg-info
 build
-*test*
+mykmc
+*.ipynb
