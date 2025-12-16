@@ -3,6 +3,9 @@ import random
 from kmc.particles import *
 import sys
 from collections import Counter
+from pymatgen.core import Structure
+from pymatgen.core import IMolecule
+
 
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
@@ -269,3 +272,17 @@ class Electric():
     def assign_to_system(self,system):
         system.set_medium(self.eps)    
         system.set_electric_field(self.field)
+#################### CIF READER ##########################
+class ReadCIF():
+    def __init__(self,file,mult_cell,label):
+        self.file = file
+        self.mult_cell = mult_cell 
+        self.label = label
+    def assign_to_system(self,system):      
+        structure = Structure.from_file(self.file)
+        structure = structure.make_supercell(self.mult_cell)
+        xyz       = structure.cart_coords
+        species   = [ x.symbol for x in structure.species]
+        index     = [ self.label[x] for x in species]
+
+        system.set_morph(xyz[:,0],xyz[:,1],xyz[:,2],index) 

@@ -28,8 +28,9 @@ bimolec            = False  # Turn on annihilation
 
 ###DEFECTS PROCESSES######################################################################
 
-Cs = 0
-I  = 1
+cif_label = {'Cs':0,'I':1} #site indexing
+Cs        = cif_label['Cs']
+I         = cif_label['I']
 
 
 # FRENKEL PAIR DISSOCIAITON
@@ -68,7 +69,16 @@ num_sites         = 100             #number of sites of the lattice
 displacement      = [5, 5, 0]       #vector of the unit cell (x,y,z)
 disorder          = [0.,0.,0.]      #std deviation from avg position
 composition       = [0.5,0.5]       #population probability Ex.: composition[0] is the prob of mat 0 appear in the lattice
-lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
+#lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
+
+# building the lattice through cif file
+file = 'cifexample.cif' #filename
+multiply_cell = [1,1,4] # multiplication of the unit cel by a vector v = a + b + c
+lattice_func = morphology.ReadCIF(file,multiply_cell,cif_label)
+
+
+
+
 
 #ENERGIES
 #Gaussian distribuitions

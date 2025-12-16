@@ -27,6 +27,7 @@ dependencies = [
   "tqdm",
   "importlib_metadata",
   "pandas",
+  "pymatgen",
 ]
 
 
