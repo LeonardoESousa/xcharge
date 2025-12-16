@@ -346,7 +346,7 @@ def run_animation():
     fig.canvas.mpl_connect('draw_event', lambda event: pause_plot(event, pause)) #pausing if pause = True at the first frame
    
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate],
-                                    interval=25, blit=False,repeat=False,cache_frame_data=True)#,save_count=1000)  
+                                    interval=25, blit=True,repeat=False,cache_frame_data=True)#,save_count=1000)  
                              
                                        
     return ani 

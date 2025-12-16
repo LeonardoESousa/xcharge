@@ -440,10 +440,7 @@ class Formation:
     def rate(self, **kwargs):
         system   = kwargs['system']
         r        = kwargs['r']
-        mats     = kwargs['mats'] 
-        local = np.argwhere(r == 0)[0][0]  
-        mat      = mats[local]   # sliced neighbors
-        cut      = kwargs.get('cut')   # full-lattice indices of those neighbors
+        cut      = kwargs['cut']   # full-lattice indices of those neighbors
         
         if cut is None:
             # Fallback: assume contiguous slice from 0
@@ -465,7 +462,6 @@ class Formation:
 
     def action(self, particle, system, local):
         FP = Frenkelpair(local)
-        print('FP in', system.mats[local])
         system.set_particles([FP])
         particle.kill(self.kind, system, system.s1, 'converted')
         for p in system.particles:

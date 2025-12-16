@@ -18,7 +18,7 @@ save_animation     = False  # if you want to save the animation
 animation_exten    = 'gif'  # possible options ('gif' and 'mp4')
 rotate             = False  # True = animation rotates, False = remains fixed
 marker_type        = 1      # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = True  # if you want that the annimation stops in the first frame (debug purposes)
+pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 1   # Number of rounds
 n_proc             = 1      # Number of cores to be used
 frozen_lattice     = True   # if you want for the lattice to remain the same for all rounds
@@ -26,20 +26,26 @@ periodic           = False  # if you want periodic boundary conditions
 bimolec            = False  # Turn on annihilation
 #########################################################################################
 
-###SINGLET EXCITONS######################################################################
+###DEFECTS PROCESSES######################################################################
+
+Cs = 0
+I  = 1
 
 
-k_diss = {(0,0):0, (0,1):1e-5, (1,0):0, (1,1):0} # dissociation rates for each material combination
+# FRENKEL PAIR DISSOCIAITON
+k_diss = {(Cs,Cs):0, (Cs,I):1e-5, (I,Cs):0, (I,I):0} # dissociation rates for each material combination
 dissociation = DissociationFP(k=k_diss)
 
-k_migration = {(0,0):1e-5, (0,1):0, (1,0):0, (1,1):1e-5} # migration rates for each material combination
-migration = Migration(k=k_migration)
-
-k_annihilation = {0:1e-8, 1:0} # annihilation rates for each material combination
+# FRENKEL PAIR ANNIHILATION
+k_annihilation = {Cs:1e-8, I:0} # annihilation rates for each material combination
 annihilation = Annihilation(k=k_annihilation)
 
+# VACANCY/INTERSTITIAL MIGRATION
+k_migration = {(Cs,Cs):1e-5, (Cs,I):0, (I,Cs):0, (I,I):1e-5} # migration rates for each material combination
+migration = Migration(k=k_migration)
 
-k_formation = 1e-2 # formation rates for each material combination
+# FRENKEL PAIR FORMATION (VACANCY + INTERSTITIAL)
+k_formation = 1e-4 # formation rates for each material combination
 formation = Formation(k=k_formation)
 
 ###PROCESSES#############################################################################

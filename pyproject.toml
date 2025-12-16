@@ -21,7 +21,7 @@ dependencies = [
   "numpy",
   "scipy",
   "joblib",
-  "matplotlib<=3.5.0",
+  "matplotlib",
   "tqdm",
   "importlib_metadata",
 ]

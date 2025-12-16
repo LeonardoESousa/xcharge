@@ -1,32 +1,38 @@
 name: Python package
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+      - uses: actions/setup-python@v5
         with:
-          # Semantic version range syntax or exact version of a Python version
-          python-version: '3.x'
-          # Optional - x64 or x86 architecture, defaults to x64
-          architecture: 'x64'
-      # You can test your matrix by printing the current Python version
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
-      - name: Install dependencies
+
+      - name: Install dependencies + package
         run: |
           python -m pip install --upgrade pip
-          pip3 install pandas
-          pip install Cython
-          pip install pytest wheel
+          python -m pip install --upgrade setuptools wheel
+          python -m pip install pandas pytest
+          # install your package (editable is optional; use -e if you prefer)
           python -m pip install .
+          # If you defined a dev extra (cython) and want it in CI:
+          # python -m pip install ".[dev]"
+
       - name: Test with pytest
-        working-directory: ./pytest
         run: |
-          pytest -s test_equiv.py
+          pytest -s pytest/test_equiv.py
