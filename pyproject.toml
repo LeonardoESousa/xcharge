@@ -26,6 +26,7 @@ dependencies = [
   "matplotlib",
   "tqdm",
   "importlib_metadata",
+  "pandas",
 ]
 
 

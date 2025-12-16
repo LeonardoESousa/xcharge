@@ -1,139 +1,302 @@
-#(note to myself) to run: pytest
-#                 to run with print statements: pytest -s
+from __future__ import annotations
+
 import os
+import time
+import uuid
+import shutil
 import subprocess
-import pandas as pd
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable, Sequence
+
 import numpy as np
-import io
+import pandas as pd
 import pytest
-import sys
-##################################
-txt_files = [i for i in os.listdir('.') if (os.path.isfile(i)) and ('.txt' in i.lower())]
-for txt in txt_files:
-	os.remove(txt) 
-	
-def get_ds(simul):
-	data = pd.read_csv(simul,comment='#')
-	data = data[data.Time != 'END']
-	dx = data['DeltaX'].to_numpy()/10
-	dy = data['DeltaY'].to_numpy()/10
-	dz = data['DeltaZ'].to_numpy()/10
-	ds = dx*dx+dy*dy+dz*dz
-	return ds
-
-def run_job(config_test,log_name):
-	lab = []
-	for test in config_test:
-		label = '_'.join([str(x) for x in test])
-		param = ' '.join([str(x) for x in test])
-		name  = 'Simulation_'+log_name.split('_')[-1].split('.')[0]+'_'+label+'.txt'
-		lab.append(name)
-		command = "kmc "+log_name+' '+label+' '+param
-		subprocess.run(command, shell=True)
-	return [(lab)]
-	
-def cond(array,cutoff):
-	for x in array:
-		if x > cutoff:
-			return False
-	return True
-####################################	
-###### EQUIVALENCE TEST ############	
-
-#preparing equiv test
-log_name1    = "input_test1.py"
-config_test1 = [[100,10],[125,4],[1000,1]] # 1000 rounds 10 ex, 10000 rounds 1 ex...
-simuls1 = run_job(config_test1,log_name1)
-
-#preparing Rf test
-log_name2    = "input_test2.py"
-config_test2 = [[1],[10],[25],[35]] #1 ex, 10 ex, 100 ex
-simuls2 = run_job(config_test2,log_name2)
-
-jobs = [simuls1,simuls2]
-@pytest.mark.parametrize("jobs",[simuls1])
-def test_fluor(jobs):
-	for simuls in jobs:
-		print()
-		print('Fluor test with:')
-		print(simuls)
-		avgs = []
-		for simul in simuls:
-			data = pd.read_csv(simul,comment='#')
-			data = data[data.Time != 'END']
-			fluor = data['Time'].to_numpy(float)/1000
-			avg = np.mean(fluor)
-			avgs.append(avg)
-
-		ref = 3
-		print('values:',avgs)
-		avgs = [ abs((av-ref)/ref) for av in avgs]
-		print('result :',avgs)
-		assert cond(avgs,0.2) == True
-	
-
-@pytest.mark.parametrize("jobs",jobs)
-def test_ld(jobs):
-	for simuls in jobs:
-		print()
-		print('LD test with:')
-		print(simuls)
-		avgs = []
-		for simul in simuls:
-			ds = get_ds(simul)
-			ld = np.sqrt(np.mean(ds))
-			avgs.append(ld)
-		std = np.std(avgs)	
-		print('ld: ',avgs)
-		print('std:',std)
-		assert std <= 0.4
-	
-
-####### Diffusion test #######
 
 
-def spectrum(dx,gran,mindx,maxdx):
-	num = int((maxdx-mindx)/gran)
-	if num == 0:
-		bins = 1
-	else:
-		bins = np.linspace(mindx,maxdx,num)    
-	hist, bins = np.histogram(dx,bins=bins,density=True)
-	bins = bins[:-1] + (bins[1:] - bins[:-1])/2    
-	return hist,bins	
-def get_min_max(simuls):
-	ds_arr = []
-	for simul in simuls:
-		ds = get_ds(simul)
-		ds_arr.append(ds)
-	min_ds = min([min(d) for d in ds_arr])
-	max_ds = max([max(d) for d in ds_arr])
-	return min_ds, max_ds
-#####################################
+LOG_NAME_EQUIV = "input_test1.py"
+CONFIG_EQUIV = [(100, 10), (125, 4), (1000, 1)]
 
-	
-@pytest.mark.parametrize("jobs",jobs)
-def test_diff(jobs):
-	for simuls in jobs:
-		print()
-		print('Diffusion test with:')
-		print(simuls)
-		hist_arr = []
-		gran = 1.5
-		min_ds, max_ds = get_min_max(simuls)
-		for simul in simuls:
-			ds = get_ds(simul)
-			hists, binss = spectrum(ds,gran,min_ds,max_ds)
-			hist_arr.append(hists)
-		ref_hist = hist_arr[0]
-		rms_arr  = []
-		for i in range(1,len(hist_arr)):
-			#removing the 0s of histogram
-			rms = np.array([(ref_hist[k]-hist_arr[i][k])**2 for k in range(len(ref_hist)) if ref_hist[k] != 0 and hist_arr[i][k] !=0 ])
-			rms = (1/len(rms))*sum(rms)
-			rms = np.sqrt(rms)
-			rms_arr.append(rms)
-		print('rms: ', max(rms_arr))
-		assert max(rms_arr) <= 5E-2
+LOG_NAME_RF = "input_test2.py"
+CONFIG_RF = [(1,), (10,), (25,), (35,)]
+
+REF_FLUOR = 3.0
+FLUOR_TOL_REL = 0.20
+LD_STD_MAX = 0.4
+DIFF_RMS_MAX = 5e-2
+HIST_GRAN = 1.5
 
 
+def repo_root_from_test_file() -> Path:
+    here = Path(__file__).resolve()
+    for parent in [here.parent] + list(here.parents):
+        if (parent / LOG_NAME_EQUIV).exists() or (parent / LOG_NAME_RF).exists():
+            return parent
+    return Path.cwd()
+
+
+def read_simulation_csv(path: Path) -> pd.DataFrame:
+    df = pd.read_csv(path, comment="#")
+    if "Time" in df.columns:
+        df = df[df["Time"].astype(str) != "END"]
+    return df
+
+
+def get_ds(df: pd.DataFrame) -> np.ndarray:
+    dx = df["DeltaX"].to_numpy(dtype=float) / 10.0
+    dy = df["DeltaY"].to_numpy(dtype=float) / 10.0
+    dz = df["DeltaZ"].to_numpy(dtype=float) / 10.0
+    return dx * dx + dy * dy + dz * dz
+
+
+def all_below(values: Iterable[float], cutoff: float) -> bool:
+    return all(v <= cutoff for v in values)
+
+
+def spectrum(values: np.ndarray, gran: float, vmin: float, vmax: float) -> np.ndarray:
+    if vmax <= vmin:
+        edges = np.array([vmin, vmin + max(gran, 1e-12)], dtype=float)
+    else:
+        edges = np.arange(vmin, vmax + gran, gran, dtype=float)
+        if edges.size < 2:
+            edges = np.array([vmin, vmax], dtype=float)
+    hist, _ = np.histogram(values, bins=edges, density=True)
+    return hist
+
+
+@dataclass(frozen=True)
+class SimResult:
+    output_file: Path
+    duration_s: float
+    args: list[str]
+
+
+def _list_outputs(dirpath: Path) -> dict[str, float]:
+    # If your outputs are csv with a specific extension, tighten this:
+    # e.g. dirpath.glob("Simulation_*.csv")
+    candidates = {}
+    for p in dirpath.glob("Simulation_*"):
+        if p.is_file():
+            candidates[str(p.resolve())] = p.stat().st_mtime
+    return candidates
+
+
+def _pick_new_output(before: dict[str, float], after: dict[str, float]) -> Path | None:
+    new_paths = [Path(p) for p in after.keys() if p not in before]
+    if new_paths:
+        return max(new_paths, key=lambda p: p.stat().st_mtime)
+
+    changed = [Path(p) for p, mt in after.items() if before.get(p, mt) != mt]
+    if changed:
+        return max(changed, key=lambda p: p.stat().st_mtime)
+
+    return None
+
+
+def _kmc_args_for(log_name: str, params: Sequence[int], unique_label: str) -> list[str]:
+    """
+    Build argv tail for kmc depending on which input file we run.
+
+    - input_test1.py: seems to accept a string label before numeric params.
+    - input_test2.py: expects sys.argv[2] to be int, so DO NOT insert a label there.
+    """
+    if Path(log_name).name == LOG_NAME_EQUIV:
+        # kmc <input> <label> <p1> <p2> ...
+        return [unique_label, *map(str, params)]
+
+    if Path(log_name).name == LOG_NAME_RF:
+        # kmc <input> <p1> <p2> ...
+        return [*map(str, params)]
+
+    # Default safe mode: only numeric params
+    return [*map(str, params)]
+
+
+def run_kmc_once(
+    *,
+    kmc_exe: str,
+    workdir: Path,
+    input_file: Path,
+    log_name: str,
+    params: Sequence[int],
+    unique_label: str,
+) -> SimResult:
+    argv_tail = _kmc_args_for(log_name, params, unique_label)
+    cmd = [kmc_exe, str(input_file), *argv_tail]
+
+    before = _list_outputs(workdir)
+
+    t0 = time.perf_counter()
+    try:
+        subprocess.run(
+            cmd,
+            cwd=str(workdir),
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise AssertionError(
+            "kmc failed.\n"
+            f"Command: {e.cmd}\n"
+            f"Return code: {e.returncode}\n"
+            f"cwd: {workdir}\n"
+            f"stdout:\n{e.stdout}\n"
+            f"stderr:\n{e.stderr}\n"
+        ) from e
+    t1 = time.perf_counter()
+
+    after = _list_outputs(workdir)
+    out = _pick_new_output(before, after)
+    if out is None or not out.exists():
+        raise AssertionError(
+            "kmc succeeded but test could not detect output file.\n"
+            f"Command: {cmd}\n"
+            f"cwd: {workdir}\n"
+            f"Hint: adjust _list_outputs() to match your real output pattern.\n"
+        )
+
+    return SimResult(output_file=out, duration_s=(t1 - t0), args=cmd)
+
+
+def run_batch(
+    *,
+    kmc_exe: str,
+    repo_root: Path,
+    tmp_path: Path,
+    log_name: str,
+    configs: Sequence[Sequence[int]],
+    record_property,
+) -> list[Path]:
+    input_path = (repo_root / log_name).resolve()
+    if not input_path.exists():
+        pytest.skip(f"Missing {log_name} at {input_path}")
+
+    # Run each batch in its own unique working directory to prevent overwrites
+    run_tag = "pytest" + uuid.uuid4().hex[:8]
+    workdir = tmp_path / f"kmc_{Path(log_name).stem}_{run_tag}"
+    workdir.mkdir(parents=True, exist_ok=True)
+
+    # Many sims rely on relative paths next to the input file
+    # So copy the input file into the workdir and run from there
+    local_input = workdir / Path(log_name).name
+    shutil.copy2(input_path, local_input)
+
+    outputs: list[Path] = []
+    for params in configs:
+        # label only used for input_test1.py; harmless otherwise
+        unique_label = f"{run_tag}_" + "_".join(map(str, params))
+
+        res = run_kmc_once(
+            kmc_exe=kmc_exe,
+            workdir=workdir,
+            input_file=local_input,
+            log_name=log_name,
+            params=list(params),
+            unique_label=unique_label,
+        )
+
+        outputs.append(res.output_file)
+
+        record_property(
+            f"kmc_time_{Path(log_name).stem}_{'_'.join(map(str, params))}",
+            f"{res.duration_s:.6f}s",
+        )
+        print(f"\n[kmc] {Path(log_name).stem} params={params} runtime: {res.duration_s:.3f} s")
+
+    return outputs
+
+
+@pytest.fixture(scope="session")
+def repo_root() -> Path:
+    return repo_root_from_test_file()
+
+
+@pytest.fixture(scope="session")
+def kmc_exe() -> str:
+    return os.environ.get("KMC_EXE", "kmc")
+
+
+@pytest.fixture
+def sim_outputs_equiv(tmp_path: Path, repo_root: Path, kmc_exe: str, record_property) -> list[Path]:
+    return run_batch(
+        kmc_exe=kmc_exe,
+        repo_root=repo_root,
+        tmp_path=tmp_path,
+        log_name=LOG_NAME_EQUIV,
+        configs=CONFIG_EQUIV,
+        record_property=record_property,
+    )
+
+
+@pytest.fixture
+def sim_outputs_rf(tmp_path: Path, repo_root: Path, kmc_exe: str, record_property) -> list[Path]:
+    return run_batch(
+        kmc_exe=kmc_exe,
+        repo_root=repo_root,
+        tmp_path=tmp_path,
+        log_name=LOG_NAME_RF,
+        configs=CONFIG_RF,
+        record_property=record_property,
+    )
+
+
+def test_fluor_equivalence(sim_outputs_equiv: list[Path]):
+    avgs: list[float] = []
+    for out in sim_outputs_equiv:
+        df = read_simulation_csv(out)
+        fluor = df["Time"].to_numpy(dtype=float) / 1000.0
+        avgs.append(float(np.mean(fluor)))
+
+    rel_errs = [abs((av - REF_FLUOR) / REF_FLUOR) for av in avgs]
+    print("\nFluor values:", avgs)
+    print("Fluor rel errors:", rel_errs)
+    assert all_below(rel_errs, FLUOR_TOL_REL)
+
+
+@pytest.mark.parametrize("which_fixture", ["sim_outputs_equiv", "sim_outputs_rf"])
+def test_ld_stability(which_fixture: str, request):
+    outputs: list[Path] = request.getfixturevalue(which_fixture)
+    which = "equiv" if which_fixture.endswith("equiv") else "rf"
+
+    lds: list[float] = []
+    for out in outputs:
+        df = read_simulation_csv(out)
+        lds.append(float(np.sqrt(np.mean(get_ds(df)))))
+
+    std = float(np.std(lds))
+    print(f"\nLD ({which}):", lds)
+    print(f"LD std ({which}):", std)
+    assert std <= LD_STD_MAX
+
+
+@pytest.mark.parametrize("which_fixture", ["sim_outputs_equiv", "sim_outputs_rf"])
+def test_diffusion_distribution(which_fixture: str, request):
+    outputs: list[Path] = request.getfixturevalue(which_fixture)
+    which = "equiv" if which_fixture.endswith("equiv") else "rf"
+
+    if len(outputs) < 2:
+        pytest.skip("Need at least two simulations to compare diffusion distributions")
+
+    ds_list = []
+    for out in outputs:
+        df = read_simulation_csv(out)
+        ds_list.append(get_ds(df))
+
+    vmin = float(min(np.min(ds) for ds in ds_list))
+    vmax = float(max(np.max(ds) for ds in ds_list))
+
+    hists = [spectrum(ds, HIST_GRAN, vmin, vmax) for ds in ds_list]
+    ref = hists[0]
+
+    rms_arr: list[float] = []
+    for i in range(1, len(hists)):
+        other = hists[i]
+        mask = (ref != 0) & (other != 0)
+        if not np.any(mask):
+            pytest.fail("Histogram overlap mask is empty (no shared non-zero bins)")
+        rms_arr.append(float(np.sqrt(np.mean((ref[mask] - other[mask]) ** 2))))
+
+    worst = float(max(rms_arr))
+    print(f"\nDiffusion RMS ({which}):", worst)
+    assert worst <= DIFF_RMS_MAX
