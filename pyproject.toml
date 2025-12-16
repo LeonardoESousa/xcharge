@@ -8,7 +8,9 @@ version = "0.0.1"
 description = "Kinetic Monte Carlo"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.6"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
+
 
 authors = [
   { name = "Leonardo Evaristo de Sousa", email = "ledso@dtu.dk" },
@@ -26,11 +28,6 @@ dependencies = [
   "importlib_metadata",
 ]
 
-classifiers = [
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
-]
 
 [project.optional-dependencies]
 dev = [

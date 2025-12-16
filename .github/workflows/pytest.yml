@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-      - uses: actions/setup-python@v5
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
@@ -28,11 +28,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade setuptools wheel
           python -m pip install pandas pytest
-          # install your package (editable is optional; use -e if you prefer)
           python -m pip install .
-          # If you defined a dev extra (cython) and want it in CI:
-          # python -m pip install ".[dev]"
 
       - name: Test with pytest
-        run: |
-          pytest -s pytest/test_equiv.py
+        run: pytest -s pytest/test_equiv.py
