@@ -47,3 +47,15 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*", "*.tests", "*.tests.*"]
+
+
+
+
+
+[[tool.setuptools.ext-modules]]
+
+
+name = "kmc.utils"
+
+
+sources = ["kmc/utils.c"]

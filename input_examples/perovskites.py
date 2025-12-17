@@ -79,8 +79,9 @@ composition       = [0.5,0.5]       #population probability Ex.: composition[0] 
 
 # building the lattice through cif file
 file = 'cifexample.cif' #filename
-multiply_cell = [2,3,4] # multiplication of the unit cel by a vector v = a + b + c
-lattice_func = morphology.ReadCIF(file,multiply_cell,material_label)
+remove_species = ['Br']
+multiply_cell  = [2,3,4] # multiplication of the unit cel by a vector v = a + b + c
+lattice_func   = morphology.ReadCIF(file,multiply_cell,material_label,remove_species)
 
 
 
