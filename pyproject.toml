@@ -1,5 +1,10 @@
 [build-system]
-requires = ["setuptools>=68", "wheel", "numpy"]
+requires = [
+  "setuptools>=64",
+  "wheel",
+  "numpy<2",
+  "cython>=0.29.36",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,9 +14,6 @@ description = "Kinetic Monte Carlo"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.6"
 license = "MIT"
-license-files = ["LICENSE"]
-
-
 authors = [
   { name = "Leonardo Evaristo de Sousa", email = "ledso@dtu.dk" },
   { name = "Tiago de Sousa Araújo Cassiano" }
@@ -20,7 +22,7 @@ authors = [
 urls = { Homepage = "https://github.com/LeonardoESousa/KMC" }
 
 dependencies = [
-  "numpy",
+  "numpy<2",
   "scipy",
   "joblib",
   "matplotlib",
@@ -45,7 +47,3 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*", "*.tests", "*.tests.*"]
-
-[[tool.setuptools.ext-modules]]
-name = "kmc.utils"
-sources = ["kmc/utils.c"]

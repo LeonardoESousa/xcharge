@@ -14,6 +14,8 @@ class System:
         self.potential_time = -1
         self.IT = 0 #number of steps
         self.annihi_radius = {}
+        self.positions_by_species = {}
+        self.neighbor_cache = None
                 
     def set_morph(self,X,Y,Z,Mats):
         self.X = X
@@ -39,14 +41,16 @@ class System:
         self.distance            = distance
     
     def set_particles(self,Ss):
-        
         try:
             self.particles += Ss
-        except:    
-            self.particles = Ss         
+        except:
+            self.particles = Ss
+        for p in Ss:
+            self.positions_by_species.setdefault(p.species, set()).add(p.position)
                
     def reset_particles(self):
         self.particles = None 
+        self.positions_by_species = {}
         
     def set_dipoles(self,mus):
         self.mu = mus
@@ -68,6 +72,9 @@ class System:
         
     def remove(self,particle):
         self.particles.remove(particle)
+        positions = self.positions_by_species.get(particle.species)
+        if positions is not None:
+            positions.discard(particle.position)
         self.dead.append(particle) 
 
     def set_electric_field(self, field):
@@ -86,4 +93,27 @@ class System:
             self.potential = potential
             self.potential_time = self.time   
         return self.potential
+    
+    def update_position(self, particle, old_position, new_position):
+        positions = self.positions_by_species.setdefault(particle.species, set())
+        positions.discard(old_position)
+        positions.add(new_position)
+    
+    def build_neighbor_cache(self, distance_fn, cutoff):
+        cache = []
+        num_sites = len(self.X)
+        for site in range(num_sites):
+            dx, dy, dz = distance_fn(self, site)
+            r = kmc.utils.distances(dx, dy, dz, len(dx))
+            mask = np.where(r < cutoff)[0]
+            cache.append(
+                (
+                    mask,
+                    dx[mask],
+                    dy[mask],
+                    dz[mask],
+                    r[mask],
+                )
+            )
+        self.neighbor_cache = cache
             

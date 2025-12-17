@@ -17,11 +17,13 @@ class Particles:
         self.Dz = 0
         
     def move(self,local,system):
+        old_position = self.position
         Dx, Dy, Dz = system.distance(system,self.position,local)
         self.Dx += Dx
         self.Dy += Dy
         self.Dz += Dz
         self.position = local
+        system.update_position(self, old_position, local)
         
 
     def make_text(self,system,energies,causamortis):
