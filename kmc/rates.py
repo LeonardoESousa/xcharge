@@ -171,12 +171,12 @@ class Dissociation_electron:
         mat    = kwargs['matlocal']
         num      = len(mats)
 
-        lumos = np.copy(system.lumo)
-        homos = np.copy(system.homo)
+        lumos = system.lumo
+        homos = system.homo
         if particle.species   == 'singlet':
-            s1s   = np.copy(system.s1) 
+            s1s   = system.s1 
         elif particle.species == 'triplet':
-            s1s   = np.copy(system.t1)
+            s1s   = system.t1
 
         AtH        = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
@@ -212,12 +212,12 @@ class Dissociation_hole:
         mat    = kwargs['matlocal']
         num      = len(mats)
         
-        lumos = np.copy(system.lumo)
-        homos = np.copy(system.homo)
+        lumos = system.lumo
+        homos = system.homo
         if particle.species   == 'singlet':
-            s1s   = np.copy(system.s1) 
+            s1s   = system.s1 
         elif particle.species == 'triplet':
-            s1s   = np.copy(system.t1)
+            s1s   = system.t1
 
         AtH        = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
@@ -237,23 +237,34 @@ class Dissociation_hole:
 
 
 def corrected_energies(system,s,r,dx,dy,dz):
-    potential = np.copy(system.electrostatic())
-    potential += -1*(system.field[0]*dx + system.field[1]*dy + system.field[2]*dz)
-    r[r == 0]  = np.inf 
-    potential -= s.charge*abs(e)/(4*np.pi*system.epsilon*r)
-    indices_e  = np.array([x.position for x in system.particles if x.charge == -1 and x.position != s.position]).astype(int)
-    indices_h  = np.array([x.position for x in system.particles if x.charge ==  1 and x.position != s.position]).astype(int)
+    potential = system.electrostatic() - (
+        system.field[0] * dx + system.field[1] * dy + system.field[2] * dz
+    )
+    r_safe = np.where(r != 0, r, np.inf)
+    potential -= s.charge * abs(e) / (4 * np.pi * system.epsilon * r_safe)
+    indices_e = np.fromiter(
+        (pos for pos in system.positions_by_species.get("electron", set()) if pos != s.position),
+        dtype=int,
+    )
+    indices_h = np.fromiter(
+        (pos for pos in system.positions_by_species.get("hole", set()) if pos != s.position),
+        dtype=int,
+    )
 
     if s.species == 'electron':
-        engs  = np.copy(system.lumo)
-        engs[indices_h] = system.homo[indices_h]
-        engs[indices_e] = np.inf                
+        engs  = np.array(system.lumo, copy=True)
+        if indices_h.size:
+            engs[indices_h] = system.homo[indices_h]
+        if indices_e.size:
+            engs[indices_e] = np.inf
         engs += -1*potential
         DE = (engs - engs[s.position]) + abs(engs - engs[s.position])
     elif s.species == 'hole':
-        engs  = np.copy(system.homo)
-        engs[indices_e] = system.lumo[indices_e] 
-        engs[indices_h] = -np.inf     
+        engs  = np.array(system.homo, copy=True)
+        if indices_e.size:
+            engs[indices_e] = system.lumo[indices_e]
+        if indices_h.size:
+            engs[indices_h] = -np.inf
         engs += -1*potential
         DE = (engs[s.position] - engs) + abs(engs[s.position] - engs)
     return DE
@@ -446,8 +457,7 @@ class Formation:
             # Fallback: assume contiguous slice from 0
             cut = np.arange(len(r))
 
-        # Set of full-lattice positions occupied by Interstitials
-        interstitial_sites = {p.position for p in system.particles if isinstance(p, Interstitial)}
+        interstitial_sites = system.positions_by_species.get('interstitial', set())
 
         # Boolean occupancy mask aligned with r/mats via cut
         occupied = np.fromiter((site in interstitial_sites for site in cut),
@@ -468,5 +478,4 @@ class Formation:
             if isinstance(p, Interstitial) and p.position == local:
                 p.kill('interstitial', system, system.s1, 'converted')
                 break
-
 
