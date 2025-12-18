@@ -11,6 +11,7 @@ from kmc.particles import *
 import sys
 ###BASIC PARAMETERS######################################################################
 identifier         = 'test1_'+(sys.argv[2])  #output identifier
+cutoff = 50
 time_limit         = np.inf# in PS
 animation_mode     = False
 save_animation     = False # if you want to save the animation
@@ -63,7 +64,7 @@ monomolecular = {'singlet':[fluor],'triplet':[],'electron':[],'hole':[]}
 
 
 # Creating a new lattice at each new round
-num_sites         = 100*100             #number of sites of the lattice
+num_sites         = 100*100            #number of sites of the lattice
 displacement      = [15, 15, 0]       #vector of the unit cell
 disorder          = [0.,0.,0.]   #std deviation from avg position
 composition       = [1]       #popuation probility Ex.: distribu_vect[0] is the prob of mat 0 appear in the lattice

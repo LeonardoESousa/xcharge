@@ -300,7 +300,11 @@ def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
     
     #removing duplicates on legend    
     handles, labels = plt.gca().get_legend_handles_labels()
-    by_label = dict(sorted(zip(labels, handles))) #sorted to preserve the ordering in the legend
+    # De-duplicate first (dict keeps last handle per label), then sort by label.
+    # Sorting the raw zip breaks when labels repeat because Python tries to
+    # compare the (non-orderable) artist objects to break ties.
+    by_label = dict(zip(labels, handles))
+    by_label = dict(sorted(by_label.items(), key=lambda kv: kv[0]))
     particle_legend = ax.legend(by_label.values(), by_label.keys())
     ax.add_artist(particle_legend)
     ax.text2D(0.03, 0.97, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time

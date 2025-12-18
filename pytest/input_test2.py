@@ -4,6 +4,7 @@ from kmc.particles import *
 import sys
 ###BASIC PARAMETERS######################################################################
 identifier         = 'test2_'+(sys.argv[2]) #output identifier
+cutoff = 50
 time_limit         = np.inf# in PS
 animation_mode     = False
 save_animation     = False # if you want to save the animation

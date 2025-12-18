@@ -1,7 +1,5 @@
 import numpy as np
 cimport cython
-cimport numpy as cnp
-cnp.import_array()
 
 from libc.math cimport sqrt
 @cython.boundscheck(False)  # Deactivate bounds checking
@@ -70,72 +68,6 @@ cpdef jump(double[:] jump_rate, int num, double random_number):
     for i in range(num):
         if random_number <= cumsum[i]:
             return soma, i
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
-cpdef tuple select_event(
-    double[:] dx,
-    double[:] dy,
-    double[:] dz,
-    int[:] mats,
-    int matlocal,
-    object hops,
-    object monos,
-    object particle,
-    object system,
-    object cut,
-    double randu):
-    """
-    Hot-path helper used by kmc.__main__.decision.
-    Returns (total_rate, chosen_index, sizes_list).
-    """
-    # Ensure downstream Python rate functions see NumPy arrays (not memoryviews)
-    cdef cnp.ndarray[cnp.double_t, ndim=1] dx_arr = np.asarray(dx)
-    cdef cnp.ndarray[cnp.double_t, ndim=1] dy_arr = np.asarray(dy)
-    cdef cnp.ndarray[cnp.double_t, ndim=1] dz_arr = np.asarray(dz)
-    cdef cnp.ndarray[cnp.int_t, ndim=1] mats_arr = np.asarray(mats)
-
-    cdef Py_ssize_t n = dx_arr.shape[0]
-    cdef cnp.ndarray[cnp.double_t, ndim=1] r = distances(dx_arr, dy_arr, dz_arr, n)
-
-    cdef list rates = []
-    cdef list sizes = []
-    cdef object proc
-    cdef object arr_any
-
-    for proc in hops:
-        arr_any = proc.rate(r=r, dx=dx_arr, dy=dy_arr, dz=dz_arr, system=system, particle=particle, mats=mats_arr, matlocal=matlocal, cut=cut)
-        rates.append(arr_any)
-        sizes.append(len(arr_any))
-
-    for proc in monos:
-        arr_any = [proc.rate(material=matlocal)]
-        rates.append(arr_any)
-        sizes.append(1)
-
-    cdef Py_ssize_t total_size = 0
-    cdef Py_ssize_t size_val
-    for size_val in sizes:
-        total_size += size_val
-
-    if total_size == 0:
-        return (0.0, -1, sizes)
-
-    cdef cnp.ndarray[cnp.double_t, ndim=1] flat = np.empty(total_size, dtype=np.double)
-    cdef double[:] flat_view = flat
-    cdef Py_ssize_t offset = 0
-    cdef Py_ssize_t i
-    for arr_any in rates:
-        for i in range(len(arr_any)):
-            flat_view[offset + i] = arr_any[i]
-        offset += len(arr_any)
-
-    cdef double soma
-    cdef int idx
-    soma, idx = jump(flat_view, total_size, randu)
-    return (soma, idx, sizes)
 
 
 from libc.math cimport exp

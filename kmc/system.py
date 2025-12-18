@@ -15,7 +15,6 @@ class System:
         self.IT = 0 #number of steps
         self.annihi_radius = {}
         self.positions_by_species = {}
-        self.neighbor_cache = None
                 
     def set_morph(self,X,Y,Z,Mats):
         self.X = X
@@ -98,22 +97,4 @@ class System:
         positions = self.positions_by_species.setdefault(particle.species, set())
         positions.discard(old_position)
         positions.add(new_position)
-    
-    def build_neighbor_cache(self, distance_fn, cutoff):
-        cache = []
-        num_sites = len(self.X)
-        for site in range(num_sites):
-            dx, dy, dz = distance_fn(self, site)
-            r = kmc.utils.distances(dx, dy, dz, len(dx))
-            mask = np.where(r < cutoff)[0]
-            cache.append(
-                (
-                    mask,
-                    dx[mask],
-                    dy[mask],
-                    dz[mask],
-                    r[mask],
-                )
-            )
-        self.neighbor_cache = cache
             

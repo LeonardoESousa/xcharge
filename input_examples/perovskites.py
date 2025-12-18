@@ -29,7 +29,7 @@ rotate             = False  # True = animation rotates, False = remains fixed
 plot_type          = "scatter" # options: scatter or sphere
 clean_vis          = False  # vizualization with no background and axis
 scatter_alpha      = 0.5 # alpha of the scatter plot
-sizes_dic          = {0:50, 1:150} # size of the materials in the animation mode
+sizes_dic          = {0:150, 1:50} # size of the materials in the animation mode
 colors_dic         = {0:'#1FF56D', 1:'#723E9A'} # colors of the materials
 #########################################################################################
 
@@ -65,18 +65,6 @@ monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair':[annihilation]}
 
 ##Morphology functions
 
-#Reading a file name that contains your lattice
-#file = 'lattice.example'
-#lattice_func = morphology.ReadLattice(file)
-
-
-# Creating a new lattice at each new round
-num_sites         = 100             #number of sites of the lattice
-displacement      = [5, 5, 0]       #vector of the unit cell (x,y,z)
-disorder          = [0.,0.,0.]      #std deviation from avg position
-composition       = [0.5,0.5]       #population probability Ex.: composition[0] is the prob of mat 0 appear in the lattice
-#lattice_func      = morphology.Lattice(num_sites,displacement,disorder,composition)
-
 # building the lattice through cif file
 file = 'cifexample.cif' #filename
 remove_species = ['Br']
@@ -99,5 +87,5 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-exciton   = morphology.Create_Particles('frenkelpair', 1, method, mat=[0]) # creates 1 singlet exciton randomly at either material 0 or 1
+exciton   = morphology.Create_Particles('frenkelpair', 2, method, mat=[0]) # creates 1 singlet exciton randomly at either material 0 or 1
 #########################################################################################

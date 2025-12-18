@@ -2,8 +2,6 @@
 requires = [
   "setuptools>=64",
   "wheel",
-  "numpy<2",
-  "cython>=0.29.36",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -48,14 +46,6 @@ include-package-data = true
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*", "*.tests", "*.tests.*"]
 
-
-
-
-
 [[tool.setuptools.ext-modules]]
-
-
 name = "kmc.utils"
-
-
 sources = ["kmc/utils.c"]
