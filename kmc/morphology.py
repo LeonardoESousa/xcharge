@@ -274,12 +274,17 @@ class Electric():
         system.set_electric_field(self.field)
 #################### CIF READER ##########################
 class ReadCIF():
-    def __init__(self,file,mult_cell,label):
+    def __init__(self,file,mult_cell,label,remove_species=[]):
         self.file = file
         self.mult_cell = mult_cell 
         self.label = label
+        self.remove_species = remove_species
     def assign_to_system(self,system):      
         structure = Structure.from_file(self.file)
+        
+        if self.remove_species:
+            structure.remove_species(self.remove_species)
+        
         structure = structure.make_supercell(self.mult_cell)
         xyz       = structure.cart_coords
         species   = [ x.symbol for x in structure.species]

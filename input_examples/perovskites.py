@@ -13,24 +13,30 @@ from kmc.particles import *
 identifier         = 'perovskites' #output identifier
 cutoff             = 10   # in Angstroms
 time_limit         = np.inf # in ps
-animation_mode     = True  # if you want to see the animation
-save_animation     = False  # if you want to save the animation
-animation_exten    = 'gif'  # possible options ('gif' and 'mp4')
-rotate             = False  # True = animation rotates, False = remains fixed
-marker_type        = 1      # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
-pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
 rounds             = 1   # Number of rounds
 n_proc             = 1      # Number of cores to be used
 frozen_lattice     = True   # if you want for the lattice to remain the same for all rounds
 periodic           = False  # if you want periodic boundary conditions
 bimolec            = False  # Turn on annihilation
+###ANIMATION SETTINGS####################################################################
+square_ratio       = False
+pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
+marker_type        = 1      # marker type used at the animation processs ( 0 = balls, 1 = symbols)
+animation_mode     = True  # if you want to see the animation
+save_animation     = False  # if you want to save the animation
+animation_exten    = 'gif'  # possible options ('gif' and 'mp4')
+rotate             = False  # True = animation rotates, False = remains fixed
+plot_type          = "scatter" # options: scatter or sphere
+clean_vis          = False  # vizualization with no background and axis
+scatter_alpha      = 0.5 # alpha of the scatter plot
+sizes_dic          = {0:50, 1:150} # size of the materials in the animation mode
+colors_dic         = {0:'#1FF56D', 1:'#723E9A'} # colors of the materials
 #########################################################################################
 
 ###DEFECTS PROCESSES######################################################################
-
-cif_label = {'Cs':0,'I':1} #site indexing
-Cs        = cif_label['Cs']
-I         = cif_label['I']
+material_label  = {'Cs':0,'I':1} #site indexing
+Cs         = material_label['Cs']
+I          = material_label['I']
 
 
 # FRENKEL PAIR DISSOCIAITON
@@ -73,8 +79,9 @@ composition       = [0.5,0.5]       #population probability Ex.: composition[0] 
 
 # building the lattice through cif file
 file = 'cifexample.cif' #filename
-multiply_cell = [1,1,4] # multiplication of the unit cel by a vector v = a + b + c
-lattice_func = morphology.ReadCIF(file,multiply_cell,cif_label)
+remove_species = ['Br']
+multiply_cell  = [2,3,4] # multiplication of the unit cel by a vector v = a + b + c
+lattice_func   = morphology.ReadCIF(file,multiply_cell,material_label,remove_species)
 
 
 

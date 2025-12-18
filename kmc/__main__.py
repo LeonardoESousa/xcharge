@@ -9,6 +9,7 @@ import os
 import copy
 import matplotlib.pyplot as plt
 from matplotlib import animation
+from matplotlib.lines import Line2D
 import importlib  
 import inspect
 import kmc.variables
@@ -66,6 +67,15 @@ periodic       = set_variables('periodic')
 n_proc         = set_variables('n_proc')
 rounds         = set_variables('rounds')
 cutoff         = set_variables('cutoff')
+colors_dic     = set_variables('colors_dic')
+sizes_dic      = set_variables('sizes_dic')
+square_ratio   = set_variables('square_ratio')
+scatter_alpha  = set_variables('scatter_alpha')
+clean_vis      = set_variables('clean_vis')
+material_label = set_variables('material_label')
+material_leg   = set_variables('material_leg')
+sizes_dic      = set_variables('sizes_dic')
+plot_type      = set_variables('plot_type')
 #####
 
 
@@ -115,6 +125,7 @@ if periodic:
     distance = periodic_distance
 else:
     distance =  regular_distance    
+
             
 def make_system():
     #Create instance of system
@@ -235,20 +246,43 @@ def spectra(system,f):
     for s in system.dead:
         texto += s.write()
     f.write(texto+f'END\n')
-        
-def animate(num,system,ax,marker_option,rotate): 
+
+
+def draw_sphere(ax, center, radius, color, margin_size, resolution=30):
+    [[x_min,y_min,z_min],[x_max,y_max,z_max]] = margin_size
+
+
+    u = np.linspace(0, 2*np.pi, resolution)
+    v = np.linspace(0, np.pi, resolution)
+
+    x = (radius*(x_max-x_min))* np.outer(np.cos(u), np.sin(v)) + center[0]
+    y = (radius*(y_max-y_min)) * np.outer(np.sin(u), np.sin(v)) + center[1]
+    z = (radius*(z_max-z_min)) * np.outer(np.ones_like(u), np.cos(v)) + center[2]
+
+    ax.plot_surface(x, y, z, color=color, shade=True)
+
+
+
+def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size): 
     Ss = step(system)
     X, Y, Z = system.X, system.Y, system.Z        
     mats = system.mats                            
     ax.clear()
     #ploting the sites according to mat index
-    colors_dic = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
     n_mats = np.unique(mats)
     for mat in n_mats:
         X_mat = X[mats == mat]
         Y_mat = Y[mats == mat]
         Z_mat = Z[mats == mat]
-        ax.scatter(X_mat,Y_mat,Z_mat,alpha=0.25,color=colors_dic.get(int(mat)))
+        ax.set_proj_type('persp')
+        
+        if plot_type == "sphere":
+            indx = len(X_mat)
+            for i in range(indx):
+                #draw_sphere(ax, [X_mat[i],Y_mat[i],Z_mat[i]], 0.03*(sizes_dic[int(mat)]/np.amax(list(sizes_dic.values()))), colors_dic.get(int(mat)), margin_size, resolution=40)
+                draw_sphere(ax, [X_mat[i],Y_mat[i],Z_mat[i]], 0.03, colors_dic.get(int(mat)), margin_size, resolution=15)
+        else:
+            ax.scatter(X_mat,Y_mat,Z_mat,alpha=scatter_alpha,color=colors_dic.get(int(mat)),s=sizes_dic[int(mat)],depthshade=True)
     try:  
         for s in Ss:
             xs = X[s.position]        	
@@ -258,24 +292,45 @@ def animate(num,system,ax,marker_option,rotate):
             if marker_option == 1:
                 ax.scatter(xs,ys,zs,marker=s.marker,color=s.color,s=200,alpha=1,label=s.species)      
             if marker_option == 0:
-                ax.scatter(xs,ys,zs,color=s.color,s=100,alpha=1,label=s.species)               
+                ax.scatter(xs,ys,zs,color=s.color,s=100,alpha=1,label=s.species)                 
     except:
         pass
-    
     if rotate:#rotating the animation by an angle of IT
         ax.view_init(azim = system.IT)
     
     #removing duplicates on legend    
     handles, labels = plt.gca().get_legend_handles_labels()
-    by_label = dict(zip(labels, handles))
-    plt.legend(by_label.values(), by_label.keys())
-    ax.text2D(0.03, 0.98, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
-    ax.text2D(0.03, 0.94, "npart  = %.0f"  % (len(system.particles)), transform=ax.transAxes) #npart
+    by_label = dict(sorted(zip(labels, handles))) #sorted to preserve the ordering in the legend
+    particle_legend = ax.legend(by_label.values(), by_label.keys())
+    ax.add_artist(particle_legend)
+    ax.text2D(0.03, 0.97, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
+    ax.text2D(0.03, 0.93, "npart  = %.0f"  % (len(system.particles)), transform=ax.transAxes) #npart
     
+             
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')     
-
+    
+    if square_ratio:
+        ax.set_box_aspect([1, 1, 1])
+    if clean_vis: #cleaning the visualization
+        ax.set_axis_off()
+        ax.grid(False)
+        ax.set_position([0, 0, 1, 1]) #animation occupies more of the screen
+    if material_leg:#here, we add a specific legend for the material species, which is a fixed set of elements
+        legend_elements = []
+        mat_lab = material_label.keys()
+        for mat in mat_lab:
+          leg = Line2D([0], [0],
+               marker='o',
+               linestyle='None',
+               label=mat,
+               markerfacecolor=colors_dic[material_label[mat]],
+               markeredgecolor=colors_dic[material_label[mat]],
+               markersize=10)
+          legend_elements.append(leg)
+        mat_legend = ax.legend(handles=legend_elements, title='Materials', loc='lower right')
+        ax.add_artist(mat_legend)
     return ax,
 
 def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
@@ -339,13 +394,20 @@ def run_animation():
             ani_running  = False
 
     system = make_system()
+    
+    
+    #calculating the border for visualization purposes
+
+    p_max = [ np.amax(x) for x in [ list(system.X), list(system.Y),list(system.Z)]]
+    p_min = [ np.amin(x) for x in [ list(system.X), list(system.Y),list(system.Z)]]
                     
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     fig.canvas.mpl_connect('button_press_event', onClick) #pausing if clicking
     fig.canvas.mpl_connect('draw_event', lambda event: pause_plot(event, pause)) #pausing if pause = True at the first frame
    
-    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate],
+        
+    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate,colors_dic,[p_min,p_max]],
                                     interval=25, blit=True,repeat=False,cache_frame_data=True)#,save_count=1000)  
                              
                                        

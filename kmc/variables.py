@@ -15,6 +15,16 @@ periodic        = False
 n_proc          = 1
 rounds          = 1
 cutoff          = np.inf
-#####
+
+##### ANIMATION SETTINGS  ##################################
+material_label = {'mat 0':0,'mat 1':1, 'mat 2': 2}
+colors_dic     = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+sizes_dic      = {0:50, 1:50, 2:50, 3:50, 4:50}
+square_ratio   = True
+material_leg   = True
+plot_type      = "sphere" # options: sphere or scatter
+scatter_alpha  = 0.3
+clean_vis      = True
+###############################################################
 
 
