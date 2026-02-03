@@ -478,4 +478,31 @@ class Formation:
             if isinstance(p, Interstitial) and p.position == local:
                 p.kill('interstitial', system, system.s1, 'converted')
                 break
+#########################################################################################
+class FP_generation:
+    def __init__(self,**kwargs):
+        self.kind = 'generation'
+        self.k = kwargs['k']
+
+    def rate(self,**kwargs):
+        return self.k#[kwargs['material']]
+     
+    def action(self,system,**kwargs):
+        npart            = kwargs['npart']
+        forbidden_sites  = set().union(*(system.positions_by_species.values()))
+        all_sites        = set(range(len(system.X)))
+        avail_sites      = list(all_sites - forbidden_sites)
+        #print(f'avail sites {len(avail_sites)}')
+        try:
+            #num_FP   = int(len(avail_sites)*(random.uniform(0,1)))        
+            selected = random.sample(avail_sites, npart)
+            for selec in selected:
+                FP = Frenkelpair(selec)
+                system.set_particles([FP])
+                #reporting in
+                FP.make_text(system,system.s1,causamortis='generated')
+                
+            #print("creating a particle!")
+        except:
+            print("I could not find an avaiable site to create FP. This is a warning")
 

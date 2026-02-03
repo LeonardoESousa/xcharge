@@ -15,7 +15,8 @@ periodic        = False
 n_proc          = 1
 rounds          = 1
 cutoff          = np.inf
-
+time_units      = 'ps'
+generation      = {'ghost':None}
 ##### ANIMATION SETTINGS  ##################################
 material_label = {'mat 0':0,'mat 1':1, 'mat 2': 2}
 colors_dic     = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}

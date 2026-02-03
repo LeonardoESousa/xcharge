@@ -53,6 +53,7 @@ def set_variables(name):
     except:
         return getattr(kmc.variables, name)
 
+generation     = set_variables('generation')
 identifier     = set_variables('identifier')     
 animation_mode = set_variables('animation_mode') 
 save_animation = set_variables('save_animation') 
@@ -76,6 +77,7 @@ material_label = set_variables('material_label')
 material_leg   = set_variables('material_leg')
 sizes_dic      = set_variables('sizes_dic')
 plot_type      = set_variables('plot_type')
+time_units     = set_variables('time_units')
 #####
 
 
@@ -133,7 +135,7 @@ def make_system():
     #Sets system properties  
     for argumento in argumentos:
         argumento.assign_to_system(system)
-    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance) 
+    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance,generation) 
  
     return system 
     
@@ -180,6 +182,7 @@ def decision(s,system):
 ########ITERATION FUNCTIONS#######################################################
 def step_nonani(system): 
     while system.count_particles() > 0 and system.time < system.time_limit:
+        print(system.time,system.count_particles())   
         system.IT += 1
         Ss = system.particles.copy()
         random.shuffle(Ss)
@@ -193,7 +196,27 @@ def step_nonani(system):
                     R.append(Rs)  
                     dests.append(s.destination)  
         R = np.array(R)
-        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+        dt = (1/np.mean(R))*np.log(1/random.uniform(0,1)) #np.mean((1/R)*np.log(1/random.uniform(0,1))) 
+        system.time += dt
+        ##################################################
+        # particle GENERATION #
+        gen               = system.generation
+        kinds             = gen.keys()
+        kinds_shuffled    = random.sample(kinds, k=len(kinds))
+        for kind in kinds:
+            rates = gen[kind]
+            for rate in rates:
+                k = rate.rate()
+                ratio = dt/(1/k)
+                #print(kind,rate,ratio,f'{dt:.2f}')
+                if ratio > 1:
+                    npart = round(ratio)
+                    rate.action(system,npart=npart)
+                else:
+                    if ratio >= random.uniform(0,1):
+                        rate.action(system,npart=1)
+        ##################################################
+        #Ss = system.particles.copy()
         for s in Ss:
             s.stamp_time(system)                   
     Ss = system.particles.copy()
@@ -216,10 +239,30 @@ def step_ani(system):
                     R.append(Rs)  
                     dests.append(s.destination)  
         R = np.array(R)
-        system.time += np.mean((1/R)*np.log(1/random.uniform(0,1)))   
+        dt = (1/np.mean(R))*np.log(1/random.uniform(0,1)) #np.mean((1/R)*np.log(1/random.uniform(0,1))) 
+        system.time += dt
+        ##################################################
+        # particle GENERATION #
+        gen               = system.generation
+        kinds             = gen.keys()
+        kinds_shuffled    = random.sample(kinds, k=len(kinds))
+        for kind in kinds:
+            rates = gen[kind]
+            for rate in rates:
+                k = rate.rate()
+                ratio = dt/(1/k)
+                #print(kind,rate,ratio,f'{dt:.2f}')
+                if ratio >= 1:
+                    npart = round(ratio)
+                    rate.action(system,npart=1)
+                else:
+                    if ratio >= random.uniform(0,1):
+                        rate.action(system,npart=1)
+        ##################################################
+        Ss = system.particles.copy() #updating the list
         for s in Ss:
             s.stamp_time(system)
-        return Ss
+        return Ss                   
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
@@ -307,7 +350,8 @@ def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
     by_label = dict(sorted(by_label.items(), key=lambda kv: kv[0]))
     particle_legend = ax.legend(by_label.values(), by_label.keys())
     ax.add_artist(particle_legend)
-    ax.text2D(0.03, 0.97, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
+    #ax.text2D(0.03, 0.97, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
+    ax.text2D(0.03, 0.97, f"time = {system.time:.2e} {time_units}", transform=ax.transAxes) #time
     ax.text2D(0.03, 0.93, "npart  = %.0f"  % (len(system.particles)), transform=ax.transAxes) #npart
     
              
@@ -447,10 +491,14 @@ def main():
             syst = make_system()
             run = RUN_FREEZE
             args = [(i, syst) for i in range(rounds)]
+        #debug
+        #for arg in args:
+        #    run(arg)
+        #'''
         with open(filename, "a") as f:
             for result in tqdm.tqdm(p.imap(run, args),total=rounds):
                 spectra(result,f)        
-
+        #'''
 
 if __name__ == "__main__":
     sys.exit(main())        

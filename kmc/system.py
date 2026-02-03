@@ -29,7 +29,7 @@ class System:
         self.uniq = np.unique(Mats)       
 
 
-    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,distance):
+    def set_basic_info(self,monomolecular,processes,identifier,animation_mode,time_limit,pause,anni,distance,generation):
         self.processes           = processes
         self.monomolecular       = monomolecular
         self.identifier          = identifier
@@ -38,7 +38,7 @@ class System:
         self.pause               = pause
         self.bimolec             = anni
         self.distance            = distance
-    
+        self.generation          = generation    
     def set_particles(self,Ss):
         try:
             self.particles += Ss
