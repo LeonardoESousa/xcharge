@@ -8,9 +8,11 @@
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *
+import sys
 
 ###BASIC PARAMETERS######################################################################
-identifier         = 'generation' #output identifier
+K_GEN = float(sys.argv[2])
+identifier         = 'generation_'+sys.argv[2] #output identifier
 cutoff             = 10   # in Angstroms
 #time_limit         = np.inf # in ps
 rounds             = 10000   # Number of rounds
@@ -52,22 +54,20 @@ k_annihilation = {Cs:kaniq, I:kaniq} # annihilation rates for each material comb
 annihilation = Annihilation(k=k_annihilation)
 
 # VACANCY/INTERSTITIAL MIGRATION
-km=1E-5
+km=0
 k_migration = {(Cs,Cs):km, (Cs,I):0, (I,Cs):0, (I,I):km} # migration rates for each material combination
 migration = Migration(k=k_migration)
 
 # FRENKEL PAIR FORMATION (VACANCY + INTERSTITIAL)
-k_formation = 1e-1 # formation rates for each material combination
+k_formation = 0 # formation rates for each material combination
 formation = Formation(k=k_formation)
 
-k_generation =1E-7#{Cs:1e-8, I:0} # annihilation rates for each material combination
+k_generation =K_GEN#{Cs:1e-8, I:0} # annihilation rates for each material combination
 gen = FP_generation(k=k_generation)
 ###PROCESSES#############################################################################
-
-#processes = {'vacancy':[migration, formation], 'interstitial':[migration], 'frenkelpair':[dissociation]}
 processes = {'vacancy':[migration,formation], 'interstitial':[migration], 'frenkelpair':[dissociation]}
 monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair':[annihilation]}
-generation = [gen]#{'vacancy':[], 'interstitial':[], 'frenkelpair':[gen]}
+generation = [gen]
 #########################################################################################
 
 ###MORPHOLOGY############################################################################

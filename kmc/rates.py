@@ -403,7 +403,6 @@ class Migration:
 
     def action(self,particle,system,local):
         particle.move(local,system)
-
 class DissociationFP:
     def __init__(self,**kwargs):
         self.kind = 'dissociation_fp'
@@ -501,7 +500,7 @@ class FP_generation:
                 system.set_particles([FP])
                 #reporting in
                 FP.make_text(system,system.s1,causamortis='generated')
-                
+                FP.stamp_time(system)
             #print("creating a particle!")
         except:
             print("I could not find an avaiable site to create FP. This is a warning")

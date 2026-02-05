@@ -180,50 +180,54 @@ def decision(s,system):
     return soma
 
 ########ITERATION FUNCTIONS#######################################################
-def step_nonani(system): 
+def chose_generation(system):
+    try:
+      genrates = system.generation
+      K_gen = [ gen.rate() for gen in genrates ]
+      prob_gens   = np.cumsum(K_gen)/np.sum(K_gen)
+      u = random.uniform(0,1)
+      choose_gen = np.argmax(prob_gens >= u)
+      return genrates[choose_gen], K_gen[choose_gen]
+    except Exception as e:
+      return 0,0
+def step_nonani(system):
     while system.count_particles() > 0 and system.time < system.time_limit:
-        print(system.time,system.count_particles())   
+        #print(system.IT,f'{system.time:.2e}',len(system.particles))
         system.IT += 1
+        event_g, K_g = chose_generation(system)
+        
         Ss = system.particles.copy()
-        random.shuffle(Ss)
-        R, dests  = [],[]
-        for s in Ss:
-            if s in system.particles:
-                Rs = decision(s,system)
-                if s.destination not in dests:
-                    s.process.action(s,system,s.destination)
-                    bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
-                    R.append(Rs)  
-                    dests.append(s.destination)  
-        R = np.array(R)
-        dt = (1/np.mean(R))*np.log(1/random.uniform(0,1)) #np.mean((1/R)*np.log(1/random.uniform(0,1))) 
+        Rs = np.array([decision(s, system) for s in Ss])
+        sum_Rs = np.sum(Rs)
+        
+        R_total = sum_Rs + K_g
+        Prob    = [K_g,sum_Rs]
+        Prob    = np.cumsum(Prob)/R_total
+        
+        dt = (1 / R_total) * np.log(1 / random.uniform(0, 1))
         system.time += dt
-        ##################################################
-        # particle GENERATION #
-        gen               = system.generation
-        kinds             = gen.keys()
-        kinds_shuffled    = random.sample(kinds, k=len(kinds))
-        for kind in kinds:
-            rates = gen[kind]
-            for rate in rates:
-                k = rate.rate()
-                ratio = dt/(1/k)
-                #print(kind,rate,ratio,f'{dt:.2f}')
-                if ratio > 1:
-                    npart = round(ratio)
-                    rate.action(system,npart=npart)
-                else:
-                    if ratio >= random.uniform(0,1):
-                        rate.action(system,npart=1)
-        ##################################################
-        #Ss = system.particles.copy()
-        for s in Ss:
-            s.stamp_time(system)                   
+    
+        u = random.uniform(0, 1)
+        if u < Prob[0]:
+            # --- GENERATION EVENT ---
+            event_g.action(system, npart=1)
+        else:
+            # --- PARTICLE-BASED EVENT ---
+            u_part = random.uniform(0, 1)#u - K_g 
+            prob_part = np.cumsum(Rs)
+            choose_part = np.argmax(prob_part >= u_part)
+            
+            s = Ss[choose_part]
+            
+            # Execute the action
+            s.process.action(s, system, s.destination)
+            bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
+            s.stamp_time(system)
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
         s.stamp_time(system)
- 
+
 def step_ani(system):
     while system.count_particles() > 0 and system.time < system.time_limit:
         system.IT += 1
@@ -492,8 +496,11 @@ def main():
             run = RUN_FREEZE
             args = [(i, syst) for i in range(rounds)]
         #debug
+        #'''
         #for arg in args:
-        #    run(arg)
+        #    result = run(arg)
+        #    with open(filename, "a") as f:
+        #        spectra(result,f)
         #'''
         with open(filename, "a") as f:
             for result in tqdm.tqdm(p.imap(run, args),total=rounds):

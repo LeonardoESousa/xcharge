@@ -30,5 +30,7 @@ jobs:
           python -m pip install pandas pytest
           python -m pip install .
 
-      - name: Test with pytest
-        run: pytest -s pytest/test_equiv.py
+          - name: Test with pytest
+          run: pytest -s pytest/test_equiv.py
+          - name: Frenkel pair generation test
+          run: pytest -s pytest/test_FP.py

@@ -38,7 +38,7 @@ class System:
         self.pause               = pause
         self.bimolec             = anni
         self.distance            = distance
-        self.generation          = generation    
+        self.generation          = generation 
     def set_particles(self,Ss):
         try:
             self.particles += Ss

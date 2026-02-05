@@ -100,3 +100,10 @@ class Frenkelpair(Particles):
         self.charge = 0
         self.color  = "brown"
         self.marker = "$FP$"
+        
+class Ghost(Particles):
+    def __init__(self,initial):
+        Particles.__init__(self,'ghost',initial) 
+        self.charge = 0
+        self.color  = None
+        self.marker = None
