@@ -37,7 +37,7 @@ class Particles:
     def stamp_time(self,system):
         if self.texto != '':
             texto = self.texto
-            texto = texto.replace('TEMPO',f'{system.time:.0f}')
+            texto = texto.replace('TEMPO',f'{system.time:.12e}')
             self.report += texto+'\n'
             self.texto = ''
         

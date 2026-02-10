@@ -78,6 +78,7 @@ material_leg   = set_variables('material_leg')
 sizes_dic      = set_variables('sizes_dic')
 plot_type      = set_variables('plot_type')
 time_units     = set_variables('time_units')
+particle_condition = set_variables('particle_condition')
 #####
 
 
@@ -191,7 +192,48 @@ def chose_generation(system):
     except Exception as e:
       return 0,0
 def step_nonani(system):
-    while system.count_particles() > 0 and system.time < system.time_limit:
+    while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
+        print(system.IT,f'{system.time:.2e}',len(system.particles))
+        system.IT += 1
+        event_g, K_g = chose_generation(system)
+        
+        Ss = system.particles.copy()
+        Rs = np.array([decision(s, system) for s in Ss])
+        sum_Rs = np.sum(Rs)
+        
+        R_total = sum_Rs + K_g
+        Prob    = [K_g,sum_Rs]
+        Prob    = np.cumsum(Prob)/R_total
+        
+        dt = (1 / R_total) * np.log(1 / random.uniform(0, 1))
+        system.time += dt
+    
+        u = random.uniform(0, 1)
+        if u < Prob[0]:
+            # --- GENERATION EVENT ---
+            event_g.action(system, npart=1)
+        else:
+            # --- PARTICLE-BASED EVENT ---
+            u_part = random.uniform(0, 1) 
+            prob_part = np.cumsum(Rs)
+            choose_part = np.argmax(prob_part >= u_part)
+            
+            s = Ss[choose_part]
+            
+            # Execute the action
+            s.process.action(s, system, s.destination)
+            bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
+            s.stamp_time(system)
+            #print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
+            #for i, (x,y) in enumerate(zip([x.species for x in Ss],Rs)):
+            #    print(x,y) 
+    Ss = system.particles.copy()
+    for s in Ss:
+        s.kill('alive',system,system.s1,'alive')
+        s.stamp_time(system)
+
+def step_ani(system):
+    while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
         #print(system.IT,f'{system.time:.2e}',len(system.particles))
         system.IT += 1
         event_g, K_g = chose_generation(system)
@@ -223,50 +265,7 @@ def step_nonani(system):
             s.process.action(s, system, s.destination)
             bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
             s.stamp_time(system)
-    Ss = system.particles.copy()
-    for s in Ss:
-        s.kill('alive',system,system.s1,'alive')
-        s.stamp_time(system)
-
-def step_ani(system):
-    while system.count_particles() > 0 and system.time < system.time_limit:
-        system.IT += 1
-        Ss = system.particles.copy()
-        random.shuffle(Ss)
-        R, dests = [], []
-        for s in Ss:
-            if s in system.particles:
-                Rs = decision(s,system)
-                if s.destination not in dests:
-                    s.process.action(s,system,s.destination)
-                    bi_func(system,kmc.bimolecular.bimolec_funcs_array,s.destination)
-                    R.append(Rs)  
-                    dests.append(s.destination)  
-        R = np.array(R)
-        dt = (1/np.mean(R))*np.log(1/random.uniform(0,1)) #np.mean((1/R)*np.log(1/random.uniform(0,1))) 
-        system.time += dt
-        ##################################################
-        # particle GENERATION #
-        gen               = system.generation
-        kinds             = gen.keys()
-        kinds_shuffled    = random.sample(kinds, k=len(kinds))
-        for kind in kinds:
-            rates = gen[kind]
-            for rate in rates:
-                k = rate.rate()
-                ratio = dt/(1/k)
-                #print(kind,rate,ratio,f'{dt:.2f}')
-                if ratio >= 1:
-                    npart = round(ratio)
-                    rate.action(system,npart=1)
-                else:
-                    if ratio >= random.uniform(0,1):
-                        rate.action(system,npart=1)
-        ##################################################
-        Ss = system.particles.copy() #updating the list
-        for s in Ss:
-            s.stamp_time(system)
-        return Ss                   
+        return system.particles.copy() #Ss  <--- returns wrong number if generation is active                
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
@@ -357,7 +356,6 @@ def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
     #ax.text2D(0.03, 0.97, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
     ax.text2D(0.03, 0.97, f"time = {system.time:.2e} {time_units}", transform=ax.transAxes) #time
     ax.text2D(0.03, 0.93, "npart  = %.0f"  % (len(system.particles)), transform=ax.transAxes) #npart
-    
              
     ax.set_xlabel('X')
     ax.set_ylabel('Y')

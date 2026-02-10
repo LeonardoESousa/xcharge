@@ -377,7 +377,6 @@ def filter(num,ks, mat, mats, materials_list):
   for m in materials_list:
     if m != mat:
       taxas = np.where(mats == m, ks[(mat,m)], taxas)
-
   return taxas
 
 
@@ -395,8 +394,20 @@ class Migration:
         mats   = kwargs['mats']    
         local = np.argwhere(r == 0)[0][0]
         mat = mats[local]
+        cut      = kwargs['cut']   # full-lattice indices of those neighbors
         
+        if cut is None:
+            # Fallback: assume contiguous slice from 0
+            cut = np.arange(len(r))        
+        
+        #migration can not occur in occupied sites!
+        forbidden_sites  = set().union(*(system.positions_by_species.values()))
+        occupied = np.fromiter((site in forbidden_sites for site in cut),
+                               dtype=bool, count=len(r))
+                               
+                               
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
+        taxa = np.where(occupied, 0.0, taxa) # if occupied, rate is 0, else, remain the calc value
         taxa[local] = 0
         return taxa
 
@@ -417,9 +428,19 @@ class DissociationFP:
         mats     = kwargs['mats']        
         mat      = mats[local]
         num      = len(mats)
-
+        cut      = kwargs['cut']   # full-lattice indices of those neighbors
+        
+        if cut is None:
+            # Fallback: assume contiguous slice from 0
+            cut = np.arange(len(r))        
+        
+        #dissociation can not occur in occupied sites!
+        forbidden_sites  = set().union(*(system.positions_by_species.values()))
+        occupied = np.fromiter((site in forbidden_sites for site in cut),
+                               dtype=bool, count=len(r))
         
         taxa        = filter(num,self.k,mat,mats,self.materials_list)
+        taxa        = np.where(occupied, 0.0, taxa) # if occupied, rate is 0, else, remain the calc value
         taxa[local] = 0
         return taxa
                  
@@ -493,15 +514,22 @@ class FP_generation:
         avail_sites      = list(all_sites - forbidden_sites)
         #print(f'avail sites {len(avail_sites)}')
         try:
-            #num_FP   = int(len(avail_sites)*(random.uniform(0,1)))        
+            #npart   = int(len(avail_sites)*(random.uniform(0,1)))    
             selected = random.sample(avail_sites, npart)
+        except Exception as e:
+            print(e)
+            print("I could not find an avaiable site to create FP. This is a warning")
+            selected = []
+        if len(selected) > 0:
+            #print(len(system.X))    
+            #print(avail_sites)
+            #print(selected)        
             for selec in selected:
                 FP = Frenkelpair(selec)
                 system.set_particles([FP])
                 #reporting in
                 FP.make_text(system,system.s1,causamortis='generated')
                 FP.stamp_time(system)
-            #print("creating a particle!")
-        except:
-            print("I could not find an avaiable site to create FP. This is a warning")
+                #print("creating a particle!")
+
 

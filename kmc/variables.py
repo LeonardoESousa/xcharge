@@ -16,6 +16,7 @@ n_proc          = 1
 rounds          = 1
 cutoff          = np.inf
 time_units      = 'ps'
+particle_condition = True
 generation      = []#{'ghost':None}
 ##### ANIMATION SETTINGS  ##################################
 material_label = {'mat 0':0,'mat 1':1, 'mat 2': 2}
