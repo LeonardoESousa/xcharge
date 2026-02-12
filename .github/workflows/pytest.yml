@@ -22,15 +22,15 @@ jobs:
 
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
+- name: Install dependencies + package
+  run: |
+    python -m pip install --upgrade pip
+    python -m pip install --upgrade setuptools wheel
+    python -m pip install pandas pytest
+    python -m pip install .
 
-      - name: Install dependencies + package
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools wheel
-          python -m pip install pandas pytest
-          python -m pip install .
+- name: Test with pytest (equiv)
+  run: pytest -s pytest/test_equiv.py
 
-          - name: Test with pytest
-          run: pytest -s pytest/test_equiv.py
-          - name: Frenkel pair generation test
-          run: pytest -s pytest/test_FP.py
+- name: Frenkel pair generation test
+  run: pytest -s pytest/test_FP.py
