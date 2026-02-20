@@ -11,7 +11,7 @@ version = "0.0.1"
 description = "Kinetic Monte Carlo"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.6"
-license = "MIT"
+license = {file= "LICENSE"}
 authors = [
   { name = "Leonardo Evaristo de Sousa", email = "ledso@dtu.dk" },
   { name = "Tiago de Sousa Araújo Cassiano" }

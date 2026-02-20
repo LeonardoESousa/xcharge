@@ -15,6 +15,7 @@ periodic        = False
 n_proc          = 1
 rounds          = 1
 cutoff          = np.inf
+FPcutoff        = 3
 time_units      = 'ps'
 particle_condition = True
 generation      = []#{'ghost':None}

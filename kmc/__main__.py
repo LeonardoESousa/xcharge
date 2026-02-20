@@ -68,6 +68,7 @@ periodic       = set_variables('periodic')
 n_proc         = set_variables('n_proc')
 rounds         = set_variables('rounds')
 cutoff         = set_variables('cutoff')
+FPcutoff       = set_variables('FPcutoff')
 colors_dic     = set_variables('colors_dic')
 sizes_dic      = set_variables('sizes_dic')
 square_ratio   = set_variables('square_ratio')
@@ -134,9 +135,9 @@ def make_system():
     #Create instance of system
     system = System()
     #Sets system properties  
+    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance,generation,[cutoff,FPcutoff]) 
     for argumento in argumentos:
         argumento.assign_to_system(system)
-    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance,generation) 
  
     return system 
     
@@ -171,11 +172,16 @@ def decision(s,system):
     sizes     = np.array([len(i) for i in jump_rate])
     jump_rate = np.concatenate(jump_rate)
     labels    = hop+mono
-    soma, jump = kmc.utils.jump(jump_rate,len(jump_rate),random.uniform(0,1))
+    soma, jump = kmc.utils.jump(np.array(jump_rate,dtype=np.float64),len(jump_rate),random.uniform(0,1)) #dtype mismatch if the number, by chance, is integer. Force conversion
     destino   = np.argmax(np.cumsum(sizes) -1 >= jump)
     s.process = labels[destino]
     if destino < len(hop):
         s.destination = cut[int(jump - np.sum(sizes[:destino]))]
+        if s.process.__class__.__name__ == "Formation": #different cut, different handling
+            #fix here needed, failed attempt below
+            #FPCUT=np.where(r < system.FPcutoff)[0]
+            #s.destination = FPCUT[int(jump - np.sum(sizes[:destino]))]
+            pass
     else:
         s.destination = local
     return soma
@@ -190,6 +196,7 @@ def chose_generation(system):
       choose_gen = np.argmax(prob_gens >= u)
       return genrates[choose_gen], K_gen[choose_gen]
     except Exception as e:
+      print("Generation errror:",e)
       return 0,0
 def step_nonani(system):
     while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
@@ -212,10 +219,11 @@ def step_nonani(system):
         if u < Prob[0]:
             # --- GENERATION EVENT ---
             event_g.action(system, npart=1)
+            print(f'at time {system.time:.10e}, event: generation, dt: {dt:.2e}')
         else:
             # --- PARTICLE-BASED EVENT ---
             u_part = random.uniform(0, 1) 
-            prob_part = np.cumsum(Rs)
+            prob_part = np.cumsum(Rs)/sum_Rs
             choose_part = np.argmax(prob_part >= u_part)
             
             s = Ss[choose_part]
@@ -224,7 +232,7 @@ def step_nonani(system):
             s.process.action(s, system, s.destination)
             bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
             s.stamp_time(system)
-            #print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
+            print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
             #for i, (x,y) in enumerate(zip([x.species for x in Ss],Rs)):
             #    print(x,y) 
     Ss = system.particles.copy()
@@ -248,15 +256,18 @@ def step_ani(system):
         
         dt = (1 / R_total) * np.log(1 / random.uniform(0, 1))
         system.time += dt
-    
+
+        #print(Prob)
+        print(f'IT {system.IT} before:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
         u = random.uniform(0, 1)
         if u < Prob[0]:
             # --- GENERATION EVENT ---
             event_g.action(system, npart=1)
+            print(f'at time {system.time:.10e}, event: generation, dt: {dt:.2e}')
         else:
             # --- PARTICLE-BASED EVENT ---
             u_part = random.uniform(0, 1)#u - K_g 
-            prob_part = np.cumsum(Rs)
+            prob_part = np.cumsum(Rs)/sum_Rs
             choose_part = np.argmax(prob_part >= u_part)
             
             s = Ss[choose_part]
@@ -265,6 +276,10 @@ def step_ani(system):
             s.process.action(s, system, s.destination)
             bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
             s.stamp_time(system)
+            #print(prob_part,u,prob_part[choose_part])
+            print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
+            #print([system.mats[s.position] for s in system.particles])
+        print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
         return system.particles.copy() #Ss  <--- returns wrong number if generation is active                
     Ss = system.particles.copy()
     for s in Ss:
@@ -308,14 +323,24 @@ def draw_sphere(ax, center, radius, color, margin_size, resolution=30):
     ax.plot_surface(x, y, z, color=color, shade=True)
 
 
-
-def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size): 
+def draw_frankelpair(rS,rG,s,ax,marker,color,size,alpha):
+    xs,ys,zs = rS
+    xg,yg,zg = rG
+    ax.plot([xs,xg],[ys,yg],[zs,zg],color=s.color,alpha=0.5,label=s.species,linewidth=10)
+def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
+    try: #this is to freeze the frame at each iteration. Good for debug. Keeping here!
+       animate.event_source.stop()
+    except:
+       pass
     Ss = step(system)
+    if Ss is None:
+       Ss = []
+    
     X, Y, Z = system.X, system.Y, system.Z        
     mats = system.mats                            
     ax.clear()
     #ploting the sites according to mat index
-    n_mats = np.unique(mats)
+    n_mats = [ x for x in np.unique(mats) if x != 999]
     for mat in n_mats:
         X_mat = X[mats == mat]
         Y_mat = Y[mats == mat]
@@ -329,21 +354,50 @@ def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
                 draw_sphere(ax, [X_mat[i],Y_mat[i],Z_mat[i]], 0.03, colors_dic.get(int(mat)), margin_size, resolution=15)
         else:
             ax.scatter(X_mat,Y_mat,Z_mat,alpha=scatter_alpha,color=colors_dic.get(int(mat)),s=sizes_dic[int(mat)],depthshade=True)
+    '''
     try:  
         for s in Ss:
             xs = X[s.position]        	
             ys = Y[s.position]
             zs = Z[s.position]    
-                
+            if s.species == 'frenkelpair':
+                xg = X[s.ghost_site]        	
+                yg = Y[s.ghost_site]
+                zg = Z[s.ghost_site]
+                ax.scatter(xg,yg,zg,alpha=scatter_alpha,color=colors_dic.get(int(s.origin_site)),s=sizes_dic[int(s.origin_site)],depthshade=True) #drawing deactivated site
+                draw_frankelpair([xs,ys,zs],[xg,yg,zg],s,ax,marker=s.marker,color=s.color,size=200,alpha=1) #drawing the pair
+                continue
+            #print(system.mat[s.position])                
             if marker_option == 1:
                 ax.scatter(xs,ys,zs,marker=s.marker,color=s.color,s=200,alpha=1,label=s.species)      
             if marker_option == 0:
                 ax.scatter(xs,ys,zs,color=s.color,s=100,alpha=1,label=s.species)                 
-    except:
+    except Exception as e:
+        print('drawing error:',e)
         pass
+    '''
+    ########################
+    Ss =[ s for s in Ss if s.status=='alive']
+    for s in Ss:
+        xs = X[s.position]        	
+        ys = Y[s.position]
+        zs = Z[s.position]    
+        if s.species == 'frenkelpair':
+            xg = X[s.ghost_site]        	
+            yg = Y[s.ghost_site]
+            zg = Z[s.ghost_site]
+            print('printpart',s.position,s.ghost_site,s.status)
+            ax.scatter(xg,yg,zg,alpha=scatter_alpha,color=colors_dic.get(int(s.origin_site)),s=sizes_dic[int(s.origin_site)],depthshade=True) #drawing deactivated site
+            draw_frankelpair([xs,ys,zs],[xg,yg,zg],s,ax,marker=s.marker,color=s.color,size=200,alpha=1) #drawing the pair
+            continue
+            #print(system.mat[s.position])                
+        if marker_option == 1:
+            ax.scatter(xs,ys,zs,marker=s.marker,color=s.color,s=200,alpha=1,label=s.species)      
+        if marker_option == 0:
+            ax.scatter(xs,ys,zs,color=s.color,s=100,alpha=1,label=s.species)   
+    ############################              
     if rotate:#rotating the animation by an angle of IT
         ax.view_init(azim = system.IT)
-    
     #removing duplicates on legend    
     handles, labels = plt.gca().get_legend_handles_labels()
     # De-duplicate first (dict keeps last handle per label), then sort by label.
@@ -455,12 +509,13 @@ def run_animation():
     ax = fig.add_subplot(111, projection='3d')
     fig.canvas.mpl_connect('button_press_event', onClick) #pausing if clicking
     fig.canvas.mpl_connect('draw_event', lambda event: pause_plot(event, pause)) #pausing if pause = True at the first frame
-   
-        
-    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate,colors_dic,[p_min,p_max]],
-                                    interval=25, blit=True,repeat=False,cache_frame_data=True)#,save_count=1000)  
+       
+    #ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate,colors_dic,[p_min,p_max]],
+    #                                interval=25, blit=True,repeat=False,cache_frame_data=True)#,save_count=1000)  
                              
-                                       
+    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate,colors_dic,[p_min,p_max]],
+                                    interval=1, blit=True,repeat=False,cache_frame_data=True)                                   
+    animate.event_source = ani.event_source
     return ani 
     
 
@@ -495,14 +550,14 @@ def main():
             args = [(i, syst) for i in range(rounds)]
         #debug
         #'''
-        #for arg in args:
-        #    result = run(arg)
-        #    with open(filename, "a") as f:
-        #        spectra(result,f)
+        for arg in args:
+            result = run(arg)
+            with open(filename, "a") as f:
+                spectra(result,f)
         #'''
-        with open(filename, "a") as f:
-            for result in tqdm.tqdm(p.imap(run, args),total=rounds):
-                spectra(result,f)        
+        #with open(filename, "a") as f:
+        #    for result in tqdm.tqdm(p.imap(run, args),total=rounds):
+        #        spectra(result,f)        
         #'''
 
 if __name__ == "__main__":

@@ -371,12 +371,15 @@ class ISC:
 def filter(num,ks, mat, mats, materials_list):
   # Initialize the Raios array with the value of Rf[(mat,mat)]
   taxas = np.empty(num)
+  ks[(999,999)] =0
   taxas.fill(ks[(mat,mat)])
-
+  
   # Use NumPy's where function to set the values of Raios for the other materials
+  taxas = np.where(mats == 999, 0, taxas) # negating hop to ghost site
   for m in materials_list:
+    ks[(999,m)] = 0
     if m != mat:
-      taxas = np.where(mats == m, ks[(mat,m)], taxas)
+      taxas = np.where(mats == m, ks[(mat,m)], taxas) # where mats == m, rate will be ks[(m,m)]). To be stored in the already initialized taxas vec
   return taxas
 
 
@@ -388,12 +391,12 @@ class Migration:
         self.materials_list = list(set([key[0] for key in self.k.keys()]))
 
     def rate(self,**kwargs):
-        r      = kwargs['r']
-        system = kwargs['system']
+        r        = kwargs['r']
+        system   = kwargs['system']
         particle = kwargs['particle']
-        mats   = kwargs['mats']    
-        local = np.argwhere(r == 0)[0][0]
-        mat = mats[local]
+        mats     = kwargs['mats']    
+        local    = np.argwhere(r == 0)[0][0]
+        mat      = mats[local]
         cut      = kwargs['cut']   # full-lattice indices of those neighbors
         
         if cut is None:
@@ -418,35 +421,14 @@ class DissociationFP:
     def __init__(self,**kwargs):
         self.kind = 'dissociation_fp'
         self.k = kwargs['k']
-        self.materials_list = list(set([key[0] for key in self.k.keys()]))
-        
+        self.k[999] = 0
     def rate(self,**kwargs):
-        system   = kwargs['system']
-        r        = kwargs['r']
-        particle = kwargs['particle']
-        local = np.argwhere(r == 0)[0][0]
-        mats     = kwargs['mats']        
-        mat      = mats[local]
-        num      = len(mats)
-        cut      = kwargs['cut']   # full-lattice indices of those neighbors
-        
-        if cut is None:
-            # Fallback: assume contiguous slice from 0
-            cut = np.arange(len(r))        
-        
-        #dissociation can not occur in occupied sites!
-        forbidden_sites  = set().union(*(system.positions_by_species.values()))
-        occupied = np.fromiter((site in forbidden_sites for site in cut),
-                               dtype=bool, count=len(r))
-        
-        taxa        = filter(num,self.k,mat,mats,self.materials_list)
-        taxa        = np.where(occupied, 0.0, taxa) # if occupied, rate is 0, else, remain the calc value
-        taxa[local] = 0
-        return taxa
+        return self.k[kwargs['material']]
                  
     def action(self,particle,system,local):
         I = Interstitial(particle.position)
-        V = Vacancy(local) 
+        V = Vacancy(particle.ghost_site)
+        system.mats[particle.ghost_site] = particle.origin_site 
         system.set_particles([I,V])
         particle.kill(self.kind,system,system.s1,'converted')
 #########################################################################################        
@@ -455,11 +437,13 @@ class Annihilation:
     def __init__(self,**kwargs):
         self.kind = 'annihilation'
         self.k = kwargs['k']
-
+        self.k[999] = 0
     def rate(self,**kwargs):
         return self.k[kwargs['material']]
      
     def action(self,particle,system,local):
+        print('ani:',particle.species,particle.ghost_site,particle.origin_site,particle.status)
+        system.mats[particle.ghost_site] = particle.origin_site #reverting the ghost site
         particle.kill(self.kind,system,system.s1,'dead') 
 #########################################################################################
 
@@ -467,33 +451,56 @@ class Formation:
     def __init__(self, **kwargs):
         self.kind = 'formation'
         self.k = kwargs['k']
-
+        self.materials_list = list(set([key[0] for key in self.k.keys()]))
+        
     def rate(self, **kwargs):
-        system   = kwargs['system']
         r        = kwargs['r']
+        system   = kwargs['system']
+        particle = kwargs['particle']
+        mats     = kwargs['mats']    
+        local    = np.argwhere(r == 0)[0][0]
+        mat      = mats[local]
+        
         cut      = kwargs['cut']   # full-lattice indices of those neighbors
         
         if cut is None:
             # Fallback: assume contiguous slice from 0
             cut = np.arange(len(r))
-
+        #formation/generation cutoff should be more severe than hopping cutoff
+        new_cut = np.where(r > system.FPcutoff)[0]
+        new_r   = r[new_cut]
+        mats = system.mats[new_cut]
+            
+        all_sites          = set(range(len(system.X)))
         interstitial_sites = system.positions_by_species.get('interstitial', set())
-
+        forbidden_sites    = all_sites - interstitial_sites
         # Boolean occupancy mask aligned with r/mats via cut
-        occupied = np.fromiter((site in interstitial_sites for site in cut),
-                               dtype=bool, count=len(r))
-
+        sites_no_intersitial = np.fromiter((site in forbidden_sites for site in new_cut),
+                               dtype=bool, count=len(new_r))
         # Rate: k when destination has an insterstitial, else 0
-        taxa = np.where(occupied, self.k, 0.0)
-
+        taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
+        taxa = np.where(sites_no_intersitial, 0.0, taxa)
         # Never hop to self
-        taxa[r == 0] = 0
+        taxa[new_r == 0] = 0
         return taxa
 
     def action(self, particle, system, local):
+        # FP generation requires the addition of a ghost(deactivated) site
+        # where new particles cant hop to it 
+        # FP.ghost_site is the position (in len(system.X))
+        # material type 999 is reserved for this special site
         FP = Frenkelpair(local)
+        FP.ghost_site = particle.position
+        FP.origin_site = system.mats[particle.position]
+        system.mats[particle.position] = 999
         system.set_particles([FP])
         particle.kill(self.kind, system, system.s1, 'converted')
+        #debug
+        #xfp,yfp,zfp = system.X[particle.position],system.Y[particle.position],system.Z[particle.position]
+        #xg,yg,zg = system.X[local],system.Y[local],system.Z[local]
+        #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
+        #dist = np.sqrt(dx**2 + dy**2+dz**2)
+        #print('form:',dist)
         for p in system.particles:
             if isinstance(p, Interstitial) and p.position == local:
                 p.kill('interstitial', system, system.s1, 'converted')
@@ -503,33 +510,44 @@ class FP_generation:
     def __init__(self,**kwargs):
         self.kind = 'generation'
         self.k = kwargs['k']
-
+        
     def rate(self,**kwargs):
         return self.k#[kwargs['material']]
      
     def action(self,system,**kwargs):
         npart            = kwargs['npart']
+                
+        
         forbidden_sites  = set().union(*(system.positions_by_species.values()))
         all_sites        = set(range(len(system.X)))
-        avail_sites      = list(all_sites - forbidden_sites)
-        #print(f'avail sites {len(avail_sites)}')
-        try:
-            #npart   = int(len(avail_sites)*(random.uniform(0,1)))    
-            selected = random.sample(avail_sites, npart)
-        except Exception as e:
-            print(e)
-            print("I could not find an avaiable site to create FP. This is a warning")
-            selected = []
-        if len(selected) > 0:
-            #print(len(system.X))    
-            #print(avail_sites)
-            #print(selected)        
-            for selec in selected:
-                FP = Frenkelpair(selec)
-                system.set_particles([FP])
-                #reporting in
-                FP.make_text(system,system.s1,causamortis='generated')
-                FP.stamp_time(system)
-                #print("creating a particle!")
+        avail_sites      = list(all_sites-forbidden_sites)
+        avail_sites      = random.sample(avail_sites, k=len(avail_sites))
+        sites999         = np.where(system.mats == 999)[0] #cant create FP at 999 materials
+        for i, site in enumerate(avail_sites):
+            orig_mat     = system.mats[site]
+            dx, dy, dz   = system.distance(system,site)
+            hopsites     = avail_sites.copy()
+            r            = kmc.utils.distances(dx,dy,dz,len(dx))
+            uncut        = np.where(r > system.FPcutoff)[0] 
+            mat_mismatch = np.where(system.mats == orig_mat)[0] #FP forms occupying two sites of different composition
+            hopsites     = list(set(hopsites) - set(uncut) - set(mat_mismatch) - set([i]) -set(sites999))
+            if len(hopsites) > 0:
+                selec = i
+                viz   = hopsites
+                break
+        selected = avail_sites[selec]
+        ghost    = random.sample(viz, 1)[0]
+        #xfp,yfp,zfp = system.X[selected],system.Y[selected],system.Z[selected]
+        #xg,yg,zg = system.X[ghost],system.Y[ghost],system.Z[ghost]
+        #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
+        #dist = np.sqrt(dx**2 + dy**2+dz**2)
+        #print('gen:',dist)
+        FP = Frenkelpair(selected)
+        FP.ghost_site = ghost
+        FP.origin_site = system.mats[ghost] #storing the old material type
+        system.mats[ghost] = 999 #changing the mat
+        system.set_particles([FP])
+        FP.make_text(system,system.s1,causamortis='generated')
+        FP.stamp_time(system)
 
 
