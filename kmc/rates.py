@@ -426,6 +426,9 @@ class DissociationFP:
         return self.k[kwargs['material']]
                  
     def action(self,particle,system,local):
+        #convention:
+        # ->local = particle.position where the FP is centered, conventioned to be the place where the Intersitial moves to
+        # ->ghost  position is reserved for the vacancy
         I = Interstitial(particle.position)
         V = Vacancy(particle.ghost_site)
         system.mats[particle.ghost_site] = particle.origin_site 
@@ -489,6 +492,9 @@ class Formation:
         # where new particles cant hop to it 
         # FP.ghost_site is the position (in len(system.X))
         # material type 999 is reserved for this special site
+        #convention:
+        # ->local where the FP is centered, conventioned to be the place where the Intersitial moves to
+        # ->ghost position is reserved for the vacancy
         FP = Frenkelpair(local)
         FP.ghost_site = particle.position
         FP.origin_site = system.mats[particle.position]
@@ -506,6 +512,7 @@ class Formation:
                 p.kill('interstitial', system, system.s1, 'converted')
                 break
 #########################################################################################
+'''
 class FP_generation:
     def __init__(self,**kwargs):
         self.kind = 'generation'
@@ -516,13 +523,13 @@ class FP_generation:
      
     def action(self,system,**kwargs):
         npart            = kwargs['npart']
-                
+        pairs            = kwargs['pairs']        
         
         forbidden_sites  = set().union(*(system.positions_by_species.values()))
         all_sites        = set(range(len(system.X)))
-        avail_sites      = list(all_sites-forbidden_sites)
-        avail_sites      = random.sample(avail_sites, k=len(avail_sites))
         sites999         = np.where(system.mats == 999)[0] #cant create FP at 999 materials
+        avail_sites      = list(all_sites-forbidden_sites-set(sites999))
+        avail_sites      = random.sample(avail_sites, k=len(avail_sites))        
         for i, site in enumerate(avail_sites):
             orig_mat     = system.mats[site]
             dx, dy, dz   = system.distance(system,site)
@@ -537,11 +544,11 @@ class FP_generation:
                 break
         selected = avail_sites[selec]
         ghost    = random.sample(viz, 1)[0]
-        #xfp,yfp,zfp = system.X[selected],system.Y[selected],system.Z[selected]
-        #xg,yg,zg = system.X[ghost],system.Y[ghost],system.Z[ghost]
-        #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
-        #dist = np.sqrt(dx**2 + dy**2+dz**2)
-        #print('gen:',dist)
+        xfp,yfp,zfp = system.X[selected],system.Y[selected],system.Z[selected]
+        xg,yg,zg = system.X[ghost],system.Y[ghost],system.Z[ghost]
+        dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
+        dist = np.sqrt(dx**2 + dy**2+dz**2)
+        print('gen:',dist)
         FP = Frenkelpair(selected)
         FP.ghost_site = ghost
         FP.origin_site = system.mats[ghost] #storing the old material type
@@ -549,5 +556,58 @@ class FP_generation:
         system.set_particles([FP])
         FP.make_text(system,system.s1,causamortis='generated')
         FP.stamp_time(system)
-
+'''
+####################################################################################
+class FP_generation:
+    def __init__(self,**kwargs):
+        self.kind = 'generation'
+        self.k = kwargs['k']
+        self.pairs = kwargs['pairs']
+        try:
+          self.causamortis = kwargs['causamortis']
+        except:
+          self.causamortis = "generated"
+    def rate(self,**kwargs):
+        return self.k#[kwargs['material']]
+    def create(self,system,selected,ghost,**kwargs):
+        FP = Frenkelpair(selected)
+        FP.ghost_site = ghost
+        FP.origin_site = system.mats[ghost] #storing the old material type
+        system.mats[ghost] = 999 #changing the mat
+        system.set_particles([FP])
+        causamortis = self.causamortis
+        FP.make_text(system,system.s1,causamortis=causamortis)
+        FP.stamp_time(system)
+    def select(self,system,**kwargs):
+        pairs            = self.pairs
+        chosen,chosen_viz = [],[]
+        for pair in pairs:
+            V_site_type,I_site_type = pair        
+            forbidden_sites  = set().union(*(system.positions_by_species.values()))
+            all_I_sites      = np.where(system.mats == I_site_type)[0]
+            all_V_sites      = np.where(system.mats == V_site_type)[0]
+            sites999         = np.where(system.mats == 999)[0] #cant create FP at 999 materials
+            avail_sites      = list(set(all_I_sites)-forbidden_sites-set(sites999))
+            avail_sites      = random.sample(avail_sites, k=len(avail_sites))        
+            for i, site in enumerate(avail_sites):
+              orig_mat     = system.mats[site]
+              dx, dy, dz   = system.distance(system,site)
+              r            = kmc.utils.distances(dx,dy,dz,len(dx))
+              uncut        = np.where(r > system.FPcutoff)[0] 
+              hopsites     = list(set(all_V_sites) - set(uncut) - set([i]) -set(sites999) -set(forbidden_sites))
+              if len(hopsites) > 0:
+                  selec = i
+                  viz   = hopsites
+                  break
+            chosen.append(avail_sites[selec])
+            chosen_viz.append(random.sample(viz, 1)[0])
+        return chosen,chosen_viz        
+    def action(self,system,**kwargs):
+        try:
+          chosen,chosen_viz = self.select(system)
+          for i, (selec,viz) in enumerate(zip(chosen,chosen_viz)):
+            self.create(system,selec,viz)
+        except Exception as e:
+          print(f'This is a warning, generation/creation was not successful for some reason! {e}')
+        
 

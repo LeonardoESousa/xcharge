@@ -23,7 +23,7 @@ time_limit = 1E8
 particle_condition = False # program continues even if there are 0 particles, relevant only with generation active
 ###ANIMATION SETTINGS####################################################################
 square_ratio       = False
-pause              = True  # if you want that the annimation stops in the first frame (debug purposes)
+pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
 marker_type        = 1      # marker type used at the animation processs ( 0 = balls, 1 = symbols)
 animation_mode     = True  # if you want to see the animation
 save_animation     = False  # if you want to save the animation
@@ -54,10 +54,10 @@ k_form = arrhenius(Ea_form)
 
 
 k_ann  = 1E-6
-k_gen  = 1E-12#1E-5
-k_dis  = 1E-6
-k_form = 1E-1
-k_mig  = 1E-5
+k_gen  = 1E-3#1E-5
+k_dis  = 1E-3
+k_form = 1E-3
+k_mig  = 1E-3
 #print(k_ann,k_gen,k_dis,k_form)
 
 ###DEFECTS PROCESSES######################################################################
@@ -82,7 +82,11 @@ migration = Migration(k=k_migration)
 k_formation = {(Cs,Cs):0, (Cs,I):k_form, (I,Cs):k_form, (I,I):0}
 formation = Formation(k=k_formation)
 
-gen = FP_generation(k=k_gen)
+
+#convention:
+#pair = [x,y] -> the frenkelpair is the combination of a vacacy at site of type x with a intersitial of y
+gen = FP_generation(k=k_gen,pairs=[[I,Cs]])
+#gen = FP_generation(k=k_gen)
 ###PROCESSES#############################################################################
 
 processes = {'vacancy':[migration, formation], 'interstitial':[migration], 'frenkelpair':[]}
@@ -97,7 +101,7 @@ generation = [gen]
 # building the lattice through cif file
 file = 'cifexample.cif' #filename
 remove_species = ['Br']
-multiply_cell  = [2,2,2] # multiplication of the unit cel by a vector v = a + b + c
+multiply_cell  = [4,4,4] # multiplication of the unit cel by a vector v = a + b + c
 lattice_func   = morphology.ReadCIF(file,multiply_cell,material_label,remove_species)
 
 
@@ -116,8 +120,9 @@ a2 = morphology.Gaussian_energy(t1s)
 
 ##GENERATE PARTICLES#####################################################################
 method    = morphology.randomized
-#exciton   = morphology.Create_Particles('vacancy', 2, method, mat=[0])
+exciton   = morphology.Create_Particles('vacancy', 2, method, mat=[0])
 #exciton2   = morphology.Create_Particles('interstitial', 2, method, mat=[1])
-exciton   = morphology.Create_Particles('frenkelpair', 1, method, mat=[1])
+#exciton   = morphology.Create_Particles('frenkelpair', 5, method, mat=[1])
+FP   = morphology.Create_ParticlesFP(num=1,pairs=[[I,Cs]])
  # creates 1 singlet exciton randomly at either material 0 or 1
 #########################################################################################

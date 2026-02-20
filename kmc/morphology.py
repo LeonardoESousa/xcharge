@@ -6,6 +6,7 @@ from collections import Counter
 from pymatgen.core import Structure
 from pymatgen.core import IMolecule
 import kmc.utils
+import kmc.rates
 
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
@@ -69,33 +70,15 @@ def interface(available, number, system, kwargs):
     return selected            
 
 ##CLASS FOR GENERATING PARTICLES IN THE SYSTEM###########################################
-def create_FP(system): #handling FP specifically because they form differently
-        forbidden_sites  = set().union(*(system.positions_by_species.values()))
-        all_sites        = set(range(len(system.X)))
-        avail_sites      = list(all_sites-forbidden_sites)
-        avail_sites      = random.sample(avail_sites, k=len(avail_sites))
-        sites999         = np.where(system.mats == 999)[0] #cant create FP at 999 materials
-        for i, site in enumerate(avail_sites):
-            orig_mat     = system.mats[site]
-            dx, dy, dz   = system.distance(system,site)
-            hopsites     = avail_sites.copy()
-            r            = kmc.utils.distances(dx,dy,dz,len(dx))
-            uncut        = np.where(r > system.FPcutoff)[0] 
-            mat_mismatch = np.where(system.mats == orig_mat)[0] #FP forms occupying two sites of different composition
-            hopsites     = list(set(hopsites) - set(uncut) - set(mat_mismatch) - set([i]) -set(sites999))
-            if len(hopsites) > 0:
-                selec = i
-                viz   = hopsites
-                break
-        selected = avail_sites[selec]
-        ghost    = random.sample(viz, 1)[0]
-        FP = Frenkelpair(selected)
-        FP.ghost_site = ghost
-        FP.origin_site = system.mats[ghost] #storing the old material type
-        system.mats[ghost] = 999 #changing the mat
-        print('creation:', selected,ghost,FP.origin_site,FP.ghost_site)
-        system.set_particles([FP])
-
+class Create_ParticlesFP(): #specifically handling FPs because they form differently
+    def __init__(self, num,  **kwargs):
+        self.num    = num
+        self.argv   = kwargs
+        self.pairs  = kwargs['pairs']
+    def assign_to_system(self,system):
+        FPgen =  kmc.rates.FP_generation(k=0,pairs=self.pairs,causamortis='created')
+        [ FPgen.action(system) for _ in range(self.num) ]
+        
 class Create_Particles():
     def __init__(self,kind, num, method, **kwargs):
         self.kind   = kind
@@ -106,7 +89,8 @@ class Create_Particles():
         selected = self.method(range(len(system.X)),self.num, system, self.argv)
         part_name = getattr(sys.modules[__name__], self.kind.title()).__name__
         if part_name.lower() == "frenkelpair":
-            [create_FP(system) for _ in range(self.num)]
+            selected = self.method(range(len(system.X)),3*self.num, system, self.argv) #this is a hardfix to ensure enough molecule pool to enter in the FP filter. This may break if restrictions in create_FP are too harsh
+            [create_FP(selected,system) for _ in range(self.num)]
             return #this fucker needs to be here
         Particula = getattr(sys.modules[__name__], self.kind.title())
         particles = [Particula(number) for number in selected]
