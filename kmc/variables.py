@@ -28,6 +28,7 @@ material_leg   = True
 plot_type      = "sphere" # options: sphere or scatter
 scatter_alpha  = 0.3
 clean_vis      = True
+print_site_position = False
 ###############################################################
 
 

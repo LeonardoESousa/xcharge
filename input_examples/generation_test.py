@@ -11,16 +11,17 @@ from kmc.particles import *
 
 ###BASIC PARAMETERS######################################################################
 identifier         = 'lotte' #output identifier
-cutoff             = 3   # in Angstroms
-FPcutoff           = 3
+cutoff             = 5      # in Angstroms
+FPcutoff           = 1.2    #Frenkel pair maximum size allowed. Should not be higher than cutoff
 time_limit         = np.inf # in ps
-rounds             = 1   # Number of rounds
+rounds             = 1      # Number of rounds
 n_proc             = 1      # Number of cores to be used
 frozen_lattice     = True   # if you want for the lattice to remain the same for all rounds
 periodic           = False  # if you want periodic boundary conditions
 bimolec            = False  # Turn on annihilation
 time_limit = 1E8
 particle_condition = False # program continues even if there are 0 particles, relevant only with generation active
+print_site_position = True
 ###ANIMATION SETTINGS####################################################################
 square_ratio       = False
 pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
@@ -54,9 +55,9 @@ k_form = arrhenius(Ea_form)
 
 
 k_ann  = 1E-6
-k_gen  = 1E-3#1E-5
+k_gen  = 1E-5#1E-5
 k_dis  = 1E-3
-k_form = 1E-3
+k_form = 1E-1
 k_mig  = 1E-3
 #print(k_ann,k_gen,k_dis,k_form)
 
@@ -85,8 +86,8 @@ formation = Formation(k=k_formation)
 
 #convention:
 #pair = [x,y] -> the frenkelpair is the combination of a vacacy at site of type x with a intersitial of y
-gen = FP_generation(k=k_gen,pairs=[[I,Cs]])
-#gen = FP_generation(k=k_gen)
+generation_pairs = [[I,Cs]]
+gen = FP_generation(k=k_gen,pairs=generation_pairs)
 ###PROCESSES#############################################################################
 
 processes = {'vacancy':[migration, formation], 'interstitial':[migration], 'frenkelpair':[]}
@@ -101,7 +102,7 @@ generation = [gen]
 # building the lattice through cif file
 file = 'cifexample.cif' #filename
 remove_species = ['Br']
-multiply_cell  = [4,4,4] # multiplication of the unit cel by a vector v = a + b + c
+multiply_cell  = [2,2,2] # multiplication of the unit cel by a vector v = a + b + c
 lattice_func   = morphology.ReadCIF(file,multiply_cell,material_label,remove_species)
 
 
@@ -123,6 +124,7 @@ method    = morphology.randomized
 exciton   = morphology.Create_Particles('vacancy', 2, method, mat=[0])
 #exciton2   = morphology.Create_Particles('interstitial', 2, method, mat=[1])
 #exciton   = morphology.Create_Particles('frenkelpair', 5, method, mat=[1])
-FP   = morphology.Create_ParticlesFP(num=1,pairs=[[I,Cs]])
+#FP   = morphology.Create_ParticlesFP(num=5,pairs=[[I,Cs]])
+FP   = morphology.Create_ParticlesFP(num=5,pairs=generation_pairs)
  # creates 1 singlet exciton randomly at either material 0 or 1
 #########################################################################################

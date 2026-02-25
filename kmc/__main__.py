@@ -80,6 +80,7 @@ sizes_dic      = set_variables('sizes_dic')
 plot_type      = set_variables('plot_type')
 time_units     = set_variables('time_units')
 particle_condition = set_variables('particle_condition')
+print_site_position = set_variables('print_site_position')
 #####
 
 
@@ -339,6 +340,8 @@ def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
     X, Y, Z = system.X, system.Y, system.Z        
     mats = system.mats                            
     ax.clear()
+    if print_site_position:
+      [ax.text(X[i],Y[i],Z[i],i) for i in range(len(X))]
     #ploting the sites according to mat index
     n_mats = [ x for x in np.unique(mats) if x != 999]
     for mat in n_mats:
@@ -513,7 +516,7 @@ def run_animation():
     #                                interval=25, blit=True,repeat=False,cache_frame_data=True)#,save_count=1000)  
                              
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate,colors_dic,[p_min,p_max]],
-                                    interval=1, blit=True,repeat=False,cache_frame_data=True)                                   
+                                    interval=1, blit=False,repeat=False,cache_frame_data=True)                                   
     animate.event_source = ani.event_source
     return ani 
     

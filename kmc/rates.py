@@ -445,7 +445,7 @@ class Annihilation:
         return self.k[kwargs['material']]
      
     def action(self,particle,system,local):
-        print('ani:',particle.species,particle.ghost_site,particle.origin_site,particle.status)
+        #print('ani:',particle.species,particle.ghost_site,particle.origin_site,particle.status)
         system.mats[particle.ghost_site] = particle.origin_site #reverting the ghost site
         particle.kill(self.kind,system,system.s1,'dead') 
 #########################################################################################
@@ -469,22 +469,17 @@ class Formation:
         if cut is None:
             # Fallback: assume contiguous slice from 0
             cut = np.arange(len(r))
-        #formation/generation cutoff should be more severe than hopping cutoff
-        new_cut = np.where(r > system.FPcutoff)[0]
-        new_r   = r[new_cut]
-        mats = system.mats[new_cut]
-            
-        all_sites          = set(range(len(system.X)))
-        interstitial_sites = system.positions_by_species.get('interstitial', set())
-        forbidden_sites    = all_sites - interstitial_sites
-        # Boolean occupancy mask aligned with r/mats via cut
-        sites_no_intersitial = np.fromiter((site in forbidden_sites for site in new_cut),
-                               dtype=bool, count=len(new_r))
-        # Rate: k when destination has an insterstitial, else 0
+        
+        interstitial_sites    = system.positions_by_species.get('interstitial', set())
+        sites_above_FPradius  = set(np.where(r > system.FPcutoff)[0])  #formation/generation cutoff should be more severe than hopping cutoff
+        forbidden_sites       = list(interstitial_sites.union(sites_above_FPradius))
+        
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
-        taxa = np.where(sites_no_intersitial, 0.0, taxa)
+        N    = len(taxa)
+        rejected             = np.fromiter((site for site in forbidden_sites if 0 <= site < N),dtype=int) #this is only to remove the sites (from interstitial_sites)
+        taxa[rejected] = 0.0
         # Never hop to self
-        taxa[new_r == 0] = 0
+        taxa[r == 0] = 0.0
         return taxa
 
     def action(self, particle, system, local):
@@ -506,7 +501,7 @@ class Formation:
         #xg,yg,zg = system.X[local],system.Y[local],system.Z[local]
         #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
         #dist = np.sqrt(dx**2 + dy**2+dz**2)
-        #print('form:',dist)
+        #print('form:',dist,particle.position,local)
         for p in system.particles:
             if isinstance(p, Interstitial) and p.position == local:
                 p.kill('interstitial', system, system.s1, 'converted')
@@ -578,6 +573,13 @@ class FP_generation:
         causamortis = self.causamortis
         FP.make_text(system,system.s1,causamortis=causamortis)
         FP.stamp_time(system)
+        
+        #debug
+        #xfp,yfp,zfp = system.X[selected],system.Y[selected],system.Z[selected]
+        #xg,yg,zg = system.X[ghost],system.Y[ghost],system.Z[ghost]
+        #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
+        #dist = np.sqrt(dx**2 + dy**2+dz**2)
+        #print(self.causamortis,dist)
     def select(self,system,**kwargs):
         pairs            = self.pairs
         chosen,chosen_viz = [],[]
