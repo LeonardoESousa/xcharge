@@ -82,7 +82,7 @@ generation = [gen]
 ##Morphology functions
 
 # building the lattice through cif file
-file = 'cifexample.cif' #filename
+file = "pytest/cifexample.cif" #filename
 remove_species = ['Br']
 multiply_cell  = [10,10,10] # multiplication of the unit cel by a vector v = a + b + c
 lattice_func   = morphology.ReadCIF(file,multiply_cell,material_label,remove_species)
