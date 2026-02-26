@@ -200,7 +200,7 @@ def chose_generation(system):
       return 0,0
 def step_nonani(system):
     while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
-        #print(system.IT,f'{system.time:.2e}',len(system.particles))
+        print(system.IT,f'{system.time:.2e}',len(system.particles))
         system.IT += 1
         event_g, K_g = chose_generation(system)
         
@@ -237,7 +237,8 @@ def step_nonani(system):
             #print(prob_part,u,prob_part[choose_part])
             #print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
             #print([system.mats[s.position] for s in system.particles])
-        #print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])             
+        #print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
+        #print([ s.species for s in system.particles])             
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')

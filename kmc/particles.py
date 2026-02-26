@@ -42,6 +42,7 @@ class Particles:
             self.texto = ''
         
     def kill(self,causamortis,system,energies,result):
+        #print(f'killing a {self.species}')
         self.status = result
         self.make_text(system,energies,causamortis)
         system.remove(self)

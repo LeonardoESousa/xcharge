@@ -6,6 +6,7 @@
 import kmc.morphology as morphology
 from kmc.rates import *
 from kmc.particles import *
+import sys
 
 ###BASIC PARAMETERS######################################################################
 K_GEN = float(sys.argv[2])
