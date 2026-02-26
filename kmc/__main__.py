@@ -21,7 +21,6 @@ except ImportError: # for Python<3.8
 import multiprocessing 
 import tqdm
 # Setting up the interface
-		
 print('####################################################################')
 print('Xcharge: A Kinetic Monte Carlo Model for Exciton and Charge Dynamics')
 #print('Repo link: '+metadata.metadata('kmc')['Home-page'])
@@ -215,7 +214,9 @@ def step_nonani(system):
         
         dt = (1 / R_total) * np.log(1 / random.uniform(0, 1))
         system.time += dt
-    
+
+        #print(Prob)
+        #print(f'IT {system.IT} before:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
         u = random.uniform(0, 1)
         if u < Prob[0]:
             # --- GENERATION EVENT ---
@@ -223,7 +224,7 @@ def step_nonani(system):
             #print(f'at time {system.time:.10e}, event: generation, dt: {dt:.2e}')
         else:
             # --- PARTICLE-BASED EVENT ---
-            u_part = random.uniform(0, 1) 
+            u_part = random.uniform(0, 1)#u - K_g 
             prob_part = np.cumsum(Rs)/sum_Rs
             choose_part = np.argmax(prob_part >= u_part)
             
@@ -233,9 +234,10 @@ def step_nonani(system):
             s.process.action(s, system, s.destination)
             bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
             s.stamp_time(system)
+            #print(prob_part,u,prob_part[choose_part])
             #print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
-            #for i, (x,y) in enumerate(zip([x.species for x in Ss],Rs)):
-            #    print(x,y) 
+            #print([system.mats[s.position] for s in system.particles])
+        #print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])             
     Ss = system.particles.copy()
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
@@ -516,7 +518,9 @@ def run_animation():
     #                                interval=25, blit=True,repeat=False,cache_frame_data=True)#,save_count=1000)  
                              
     ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate,colors_dic,[p_min,p_max]],
-                                    interval=1, blit=False,repeat=False,cache_frame_data=True)                                   
+                                    interval=1, blit=False,repeat=False,cache_frame_data=True,save_count=1000)
+                                    
+    #note for future improvement: blit = true -> good for save animation, blit=false -> good for realtime interaction                                   
     animate.event_source = ani.event_source
     return ani 
     
@@ -532,11 +536,11 @@ def main():
             
             #save .gif
             if animation_exten == 'gif':
-                ani.save(path, writer='imagemagick', fps=10)
+                ani.save(path, writer='pillow', fps=10)
             
             #save .mp4
             if animation_exten == 'mp4':
-                writervideo = animation.FFMpegWriter(fps=10) 
+                writervideo = animation.FFMpegWriter(fps=10,extra_args=["-crf", "10","-preset", "slow","-pix_fmt", "yuv420p"]) 
                 ani.save(path, writer=writervideo)
         
         plt.show()

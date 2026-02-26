@@ -433,6 +433,7 @@ class DissociationFP:
         V = Vacancy(particle.ghost_site)
         system.mats[particle.ghost_site] = particle.origin_site 
         system.set_particles([I,V])
+        #print(f'diss:vac->{particle.ghost_site} inter->{particle.position}')
         particle.kill(self.kind,system,system.s1,'converted')
 #########################################################################################        
 
@@ -470,9 +471,10 @@ class Formation:
             # Fallback: assume contiguous slice from 0
             cut = np.arange(len(r))
         
-        interstitial_sites    = system.positions_by_species.get('interstitial', set())
+        #interstitial_sites    = system.positions_by_species.get('interstitial', set())
+        not_interstitial_sites  = set([p.position for p in system.particles if p.species != "interstitial"])
         sites_above_FPradius  = set(np.where(r > system.FPcutoff)[0])  #formation/generation cutoff should be more severe than hopping cutoff
-        forbidden_sites       = list(interstitial_sites.union(sites_above_FPradius))
+        forbidden_sites       = list(not_interstitial_sites.union(sites_above_FPradius))
         
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
         N    = len(taxa)
@@ -504,6 +506,7 @@ class Formation:
         #print('form:',dist,particle.position,local)
         for p in system.particles:
             if isinstance(p, Interstitial) and p.position == local:
+                print('aaa')
                 p.kill('interstitial', system, system.s1, 'converted')
                 break
 #########################################################################################
@@ -611,5 +614,4 @@ class FP_generation:
             self.create(system,selec,viz)
         except Exception as e:
           print(f'This is a warning, generation/creation was not successful for some reason! {e}')
-        
 
