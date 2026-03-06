@@ -9,9 +9,9 @@ import pytest
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-txts = [ x for x in os.listdir(BASE_DIR) if ".txt" in x ]
-for txt in txts:
-    os.remove(txt)
+#txts = [ x for x in os.listdir(BASE_DIR) if ".txt" in x ]
+#for txt in txts:
+#    os.remove(txt)
 
 
 INPUT = f"{BASE_DIR}/FP_generation_input.py"
@@ -35,7 +35,8 @@ def average_genpop(filename):
 for conf in CONFIGS:
   os.system(f'kmc {INPUT} {conf}')
 
-
+print("run finished")
+print(os.listdir())
 estimated_K = [ average_genpop(f'{BASE_DIR}/Simulation_generation_{conf}.txt') for conf in CONFIGS ]
 
 
