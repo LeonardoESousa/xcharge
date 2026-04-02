@@ -411,7 +411,9 @@ class Migration:
                                
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
         taxa = np.where(occupied, 0.0, taxa) # if occupied, rate is 0, else, remain the calc value
+
         taxa[local] = 0
+        
         return taxa
 
 

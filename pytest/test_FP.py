@@ -37,8 +37,8 @@ for conf in CONFIGS:
 
 print("run finished")
 print(os.listdir())
-estimated_K = [ average_genpop(f'{BASE_DIR}/Simulation_generation_{conf}.txt') for conf in CONFIGS ]
-
+$estimated_K = [ average_genpop(f'{BASE_DIR}/Simulation_generation_{conf}.txt') for conf in CONFIGS ]
+estimated_K = [ average_genpop(f'Simulation_generation_{conf}.txt') for conf in CONFIGS ]
 
 rms = np.array(CONFIGS)-np.array(estimated_K)
 rms = np.sqrt( sum([ x**2 for x in rms])/len(rms))

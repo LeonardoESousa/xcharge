@@ -125,6 +125,27 @@ def periodic_distance(system,local,destination=None):
         dz -= system.Lz*np.round(dz/system.Lz)
     return dx,dy,dz
 
+
+
+def periodic_distance(system,local,destination=None):
+    if destination is None:
+        dx = system.X - system.X[local]   
+        dy = system.Y - system.Y[local]  
+        dz = system.Z - system.Z[local]
+    else:
+        dx = system.X[destination] - system.X[local]   
+        dy = system.Y[destination] - system.Y[local]  
+        dz = system.Z[destination] - system.Z[local]
+
+    if system.Lx > 0:
+        dx -= system.Lx*np.floor(dx/system.Lx + 0.5)
+    if system.Ly > 0:
+        dy -= system.Ly*np.floor(dy/system.Ly + 0.5)
+    if system.Lz > 0:
+        dz -= system.Lz*np.floor(dz/system.Lz + 0.5)
+
+    return dx,dy,dz
+
 if periodic:
     distance = periodic_distance
 else:
@@ -166,7 +187,9 @@ def decision(s,system):
     mats = system.mats[cut]
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
-    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s,mats=mats,matlocal=system.mats[local],cut=cut) for transfer in hop] 
+    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s,mats=mats,matlocal=system.mats[local],cut=cut) for transfer in hop]
+    #h = len([x for x in jump_rate[0] if x !=0])
+    #print(f"nviz tot: {len(dx)}") 
     mono_rate = [[m.rate(material=system.mats[local])] for m in mono]
     jump_rate.extend(mono_rate)   
     sizes     = np.array([len(i) for i in jump_rate])
@@ -200,7 +223,7 @@ def chose_generation(system):
       return 0,0
 def step_nonani(system):
     while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
-        print(system.IT,f'{system.time:.2e}',len(system.particles))
+        #print(system.IT,f'{system.time:.2e}',len(system.particles))
         system.IT += 1
         event_g, K_g = chose_generation(system)
         
@@ -213,6 +236,10 @@ def step_nonani(system):
         Prob    = np.cumsum(Prob)/R_total
         
         dt = (1 / R_total) * np.log(1 / random.uniform(0, 1))
+        
+        #print(f"{R_total:0e}, {2*1E5:0e}")
+        #print(Rs)
+        #print()
         system.time += dt
 
         #print(Prob)
