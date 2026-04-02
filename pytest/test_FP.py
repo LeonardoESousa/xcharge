@@ -44,4 +44,5 @@ rms = np.array(CONFIGS)-np.array(estimated_K)
 rms = np.sqrt( sum([ x**2 for x in rms])/len(rms))
 
 print(f'rms: {rms:.2e}')
-assert rms < THRESHOLD
+def testFP():
+  assert rms < THRESHOLD

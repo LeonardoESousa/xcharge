@@ -35,3 +35,6 @@ jobs:
       
       - name: Frenkel pair generation test
         run: pytest -s pytest/test_FP.py
+
+      - name: LiF test
+        run: pytest -s pytest/test_LiF.py
