@@ -22,7 +22,7 @@ THRESHOLD = 1E-4
 def read_dat(fn):
   data = pd.read_csv(fn,comment='#')
   data = data[data.Time != 'END']
-  data.loc[(data.Time == '0'),'Time'] = 1
+  #data.loc[(data.Time == '0'),'Time'] = 1
   return data
 
 def average_genpop(filename):
