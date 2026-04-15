@@ -29,7 +29,7 @@ THRESHOLD = 5E-2 # 5% error on D
 def read_dat(fn):
   data = pd.read_csv(fn,comment='#')
   data = data[data.Time != 'END']
-  data.loc[(data.Time == '0'),'Time'] = 1
+  #data.loc[(data.Time == '0'),'Time'] = 1
   return data
 
 def calc_D(list_particle):
