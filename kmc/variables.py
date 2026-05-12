@@ -18,6 +18,7 @@ cutoff          = np.inf
 FPcutoff        = 3
 time_units      = 'ps'
 particle_condition = True
+creation_threshold = np.inf
 generation      = []#{'ghost':None}
 ##### ANIMATION SETTINGS  ##################################
 material_label = {'mat 0':0,'mat 1':1, 'mat 2': 2}

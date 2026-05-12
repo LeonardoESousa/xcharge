@@ -79,9 +79,9 @@ sizes_dic      = set_variables('sizes_dic')
 plot_type      = set_variables('plot_type')
 time_units     = set_variables('time_units')
 particle_condition = set_variables('particle_condition')
+creation_threshold = set_variables('creation_threshold')
 print_site_position = set_variables('print_site_position')
 #####
-
 
 def passar(*args):
     pass
@@ -222,6 +222,7 @@ def chose_generation(system):
       print("Generation errror:",e)
       return 0,0
 def step_nonani(system):
+    global particle_condition #so that it can be changed
     while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
         #print(system.IT,f'{system.time:.2e}',len(system.particles))
         system.IT += 1
@@ -230,6 +231,14 @@ def step_nonani(system):
         Ss = system.particles.copy()
         Rs = np.array([decision(s, system) for s in Ss])
         sum_Rs = np.sum(Rs)
+        
+        #if time above this threshold, no creation allowed
+        if system.time >= creation_threshold:
+            if system.count_particles() == 0:
+                break
+            K_g = 0
+            particle_condition = True        
+        #######
         
         R_total = sum_Rs + K_g
         Prob    = [K_g,sum_Rs]
@@ -241,8 +250,8 @@ def step_nonani(system):
         #print(Rs)
         #print()
         system.time += dt
-
-        #print(Prob)
+        #print(dt,[K_g,sum_Rs])
+        #print(Prob,particle_condition,system.time)
         #print(f'IT {system.IT} before:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
         u = random.uniform(0, 1)
         if u < Prob[0]:
@@ -272,6 +281,7 @@ def step_nonani(system):
         s.stamp_time(system)
 
 def step_ani(system):
+    global particle_condition #so that it can be changed
     while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
         #print(system.IT,f'{system.time:.2e}',len(system.particles))
         system.IT += 1
@@ -280,6 +290,10 @@ def step_ani(system):
         Ss = system.particles.copy()
         Rs = np.array([decision(s, system) for s in Ss])
         sum_Rs = np.sum(Rs)
+
+        if system.time > creation_threshold: #if time above this threshold, no creation allowed
+            K_g = 0
+            particle_condition = True
         
         R_total = sum_Rs + K_g
         Prob    = [K_g,sum_Rs]
