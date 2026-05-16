@@ -472,7 +472,15 @@ class Formation:
             cut = np.arange(len(r))
             
         sites_above_FPradius  = set(np.where(r > system.FPcutoff)[0])  #formation/generation cutoff should be more severe than hopping cutoff
-        interstitial_sites = system.positions_by_species.get('interstitial', set())
+        
+        origin_type = particle.species
+        #two forms of formation: I first  or V first
+        if origin_type == 'interstitial':
+            neigh_type = 'vacancy'
+        if origin_type == 'vacancy':
+            neigh_type = 'interstitial'        
+        
+        interstitial_sites = system.positions_by_species.get(neigh_type, set())
         interstitial_sites = interstitial_sites- sites_above_FPradius
         # Boolean occupancy mask aligned with r/mats via cut
         occupied = np.fromiter((site in interstitial_sites for site in cut),

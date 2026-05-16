@@ -81,6 +81,7 @@ time_units     = set_variables('time_units')
 particle_condition = set_variables('particle_condition')
 creation_threshold = set_variables('creation_threshold')
 print_site_position = set_variables('print_site_position')
+particle_condition_base = particle_condition
 #####
 
 def passar(*args):
@@ -196,6 +197,7 @@ def decision(s,system):
     jump_rate = np.concatenate(jump_rate)
     labels    = hop+mono
     soma, jump = kmc.utils.jump(np.array(jump_rate,dtype=np.float64),len(jump_rate),random.uniform(0,1)) #dtype mismatch if the number, by chance, is integer. Force conversion
+    #print(kind,[(float(f"{jump_rate[x]:.10e}"),type(labels[x]).__name__) for x in range(len(labels))]) #do not delete. Good debug line
     destino   = np.argmax(np.cumsum(sizes) -1 >= jump)
     s.process = labels[destino]
     if destino < len(hop):
@@ -225,6 +227,8 @@ def step_nonani(system):
     global particle_condition #so that it can be changed
     while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
         #print(system.IT,f'{system.time:.2e}',len(system.particles))
+        #cond = (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit))
+        #print(f"{system.time:.2e}",cond,system.count_particles() > 0)
         system.IT += 1
         event_g, K_g = chose_generation(system)
         
@@ -235,6 +239,7 @@ def step_nonani(system):
         #if time above this threshold, no creation allowed
         if system.time >= creation_threshold:
             if system.count_particles() == 0:
+                print("terminating")
                 break
             K_g = 0
             particle_condition = True        
@@ -243,9 +248,12 @@ def step_nonani(system):
         R_total = sum_Rs + K_g
         Prob    = [K_g,sum_Rs]
         Prob    = np.cumsum(Prob)/R_total
-        
+        #print(Prob)
         dt = (1 / R_total) * np.log(1 / random.uniform(0, 1))
         
+        #print([K_g,sum_Rs],dt)
+        #print(system.IT,f'{system.time:.2e}',len(system.particles))
+        #print()
         #print(f"{R_total:0e}, {2*1E5:0e}")
         #print(Rs)
         #print()
@@ -279,7 +287,7 @@ def step_nonani(system):
     for s in Ss:
         s.kill('alive',system,system.s1,'alive')
         s.stamp_time(system)
-
+    particle_condition = particle_condition_base #returning to its initial state
 def step_ani(system):
     global particle_condition #so that it can be changed
     while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
@@ -304,6 +312,7 @@ def step_ani(system):
 
         #print(Prob)
         #print(f'IT {system.IT} before:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
+        #print(f'IT {system.IT} before:',Rs)
         u = random.uniform(0, 1)
         if u < Prob[0]:
             # --- GENERATION EVENT ---
@@ -322,7 +331,8 @@ def step_ani(system):
             bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
             s.stamp_time(system)
             #print(prob_part,u,prob_part[choose_part])
-            #print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
+            #print(f'at time {system.time:.10e}, event: {s.process}, specie: {s.species}, dt: {dt:.2e}')
+            #print()
             #print([system.mats[s.position] for s in system.particles])
         #print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
         return system.particles.copy() #Ss  <--- returns wrong number if generation is active                
