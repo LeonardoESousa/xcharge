@@ -503,7 +503,7 @@ class Formation:
         #convention:
         # ->local where the FP is centered, conventioned to be the place where the Intersitial moves to
         # ->ghost position is reserved for the vacancy
-        FP = Frenkelpair(local)
+        FP = Frenkelpair_0(local)
         FP.ghost_site = particle.position
         FP.origin_site = system.mats[particle.position]
         system.mats[particle.position] = 999
@@ -584,7 +584,7 @@ class FP_generation:
     def rate(self,**kwargs):
         return self.k#[kwargs['material']]
     def create(self,system,selected,ghost,**kwargs):
-        FP = Frenkelpair(selected)
+        FP = Frenkelpair_plus2(selected)
         FP.ghost_site = ghost
         FP.origin_site = system.mats[ghost] #storing the old material type
         system.mats[ghost] = 999 #changing the mat

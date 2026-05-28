@@ -239,7 +239,7 @@ def step_nonani(system):
         #if time above this threshold, no creation allowed
         if system.time >= creation_threshold:
             if system.count_particles() == 0:
-                print("terminating")
+                print("pop criteria fulfilled. Terminating this loop")
                 break
             K_g = 0
             particle_condition = True        
@@ -439,7 +439,7 @@ def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
         xs = X[s.position]        	
         ys = Y[s.position]
         zs = Z[s.position]    
-        if s.species == 'frenkelpair':
+        if 'frenkelpair' in s.species:
             xg = X[s.ghost_site]        	
             yg = Y[s.ghost_site]
             zg = Z[s.ghost_site]
