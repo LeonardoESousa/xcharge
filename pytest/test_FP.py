@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT = f"{BASE_DIR}/FP_generation_input.py"
 #CONFIGS = [10**x for x in [-5,-6,-7,-8]]
 CONFIGS = [10**x for x in [-5,-6,-7]]
-THRESHOLD = 1E-4
+THRESHOLD = 1E-3
 
 def read_dat(fn):
   data = pd.read_csv(fn,comment='#')

@@ -299,9 +299,14 @@ def step_ani(system):
         Rs = np.array([decision(s, system) for s in Ss])
         sum_Rs = np.sum(Rs)
 
-        if system.time > creation_threshold: #if time above this threshold, no creation allowed
+        #if time above this threshold, no creation allowed
+        if system.time >= creation_threshold:
+            if system.count_particles() == 0:
+                print("pop criteria fulfilled. Terminating this loop")
+                break
             K_g = 0
-            particle_condition = True
+            particle_condition = True        
+        #######
         
         R_total = sum_Rs + K_g
         Prob    = [K_g,sum_Rs]
@@ -331,7 +336,7 @@ def step_ani(system):
             bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
             s.stamp_time(system)
             #print(prob_part,u,prob_part[choose_part])
-            #print(f'at time {system.time:.10e}, event: {s.process}, specie: {s.species}, dt: {dt:.2e}')
+            print(f'at time {system.time:.10e}, event: {s.process}, specie: {s.species}, dt: {dt:.2e}')
             #print()
             #print([system.mats[s.position] for s in system.particles])
         #print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
@@ -439,7 +444,7 @@ def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
         xs = X[s.position]        	
         ys = Y[s.position]
         zs = Z[s.position]    
-        if 'frenkelpair' in s.species:
+        if ('frenkelpair' in s.species) or ('I2' in s.species):
             xg = X[s.ghost_site]        	
             yg = Y[s.ghost_site]
             zg = Z[s.ghost_site]

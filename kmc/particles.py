@@ -104,7 +104,7 @@ class Frenkelpair(Particles):
         self.ghost_site = None
         self.origin_site = None
 
-class Frenkelpair_0(Particles):
+class Frenkelpair0(Particles):
     def __init__(self,initial):
         Particles.__init__(self,'frenkelpair0',initial) 
         self.charge = 0
@@ -113,12 +113,21 @@ class Frenkelpair_0(Particles):
         self.ghost_site = None
         self.origin_site = None
 
-class Frenkelpair_plus2(Particles):
+class Frenkelpair2(Particles):
     def __init__(self,initial):
         Particles.__init__(self,'frenkelpair2',initial) 
         self.charge = 0
         self.color  = "gray"
         self.marker = "$FP+0$"
+        self.ghost_site = None
+        self.origin_site = None
+
+class I2(Particles): #two interstitial forming I2
+    def __init__(self,initial):
+        Particles.__init__(self,'I2',initial) 
+        self.charge = 0
+        self.color  = "magenta"
+        self.marker = "$I2$"
         self.ghost_site = None
         self.origin_site = None
 

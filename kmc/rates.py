@@ -503,7 +503,7 @@ class Formation:
         #convention:
         # ->local where the FP is centered, conventioned to be the place where the Intersitial moves to
         # ->ghost position is reserved for the vacancy
-        FP = Frenkelpair_0(local)
+        FP = Frenkelpair0(local)
         FP.ghost_site = particle.position
         FP.origin_site = system.mats[particle.position]
         system.mats[particle.position] = 999
@@ -526,51 +526,78 @@ class Formation:
                 break
         '''
 #########################################################################################
-'''
-class FP_generation:
-    def __init__(self,**kwargs):
-        self.kind = 'generation'
+# I + I -> I2
+class I2Formation:
+    def __init__(self, **kwargs):
+        self.kind = 'formation'
         self.k = kwargs['k']
+        self.materials_list = list(set([key[0] for key in self.k.keys()]))
+    def rate(self, **kwargs):
+        r        = kwargs['r']
+        system   = kwargs['system']
+        particle = kwargs['particle']
+        mats     = kwargs['mats']    
+        local    = np.argwhere(r == 0)[0][0]
+        mat      = mats[local]
         
+        cut      = kwargs['cut']   # full-lattice indices of those neighbors
+        
+        if cut is None:
+            # Fallback: assume contiguous slice from 0
+            cut = np.arange(len(r))
+            
+        sites_above_FPradius  = set(np.where(r > system.FPcutoff)[0])  #formation/generation cutoff should be more severe than hopping cutoff
+        
+        origin_type = particle.species
+
+        origin_type = 'interstitial'
+        neigh_type  = 'interstitial'      
+        
+        interstitial_sites = system.positions_by_species.get(neigh_type, set())
+        interstitial_sites = interstitial_sites- sites_above_FPradius
+        # Boolean occupancy mask aligned with r/mats via cut
+        occupied = np.fromiter((site in interstitial_sites for site in cut),
+                               dtype=bool, count=len(r))
+
+        # Rate: k when destination has an insterstitial, else 0
+        taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
+        taxa = np.where(occupied, taxa, 0.0)
+
+        # Never hop to self
+        taxa[r == 0] = 0
+        return taxa
+
+
+    def action(self, particle, system, local):
+        I2_part = I2(local)
+        I2_part.ghost_site = particle.position
+        I2_part.origin_site = system.mats[particle.position]
+        system.mats[particle.position] = 999
+        system.set_particles([I2_part])
+        particle.kill(self.kind, system, system.s1, 'converted')
+        inters = [ p for p in system.particles if p.species=="interstitial"]
+        for p in inters:
+            if p.position == local:
+                p.kill(self.kind, system, system.s1, 'converted')
+
+class I2Dissociation:
+    def __init__(self,**kwargs):
+        self.kind = 'dissociation_I2'
+        self.k = kwargs['k']
+        self.k[999] = 0
     def rate(self,**kwargs):
-        return self.k#[kwargs['material']]
-     
-    def action(self,system,**kwargs):
-        npart            = kwargs['npart']
-        pairs            = kwargs['pairs']        
-        
-        forbidden_sites  = set().union(*(system.positions_by_species.values()))
-        all_sites        = set(range(len(system.X)))
-        sites999         = np.where(system.mats == 999)[0] #cant create FP at 999 materials
-        avail_sites      = list(all_sites-forbidden_sites-set(sites999))
-        avail_sites      = random.sample(avail_sites, k=len(avail_sites))        
-        for i, site in enumerate(avail_sites):
-            orig_mat     = system.mats[site]
-            dx, dy, dz   = system.distance(system,site)
-            hopsites     = avail_sites.copy()
-            r            = kmc.utils.distances(dx,dy,dz,len(dx))
-            uncut        = np.where(r > system.FPcutoff)[0] 
-            mat_mismatch = np.where(system.mats == orig_mat)[0] #FP forms occupying two sites of different composition
-            hopsites     = list(set(hopsites) - set(uncut) - set(mat_mismatch) - set([i]) -set(sites999))
-            if len(hopsites) > 0:
-                selec = i
-                viz   = hopsites
-                break
-        selected = avail_sites[selec]
-        ghost    = random.sample(viz, 1)[0]
-        xfp,yfp,zfp = system.X[selected],system.Y[selected],system.Z[selected]
-        xg,yg,zg = system.X[ghost],system.Y[ghost],system.Z[ghost]
-        dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
-        dist = np.sqrt(dx**2 + dy**2+dz**2)
-        print('gen:',dist)
-        FP = Frenkelpair(selected)
-        FP.ghost_site = ghost
-        FP.origin_site = system.mats[ghost] #storing the old material type
-        system.mats[ghost] = 999 #changing the mat
-        system.set_particles([FP])
-        FP.make_text(system,system.s1,causamortis='generated')
-        FP.stamp_time(system)
-'''
+        return self.k[kwargs['material']]
+                 
+    def action(self,particle,system,local):
+        #convention:
+        # ->local = particle.position where the I2 is centered, conventioned to be the place where the Intersitial moves to
+        # ->ghost  position is reserved for the other I
+        IA = Interstitial(particle.position)
+        IB = Interstitial(particle.ghost_site)
+        system.mats[particle.ghost_site] = particle.origin_site 
+        system.set_particles([IA,IB])
+        #print(f'diss:vac->{particle.ghost_site} inter->{particle.position}')
+        particle.kill(self.kind,system,system.s1,'converted')    
 ####################################################################################
 class FP_generation:
     def __init__(self,**kwargs):
@@ -584,7 +611,7 @@ class FP_generation:
     def rate(self,**kwargs):
         return self.k#[kwargs['material']]
     def create(self,system,selected,ghost,**kwargs):
-        FP = Frenkelpair_plus2(selected)
+        FP = Frenkelpair2(selected)
         FP.ghost_site = ghost
         FP.origin_site = system.mats[ghost] #storing the old material type
         system.mats[ghost] = 999 #changing the mat

@@ -72,8 +72,8 @@ generation_pairs = [[I,Cs]]
 gen = FP_generation(k=k_gen,pairs=generation_pairs)
 ###PROCESSES#############################################################################
 
-processes = {'vacancy':[migration, formation], 'interstitial':[migration], 'frenkelpair0':[]}
-monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair0':[annihilation,dissociation]}
+processes = {'vacancy':[migration, formation], 'interstitial':[migration], 'frenkelpair2':[]}
+monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair2':[annihilation,dissociation]}
 generation = [gen]
 #########################################################################################
 
