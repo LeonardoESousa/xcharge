@@ -261,6 +261,7 @@ def step_nonani(system):
         #print(dt,[K_g,sum_Rs])
         #print(Prob,particle_condition,system.time)
         #print(f'IT {system.IT} before:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
+        
         u = random.uniform(0, 1)
         if u < Prob[0]:
             # --- GENERATION EVENT ---
@@ -279,7 +280,7 @@ def step_nonani(system):
             bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
             s.stamp_time(system)
             #print(prob_part,u,prob_part[choose_part])
-            #print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
+            print(f'at time {system.time:.10e}, event: {s.process}, dt: {dt:.2e}')
             #print([system.mats[s.position] for s in system.particles])
         #print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
         #print([ s.species for s in system.particles])             

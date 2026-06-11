@@ -7,7 +7,7 @@ from pymatgen.core import Structure
 from pymatgen.core import IMolecule
 import kmc.utils
 import kmc.rates
-
+import re
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
 #### CHOOSE A FUNC TO GENERATE PARTICLES
@@ -321,8 +321,10 @@ class ReadCIF():
         
         structure.make_supercell(self.mult_cell)
         xyz       = structure.cart_coords
-        species   = [x.symbol for x in structure.species]
-        index     = [self.label[x] for x in species]
+        #species   = [x.symbol for x in structure.species]
+        cif_label = [re.sub(r"\d+", "", x) for x in structure.labels]
+        #print(cif_label)
+        index     = [self.label[x] for x in cif_label]
 
         system.set_morph(xyz[:,0], xyz[:,1], xyz[:,2], index)
 
