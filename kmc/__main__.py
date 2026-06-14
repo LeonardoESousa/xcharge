@@ -14,6 +14,8 @@ import importlib
 import inspect
 import kmc.variables
 import kmc.utils
+import kmc.vis
+
 try:
     from importlib import metadata
 except ImportError: # for Python<3.8
@@ -186,6 +188,7 @@ def decision(s,system):
     dy = dy[cut]
     dz = dz[cut]
     mats = system.mats[cut]
+    #print( [ [cut[i],mats[i]] for i in range(len(cut)) ] )
     hop  = system.processes[kind] 
     mono = system.monomolecular[kind]     
     jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s,mats=mats,matlocal=system.mats[local],cut=cut) for transfer in hop]
@@ -265,7 +268,7 @@ def step_nonani(system):
         u = random.uniform(0, 1)
         if u < Prob[0]:
             # --- GENERATION EVENT ---
-            event_g.action(system, npart=1)
+            event_g.action(system, num=1)
             #print(f'at time {system.time:.10e}, event: generation, dt: {dt:.2e}')
         else:
             # --- PARTICLE-BASED EVENT ---
@@ -322,7 +325,7 @@ def step_ani(system):
         u = random.uniform(0, 1)
         if u < Prob[0]:
             # --- GENERATION EVENT ---
-            event_g.action(system, npart=1)
+            event_g.action(system, num=1)
             #print(f'at time {system.time:.10e}, event: generation, dt: {dt:.2e}')
         else:
             # --- PARTICLE-BASED EVENT ---
@@ -369,7 +372,7 @@ def spectra(system,f):
         texto += s.write()
     f.write(texto+f'END\n')
 
-
+'''
 def draw_sphere(ax, center, radius, color, margin_size, resolution=30):
     [[x_min,y_min,z_min],[x_max,y_max,z_max]] = margin_size
 
@@ -388,6 +391,7 @@ def draw_frankelpair(rS,rG,s,ax,marker,color,size,alpha):
     xs,ys,zs = rS
     xg,yg,zg = rG
     ax.plot([xs,xg],[ys,yg],[zs,zg],color=s.color,alpha=0.5,label=s.species,linewidth=10)
+   
 def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
     #try: #this is to freeze the frame at each iteration. Good for debug. Keeping here!
     #   animate.event_source.stop()
@@ -417,28 +421,6 @@ def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
                 draw_sphere(ax, [X_mat[i],Y_mat[i],Z_mat[i]], 0.03, colors_dic.get(int(mat)), margin_size, resolution=15)
         else:
             ax.scatter(X_mat,Y_mat,Z_mat,alpha=scatter_alpha,color=colors_dic.get(int(mat)),s=sizes_dic[int(mat)],depthshade=True)
-    '''#keeping this commented for a while so I can debug properly
-    try:  
-        for s in Ss:
-            xs = X[s.position]        	
-            ys = Y[s.position]
-            zs = Z[s.position]    
-            if s.species == 'frenkelpair':
-                xg = X[s.ghost_site]        	
-                yg = Y[s.ghost_site]
-                zg = Z[s.ghost_site]
-                ax.scatter(xg,yg,zg,alpha=scatter_alpha,color=colors_dic.get(int(s.origin_site)),s=sizes_dic[int(s.origin_site)],depthshade=True) #drawing deactivated site
-                draw_frankelpair([xs,ys,zs],[xg,yg,zg],s,ax,marker=s.marker,color=s.color,size=200,alpha=1) #drawing the pair
-                continue
-            #print(system.mat[s.position])                
-            if marker_option == 1:
-                ax.scatter(xs,ys,zs,marker=s.marker,color=s.color,s=200,alpha=1,label=s.species)      
-            if marker_option == 0:
-                ax.scatter(xs,ys,zs,color=s.color,s=100,alpha=1,label=s.species)                 
-    except Exception as e:
-        print('drawing error:',e)
-        pass
-    '''
     ########################
     Ss =[ s for s in Ss if s.status=='alive']
     for s in Ss:
@@ -510,34 +492,7 @@ def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
         plt.switch_backend('agg')
         plt.savefig(fig_name+'.png')
         
-#resets particles' initial position for a given system
-def reroll_system(system):
-    system.reset_particles()
-    for argumento in argumentos:
-        class_name = argumento.__class__.__name__
-        if (class_name in ["Create_Particles","Create_Particles_PROB","Create_ParticlesFP"]):
-            argumento.assign_to_system(system)
-    
-    '''
-    #debug
-    p  = system.particles
-    pp = [ part.position for part in p ]
-    print(pp,system.s1)    
-    '''
-    return system
 
-
-#RUN of a single round       
-def RUN(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE IS RECALCULATED
-    system = make_system()
-    step(system)
-    return system
-
-def RUN_FREEZE(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE REMAINS INTACT
-    syst = dynamic[1]
-    system = reroll_system(copy.deepcopy(syst)) 
-    step(system)
-    return system
 
 
 #setting up the animation object and adding responses to events    
@@ -581,7 +536,126 @@ def run_animation():
     #note for future improvement: blit = true -> good for save animation, blit=false -> good for realtime interaction                                   
     animate.event_source = ani.event_source
     return ani 
+'''
+
+def animate(num, viewer):
+    return viewer.update()
+
+
+def run_animation():
+    ani_running = True
+
+    def onClick(event):
+        nonlocal ani_running
+
+        if ani_running:
+            ani.event_source.stop()
+            ani_running = False
+        else:
+            ani.event_source.start()
+            ani_running = True
+
+    def pause_plot(event, pause):
+        nonlocal ani_running
+
+        if pause:
+            ani.event_source.stop()
+            ani_running = False
+
+    system = make_system()
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+
+    viewer = kmc.vis.KMCViewer(
+        system=system,
+        step_function=step,
+        fig=fig,
+        ax=ax,
+        colors_dic=colors_dic,
+        sizes_dic=sizes_dic,
+        material_label=material_label,
+        marker_option=marker_type,
+        rotate=rotate,
+        square_ratio=square_ratio,
+        clean_vis=clean_vis,
+        scatter_alpha=scatter_alpha,
+        print_site_position=print_site_position,
+        material_leg=material_leg,
+        time_units=time_units,
+    )
+
+    fig.canvas.mpl_connect("button_press_event", onClick)
+    fig.canvas.mpl_connect(
+        "draw_event",
+        lambda event: pause_plot(event, pause),
+    )
+
+    ani = animation.FuncAnimation(
+        fig,
+        animate,
+        fargs=[viewer],
+        interval=1,
+        blit=False,
+        repeat=False,
+        cache_frame_data=False,
+        save_count=1000,
+    )
+
+    animate.event_source = ani.event_source
+
+    return ani
+def draw_lattice(X, Y, Z, Mats, color_dir, fig_name):
+    fig = plt.figure()
+    ax = plt.axes(projection="3d")
+
+    ax.scatter3D(
+        X,
+        Y,
+        Z,
+        c=color_dir,
+        marker="o",
+        depthshade=True,
+        edgecolors="none",
+    )
+
+    try:
+        plt.show()
+    except:
+        plt.switch_backend("agg")
+        plt.savefig(fig_name + ".png")
+
+
+
+
+#resets particles' initial position for a given system
+def reroll_system(system):
+    system.reset_particles()
+    for argumento in argumentos:
+        class_name = argumento.__class__.__name__
+        if (class_name in ["Create_Particles","Create_Particles_PROB","Create_ParticlesFP"]):
+            argumento.assign_to_system(system)
     
+    '''
+    #debug
+    p  = system.particles
+    pp = [ part.position for part in p ]
+    print(pp,system.s1)    
+    '''
+    return system
+    
+    
+#RUN of a single round       
+def RUN(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE IS RECALCULATED
+    system = make_system()
+    step(system)
+    return system
+
+def RUN_FREEZE(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE REMAINS INTACT
+    syst = dynamic[1]
+    system = reroll_system(copy.deepcopy(syst)) 
+    step(system)
+    return system
 
     
 def main():

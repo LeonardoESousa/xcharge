@@ -411,7 +411,8 @@ class Migration:
                                
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
         taxa = np.where(occupied, 0.0, taxa) # if occupied, rate is 0, else, remain the calc value
-
+        
+        
         taxa[local] = 0
         
         return taxa
@@ -626,6 +627,7 @@ class FP_generation:
         #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
         #dist = np.sqrt(dx**2 + dy**2+dz**2)
         #print(self.causamortis,dist)
+    '''    
     def select(self,system,**kwargs):
         pairs            = self.pairs
         chosen,chosen_viz = [],[]
@@ -650,9 +652,54 @@ class FP_generation:
             chosen.append(avail_sites[selec])
             chosen_viz.append(random.sample(viz, 1)[0])
         return chosen,chosen_viz        
+    '''    
+    def select(self,system,**kwargs):
+        num = kwargs['num']
+        pairs            = self.pairs
+        avails,avails_viz = [],[]
+        for pair in pairs:
+            V_site_type,I_site_type = pair        
+            forbidden_sites  = set().union(*(system.positions_by_species.values()))
+            all_I_sites      = np.where(system.mats == I_site_type)[0]
+            all_V_sites      = np.where(system.mats == V_site_type)[0]
+            sites999         = np.where(system.mats == 999)[0] #cant create FP at 999 materials
+            avail_sites      = list(set(all_I_sites)-forbidden_sites-set(sites999))
+            avail_sites      = random.sample(avail_sites, k=len(avail_sites))        
+            for i, site in enumerate(avail_sites):
+              orig_mat     = system.mats[site]
+              dx, dy, dz   = system.distance(system,site)
+              r            = kmc.utils.distances(dx,dy,dz,len(dx))
+              uncut        = np.where(r > system.FPcutoff)[0] 
+              hopsites     = list(set(all_V_sites) - set(uncut) - set([i]) -set(sites999) -set(forbidden_sites))
+              if len(hopsites) > 0:
+                  avails.append(site)
+                  avails_viz.append(hopsites)
+                  
+        all_unique_pairs=[]
+        for i,base in enumerate(avails):
+          all_unique_pairs = all_unique_pairs + [ [base, viz] for viz in avails_viz[i] ]
+        random.shuffle(all_unique_pairs)
+        chosen_pairs = []
+        chosen_pairs.append(all_unique_pairs[0])
+        counter = 0
+        for pair in all_unique_pairs:
+          A, B = list(np.array(chosen_pairs)[:,0]), list(np.array(chosen_pairs)[:,1])
+          p1,p2 = pair
+          if ((p1 not in A) and (p2 not in B)):  
+            chosen_pairs.append(pair)
+            counter =+ 1
+            if counter >= num:
+              break
+        #chosen_pairs = np.array(random.sample(all_unique_pairs,num))
+        #print(chosen_pairs)
+        chosen = np.array(chosen_pairs)[:num,0]
+        chosen_viz = np.array(chosen_pairs)[:num,1]
+        return chosen,chosen_viz                
+
     def action(self,system,**kwargs):
+        num = kwargs['num']
         try:
-          chosen,chosen_viz = self.select(system)
+          chosen,chosen_viz = self.select(system,num=num)
           for i, (selec,viz) in enumerate(zip(chosen,chosen_viz)):
             self.create(system,selec,viz)
         except Exception as e:

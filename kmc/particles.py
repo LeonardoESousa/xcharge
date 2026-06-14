@@ -109,7 +109,7 @@ class Frenkelpair0(Particles):
         Particles.__init__(self,'frenkelpair0',initial) 
         self.charge = 0
         self.color  = "yellow"
-        self.marker = "$FP+0$"
+        self.marker = "$FP0$"
         self.ghost_site = None
         self.origin_site = None
 
@@ -118,7 +118,7 @@ class Frenkelpair2(Particles):
         Particles.__init__(self,'frenkelpair2',initial) 
         self.charge = 0
         self.color  = "gray"
-        self.marker = "$FP+0$"
+        self.marker = "$FP2$"
         self.ghost_site = None
         self.origin_site = None
 

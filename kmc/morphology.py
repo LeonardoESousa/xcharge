@@ -77,7 +77,8 @@ class Create_ParticlesFP(): #specifically handling FPs because they form differe
         self.pairs  = kwargs['pairs']
     def assign_to_system(self,system):
         FPgen =  kmc.rates.FP_generation(k=0,pairs=self.pairs,causamortis='created')
-        [ FPgen.action(system) for _ in range(self.num) ]
+        FPgen.action(system,num=self.num)
+        #[ FPgen.action(system) for _ in range(self.num) ]
         
 class Create_Particles():
     def __init__(self,kind, num, method, **kwargs):
