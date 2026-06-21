@@ -504,10 +504,27 @@ class Formation:
         #convention:
         # ->local where the FP is centered, conventioned to be the place where the Intersitial moves to
         # ->ghost position is reserved for the vacancy
-        FP = Frenkelpair0(local)
-        FP.ghost_site = particle.position
-        FP.origin_site = system.mats[particle.position]
-        system.mats[particle.position] = 999
+        
+        origin_type = particle.species
+        #two forms of formation: I first  or V first
+        if origin_type == 'interstitial':
+            neigh_type = 'vacancy'
+        if origin_type == 'vacancy':
+            neigh_type = 'interstitial'         
+             
+        if origin_type == 'interstitial':
+          FP_position   = particle.position
+          Ghost_position = local
+        if origin_type == 'vacancy':
+          FP_position    = local
+          Ghost_position = particle.position
+        
+        FP = Frenkelpair0(FP_position)
+        FP.ghost_site = Ghost_position
+        FP.origin_site = system.mats[FP_position]
+        system.mats[Ghost_position] = 999
+        
+        
         system.set_particles([FP])
         particle.kill(self.kind, system, system.s1, 'converted')
         #debug
@@ -516,7 +533,7 @@ class Formation:
         #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
         #dist = np.sqrt(dx**2 + dy**2+dz**2)
         #print('form:',dist,particle.position,local)
-        inters = [ p for p in system.particles if p.species=="interstitial"]
+        inters = [ p for p in system.particles if p.species==neigh_type]
         for p in inters:
             if p.position == local:
                 p.kill(self.kind, system, system.s1, 'converted')
@@ -627,32 +644,6 @@ class FP_generation:
         #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
         #dist = np.sqrt(dx**2 + dy**2+dz**2)
         #print(self.causamortis,dist)
-    '''    
-    def select(self,system,**kwargs):
-        pairs            = self.pairs
-        chosen,chosen_viz = [],[]
-        for pair in pairs:
-            V_site_type,I_site_type = pair        
-            forbidden_sites  = set().union(*(system.positions_by_species.values()))
-            all_I_sites      = np.where(system.mats == I_site_type)[0]
-            all_V_sites      = np.where(system.mats == V_site_type)[0]
-            sites999         = np.where(system.mats == 999)[0] #cant create FP at 999 materials
-            avail_sites      = list(set(all_I_sites)-forbidden_sites-set(sites999))
-            avail_sites      = random.sample(avail_sites, k=len(avail_sites))        
-            for i, site in enumerate(avail_sites):
-              orig_mat     = system.mats[site]
-              dx, dy, dz   = system.distance(system,site)
-              r            = kmc.utils.distances(dx,dy,dz,len(dx))
-              uncut        = np.where(r > system.FPcutoff)[0] 
-              hopsites     = list(set(all_V_sites) - set(uncut) - set([i]) -set(sites999) -set(forbidden_sites))
-              if len(hopsites) > 0:
-                  selec = i
-                  viz   = hopsites
-                  break
-            chosen.append(avail_sites[selec])
-            chosen_viz.append(random.sample(viz, 1)[0])
-        return chosen,chosen_viz        
-    '''    
     def select(self,system,**kwargs):
         num = kwargs['num']
         pairs            = self.pairs

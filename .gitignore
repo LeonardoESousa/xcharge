@@ -10,3 +10,4 @@ mykmc
 *.ipynb
 envkmc
 *pyd
+*.cif

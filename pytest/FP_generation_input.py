@@ -13,12 +13,12 @@ K_GEN = float(sys.argv[2])
 identifier         = 'generation_'+sys.argv[2] #output identifier
 cutoff             = 10      # in Angstroms
 FPcutoff           = 10    #Frenkel pair maximum size allowed. Should not be higher than cutoff
-rounds             = 10000      # Number of rounds
+rounds             = 1000      # Number of rounds
 n_proc             = 10      # Number of cores to be used
 frozen_lattice     = True   # if you want for the lattice to remain the same for all rounds
-periodic           = False  # if you want periodic boundary conditions
+periodic           = True  # if you want periodic boundary conditions
 bimolec            = False  # Turn on annihilation
-time_limit = 1E6
+time_limit = 1E3
 particle_condition = False # program continues even if there are 0 particles, relevant only with generation active
 print_site_position = True
 ###ANIMATION SETTINGS####################################################################
@@ -84,7 +84,8 @@ generation = [gen]
 # building the lattice through cif file
 file = "pytest/cifexample.cif" #filename
 remove_species = ['Br']
-multiply_cell  = [10,10,10] # multiplication of the unit cel by a vector v = a + b + c
+#multiply_cell  = [10,10,10] # multiplication of the unit cel by a vector v = a + b + c
+multiply_cell  = [6,6,6] # multiplication of the unit cel by a vector v = a + b + c
 lattice_func   = morphology.ReadCIF(file,multiply_cell,material_label,remove_species)
 
 

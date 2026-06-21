@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT = f"{BASE_DIR}/FP_generation_input.py"
 #CONFIGS = [10**x for x in [-5,-6,-7,-8]]
 CONFIGS = [10**x for x in [-5,-6,-7]]
-THRESHOLD = 1E-3
+THRESHOLD = 1E-2
 
 def read_dat(fn):
   data = pd.read_csv(fn,comment='#')
@@ -28,11 +28,12 @@ def read_dat(fn):
 def average_genpop(filename):
   data = read_dat(filename)
   time = sorted(data[data['CausaMortis'] == 'generated']['Time'].to_numpy(dtype=float))
-  pop = np.cumsum(np.ones([len(time)]))/10000
+  pop = np.cumsum(np.ones([len(time)]))/1000
   x = np.mean([pop[i]/time[i] for i in range(len(pop))])
   return x
   
 for conf in CONFIGS:
+  print(f'running {conf}')
   os.system(f'kmc {INPUT} {conf}')
 
 print("run finished")
