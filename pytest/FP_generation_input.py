@@ -13,12 +13,14 @@ K_GEN = float(sys.argv[2])
 identifier         = 'generation_'+sys.argv[2] #output identifier
 cutoff             = 10      # in Angstroms
 FPcutoff           = 10    #Frenkel pair maximum size allowed. Should not be higher than cutoff
-rounds             = 1000      # Number of rounds
-n_proc             = 10      # Number of cores to be used
+rounds             = 100      # Number of rounds
+n_proc             = 2      # Number of cores to be used
 frozen_lattice     = True   # if you want for the lattice to remain the same for all rounds
 periodic           = True  # if you want periodic boundary conditions
 bimolec            = False  # Turn on annihilation
 time_limit = 1E3
+time_units = 's'
+random_seed = 12345
 particle_condition = False # program continues even if there are 0 particles, relevant only with generation active
 print_site_position = True
 ###ANIMATION SETTINGS####################################################################

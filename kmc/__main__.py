@@ -1,580 +1,452 @@
-import numpy as np
-import random
-from kmc.system import System
-import kmc.bimolecular
-import sys
-import warnings
-warnings.filterwarnings("ignore") 
-import os
 import copy
-import matplotlib.pyplot as plt
-from matplotlib import animation
-from matplotlib.lines import Line2D
-import importlib  
+import importlib
 import inspect
+import multiprocessing
+import os
+import random
+import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import animation
+
+try:
+    import tqdm
+except ImportError:  # pragma: no cover - optional progress display
+    tqdm = None
+
+import kmc.bimolecular
 import kmc.variables
-import kmc.utils
 import kmc.vis
+from kmc.system import System
 
 try:
     from importlib import metadata
-except ImportError: # for Python<3.8
+except ImportError:  # pragma: no cover - Python < 3.8
     import importlib_metadata as metadata
-import multiprocessing 
-import tqdm
-# Setting up the interface
-print('####################################################################')
-print('Xcharge: A Kinetic Monte Carlo Model for Exciton and Charge Dynamics')
-#print('Repo link: '+metadata.metadata('kmc')['Home-page'])
-#print('Authors  : '+ metadata.metadata('kmc')['Author'])
-print('Version  : '+  metadata.metadata('kmc')['VERSION'])
-print()
-output_header='# Version  : '+  metadata.metadata('kmc')['VERSION']+'\n'
-### end interface
 
 
-#importing param module
-spec  = importlib.util.spec_from_file_location(sys.argv[1].split('.')[0], os.path.join(os.getcwd(),sys.argv[1]))
-param = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(param)
+def _load_parameters(path):
+    module_name = os.path.splitext(os.path.basename(path))[0]
+    spec = importlib.util.spec_from_file_location(module_name, os.path.abspath(path))
+    if spec is None or spec.loader is None:
+        raise ValueError(f"Could not load input file: {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-argumentos = []  
-for name, value in vars(param).items():
-    if hasattr(value, 'assign_to_system') and not inspect.isclass(value): #getting only instancied classes         
-        argumentos.append(value)
-        #print(name,hasattr(value, 'make'))
 
-#getting all essential info from user's input
-monomolecular       = param.monomolecular
-processes           = param.processes
+if len(sys.argv) < 2:
+    raise SystemExit("Usage: kmc INPUT.py [input arguments ...]")
 
-def set_variables(name):
+param = _load_parameters(sys.argv[1])
+
+
+def package_version():
     try:
+        return metadata.version("KMC")
+    except metadata.PackageNotFoundError:
+        from kmc.__version__ import __version__
+
+        return __version__
+
+
+def set_variable(name):
+    if hasattr(param, name):
         return getattr(param, name)
-    except:
-        return getattr(kmc.variables, name)
-
-generation     = set_variables('generation')
-identifier     = set_variables('identifier')     
-animation_mode = set_variables('animation_mode') 
-save_animation = set_variables('save_animation') 
-animation_exten= set_variables('animation_exten')
-time_limit     = set_variables('time_limit')     
-pause          = set_variables('pause')          
-marker_type    = set_variables('marker_type')    
-rotate         = set_variables('rotate')         
-frozen_lattice = set_variables('frozen_lattice') 
-bimolec        = set_variables('bimolec')  
-periodic       = set_variables('periodic')          
-n_proc         = set_variables('n_proc')
-rounds         = set_variables('rounds')
-cutoff         = set_variables('cutoff')
-FPcutoff       = set_variables('FPcutoff')
-colors_dic     = set_variables('colors_dic')
-sizes_dic      = set_variables('sizes_dic')
-square_ratio   = set_variables('square_ratio')
-scatter_alpha  = set_variables('scatter_alpha')
-clean_vis      = set_variables('clean_vis')
-material_label = set_variables('material_label')
-material_leg   = set_variables('material_leg')
-sizes_dic      = set_variables('sizes_dic')
-plot_type      = set_variables('plot_type')
-time_units     = set_variables('time_units')
-particle_condition = set_variables('particle_condition')
-creation_threshold = set_variables('creation_threshold')
-print_site_position = set_variables('print_site_position')
-particle_condition_base = particle_condition
-#####
-
-def passar(*args):
-    pass
-
-def anni(system,array,local):
-    anni_general(system,array,local)
-   
-
-if bimolec:
-    bi_func = anni
-else:
-    bi_func = passar
+    return getattr(kmc.variables, name)
 
 
-def regular_distance(system,local,destination=None):
-    if destination is not None:
-        dx = system.X[destination] - system.X[local]   
-        dy = system.Y[destination] - system.Y[local]  
-        dz = system.Z[destination] - system.Z[local]
-    else:
-        #dx,dy,dz = kmc.utils.distance(system.X,system.Y,system.Z,len(system.X),local)
-        dx = system.X - system.X[local]   
-        dy = system.Y - system.Y[local]  
-        dz = system.Z - system.Z[local]
-    return dx, dy, dz
+assigners = [
+    value
+    for value in vars(param).values()
+    if hasattr(value, "assign_to_system") and not inspect.isclass(value)
+]
 
-def periodic_distance(system,local,destination=None):
+monomolecular = param.monomolecular
+processes = param.processes
+generation = set_variable("generation")
+identifier = set_variable("identifier")
+animation_mode = set_variable("animation_mode")
+save_animation = set_variable("save_animation")
+animation_exten = set_variable("animation_exten")
+time_limit = set_variable("time_limit")
+pause = set_variable("pause")
+marker_type = set_variable("marker_type")
+rotate = set_variable("rotate")
+frozen_lattice = set_variable("frozen_lattice")
+bimolec = set_variable("bimolec")
+periodic = set_variable("periodic")
+n_proc = int(set_variable("n_proc"))
+rounds = int(set_variable("rounds"))
+cutoff = set_variable("cutoff")
+colors_dic = set_variable("colors_dic")
+sizes_dic = set_variable("sizes_dic")
+square_ratio = set_variable("square_ratio")
+scatter_alpha = set_variable("scatter_alpha")
+clean_vis = set_variable("clean_vis")
+material_label = set_variable("material_label")
+material_leg = set_variable("material_leg")
+time_units = set_variable("time_units")
+particle_condition = set_variable("particle_condition")
+creation_threshold = set_variable("creation_threshold")
+print_site_position = set_variable("print_site_position")
+first_neighbor_rtol = set_variable("first_neighbor_rtol")
+random_seed = set_variable("random_seed")
+append_output = set_variable("append_output")
+
+PARTICLE_ASSIGNERS = {
+    "Create_Particles",
+    "Create_Particles_PROB",
+    "Create_ParticlesFP",
+}
+
+
+def regular_distance(system, local, destination=None):
     if destination is None:
-        dx = system.X - system.X[local]   
-        dy = system.Y - system.Y[local]  
-        dz = system.Z - system.Z[local]
+        displacement = system.R - system.R[local]
     else:
-        dx = system.X[destination] - system.X[local]   
-        dy = system.Y[destination] - system.Y[local]  
-        dz = system.Z[destination] - system.Z[local]
-    if system.Lx > 0:
-        dx -= system.Lx*np.round(dx/system.Lx)   
-    if system.Ly > 0:
-        dy -= system.Ly*np.round(dy/system.Ly)  
-    if system.Lz > 0:
-        dz -= system.Lz*np.round(dz/system.Lz)
-    return dx,dy,dz
+        displacement = system.R[destination] - system.R[local]
+    return tuple(np.moveaxis(displacement, -1, 0))
 
 
+def periodic_distance(system, local, destination=None):
+    return system.minimum_image_displacement(local, destination)
 
-def periodic_distance(system,local,destination=None):
-    if destination is None:
-        dx = system.X - system.X[local]   
-        dy = system.Y - system.Y[local]  
-        dz = system.Z - system.Z[local]
-    else:
-        dx = system.X[destination] - system.X[local]   
-        dy = system.Y[destination] - system.Y[local]  
-        dz = system.Z[destination] - system.Z[local]
 
-    if system.Lx > 0:
-        dx -= system.Lx*np.floor(dx/system.Lx + 0.5)
-    if system.Ly > 0:
-        dy -= system.Ly*np.floor(dy/system.Ly + 0.5)
-    if system.Lz > 0:
-        dz -= system.Lz*np.floor(dz/system.Lz + 0.5)
+distance = periodic_distance if periodic else regular_distance
 
-    return dx,dy,dz
 
-if periodic:
-    distance = periodic_distance
-else:
-    distance =  regular_distance    
+def _seed_legacy_rngs(seed):
+    if seed is None:
+        return
+    seed = int(seed)
+    random.seed(seed)
+    np.random.seed(seed % (2**32))
 
-            
-def make_system():
-    #Create instance of system
+
+def make_system(seed=None, include_particles=True):
+    _seed_legacy_rngs(seed)
     system = System()
-    #Sets system properties  
-    system.set_basic_info(monomolecular,processes,identifier,animation_mode,time_limit,pause,bimolec,distance,generation,[cutoff,FPcutoff]) 
-    for argumento in argumentos:
-        argumento.assign_to_system(system)
- 
-    return system 
-    
-# runs the annihilations defined in anni_funcs_array                 
-def anni_general(system,anni_dict,local):
-    Ss = system.particles.copy()   
-    locs = np.array([s.position for s in Ss])
-    superpostos = np.where(locs == local)[0]
-    if len(superpostos) > 1:
-        try:
-            anni_dict[tuple(sorted(Ss[i].species for i in superpostos[:2]))](Ss,system,superpostos[:2])
-        except:#in case of the set (particle1,partticle2) is not defined
-            pass
+    system.set_rng(seed)
+    system.set_basic_info(
+        monomolecular=monomolecular,
+        processes=processes,
+        identifier=identifier,
+        animation_mode=animation_mode,
+        time_limit=time_limit,
+        pause=pause,
+        anni=bimolec,
+        distance=distance,
+        generation=generation,
+        cutoff=cutoff,
+        periodic=periodic,
+        first_neighbor_rtol=first_neighbor_rtol,
+        particle_condition=particle_condition,
+        creation_threshold=creation_threshold,
+        time_units=time_units,
+    )
+
+    for assigner in assigners:
+        if assigner.__class__.__name__ not in PARTICLE_ASSIGNERS:
+            assigner.assign_to_system(system)
+    if not hasattr(system, "R"):
+        raise ValueError("No morphology was assigned to the system.")
+    system.build_neighbor_topology()
+
+    if include_particles:
+        for assigner in assigners:
+            if assigner.__class__.__name__ in PARTICLE_ASSIGNERS:
+                assigner.assign_to_system(system)
+    return system
 
 
-def decision(s,system):
-    kind = s.species      
-    local= s.position        
-    dx, dy, dz = distance(system,local)
-    r = kmc.utils.distances(dx,dy,dz,len(dx))
-    cut = np.where(r < cutoff)[0]
-    r = r[cut]
-    dx = dx[cut]
-    dy = dy[cut]
-    dz = dz[cut]
-    mats = system.mats[cut]
-    #print( [ [cut[i],mats[i]] for i in range(len(cut)) ] )
-    hop  = system.processes[kind] 
-    mono = system.monomolecular[kind]     
-    jump_rate = [transfer.rate(r=r,dx=dx,dy=dy,dz=dz,system=system,particle=s,mats=mats,matlocal=system.mats[local],cut=cut) for transfer in hop]
-    #h = len([x for x in jump_rate[0] if x !=0])
-    #print(f"nviz tot: {len(dx)}") 
-    mono_rate = [[m.rate(material=system.mats[local])] for m in mono]
-    jump_rate.extend(mono_rate)   
-    sizes     = np.array([len(i) for i in jump_rate])
-    jump_rate = np.concatenate(jump_rate)
-    labels    = hop+mono
-    soma, jump = kmc.utils.jump(np.array(jump_rate,dtype=np.float64),len(jump_rate),random.uniform(0,1)) #dtype mismatch if the number, by chance, is integer. Force conversion
-    #print(kind,[(float(f"{jump_rate[x]:.10e}"),type(labels[x]).__name__) for x in range(len(labels))]) #do not delete. Good debug line
-    destino   = np.argmax(np.cumsum(sizes) -1 >= jump)
-    s.process = labels[destino]
-    if destino < len(hop):
-        s.destination = cut[int(jump - np.sum(sizes[:destino]))]
-        if s.process.__class__.__name__ == "Formation": #different cut, different handling
-            #fix here needed, failed attempt below
-            #FPCUT=np.where(r < system.FPcutoff)[0]
-            #s.destination = FPCUT[int(jump - np.sum(sizes[:destino]))]
-            pass
-    else:
-        s.destination = local
-    return soma
+def anni_general(system, reactions, local):
+    particles = system.particles.copy()
+    overlapping = [
+        index for index, particle in enumerate(particles)
+        if particle.position == local
+    ]
+    if len(overlapping) < 2:
+        return
+    pair = overlapping[:2]
+    key = tuple(sorted(particles[index].species for index in pair))
+    reaction = reactions.get(key)
+    if reaction is not None:
+        reaction(particles, system, pair)
 
-########ITERATION FUNCTIONS#######################################################
-def chose_generation(system):
-    try:
-      genrates = system.generation
-      K_gen = [ gen.rate() for gen in genrates ]
-      prob_gens   = np.cumsum(K_gen)/np.sum(K_gen)
-      u = random.uniform(0,1)
-      choose_gen = np.argmax(prob_gens >= u)
-      return genrates[choose_gen], K_gen[choose_gen]
-    except Exception as e:
-      print("Generation errror:",e)
-      return 0,0
+
+def _checked_rates(values, process):
+    values = np.asarray(values, dtype=float).reshape(-1)
+    if np.any(~np.isfinite(values)):
+        raise ValueError(f"Non-finite rate produced by {process!r}.")
+    if np.any(values < 0):
+        raise ValueError(f"Negative rate produced by {process!r}.")
+    return values
+
+
+def decision(particle, system):
+    local = particle.position
+    rate_blocks = []
+    destinations = []
+    labels = []
+
+    for transfer in system.processes[particle.species]:
+        mode = getattr(transfer, "neighbor_mode", "cutoff")
+        cut, dx, dy, dz, r = system.neighbor_data(local, mode)
+        mats = system.mats[cut]
+        rates = transfer.rate(
+            r=r,
+            dx=dx,
+            dy=dy,
+            dz=dz,
+            system=system,
+            particle=particle,
+            mats=mats,
+            matlocal=system.mats[local],
+            cut=cut,
+        )
+        rates = _checked_rates(rates, transfer)
+        if len(rates) != len(cut):
+            raise ValueError(
+                f"{transfer!r} returned {len(rates)} rates for {len(cut)} destinations."
+            )
+        rate_blocks.append(rates)
+        destinations.append(cut)
+        labels.append(transfer)
+
+    for process in system.monomolecular[particle.species]:
+        rate = _checked_rates(
+            [process.rate(material=system.mats[local])], process
+        )
+        rate_blocks.append(rate)
+        destinations.append(np.asarray([local], dtype=np.int32))
+        labels.append(process)
+
+    if not rate_blocks:
+        particle.process = None
+        particle.destination = None
+        return 0.0
+
+    totals = np.fromiter((rates.sum() for rates in rate_blocks), dtype=float)
+    total = float(totals.sum())
+    if total <= 0:
+        particle.process = None
+        particle.destination = None
+        return 0.0
+
+    process_index = int(
+        np.searchsorted(np.cumsum(totals), system.rng.random() * total, side="right")
+    )
+    selected_rates = rate_blocks[process_index]
+    process_total = totals[process_index]
+    event_index = int(
+        np.searchsorted(
+            np.cumsum(selected_rates),
+            system.rng.random() * process_total,
+            side="right",
+        )
+    )
+    particle.process = labels[process_index]
+    particle.destination = int(destinations[process_index][event_index])
+    return total
+
+
+def particle_propensity(particle, system):
+    cached = system.rate_cache.get(particle)
+    if cached is None:
+        cached = decision(particle, system)
+        system.rate_cache[particle] = cached
+    return cached
+
+
+def _particle_snapshot(system):
+    return {
+        particle: (
+            particle.position,
+            particle.charge,
+            getattr(particle, "ghost_site", None),
+        )
+        for particle in system.particles
+    }
+
+
+def _invalidate_changed_rates(system, before):
+    after = _particle_snapshot(system)
+    changed_particles = set(before) ^ set(after)
+    changed_particles.update(
+        particle
+        for particle in set(before) & set(after)
+        if before[particle] != after[particle]
+    )
+    changed_sites = set()
+    charge_changed = False
+    for particle in changed_particles:
+        for snapshot in (before.get(particle), after.get(particle)):
+            if snapshot is None:
+                continue
+            position, charge, ghost_site = snapshot
+            changed_sites.add(position)
+            if ghost_site is not None:
+                changed_sites.add(ghost_site)
+            charge_changed = charge_changed or charge != 0
+
+    if charge_changed:
+        system.rate_cache.clear()
+        return
+    affected_origins = system.affected_origins(changed_sites) if changed_sites else set()
+    alive = set(system.particles)
+    for particle in list(system.rate_cache):
+        if particle not in alive or particle.position in affected_origins:
+            system.rate_cache.pop(particle, None)
+
+
+def choose_generation(system):
+    rates = _checked_rates(
+        [generator.rate(system=system) for generator in system.generation],
+        "generation",
+    )
+    total = float(rates.sum())
+    if total <= 0:
+        return None, 0.0
+    index = int(
+        np.searchsorted(np.cumsum(rates), system.rng.random() * total, side="right")
+    )
+    return system.generation[index], total
+
+
+def _active(system):
+    if system.time >= system.time_limit:
+        return False
+    if system.particle_condition and system.count_particles() == 0:
+        return False
+    return True
+
+
+def _advance_to_next_event(system):
+    """Execute one exact KMC event, respecting deterministic time boundaries."""
+    while _active(system):
+        generation_enabled = system.time < system.creation_threshold
+        if generation_enabled:
+            generation_event, generation_rate = choose_generation(system)
+        else:
+            generation_event, generation_rate = None, 0.0
+
+        particles = system.particles.copy()
+        particle_rates = np.fromiter(
+            (particle_propensity(particle, system) for particle in particles), dtype=float
+        )
+        particle_total = float(particle_rates.sum())
+        total_rate = generation_rate + particle_total
+
+        boundaries = [system.time_limit]
+        if generation_enabled and np.isfinite(system.creation_threshold):
+            boundaries.append(system.creation_threshold)
+        boundary = min(value for value in boundaries if value >= system.time)
+
+        if total_rate <= 0:
+            if np.isfinite(boundary) and boundary > system.time:
+                system.time = boundary
+                continue
+            return False
+
+        dt = -np.log(max(system.rng.random(), np.finfo(float).tiny)) / total_rate
+        if system.time + dt >= boundary:
+            system.time = boundary
+            continue
+
+        system.time += dt
+        system.IT += 1
+        before = _particle_snapshot(system)
+        target = system.rng.random() * total_rate
+        if target < generation_rate:
+            generation_event.action(system, num=1)
+            _invalidate_changed_rates(system, before)
+            return True
+
+        target -= generation_rate
+        particle_index = int(
+            np.searchsorted(np.cumsum(particle_rates), target, side="right")
+        )
+        particle = particles[particle_index]
+        if particle.process is None:
+            raise RuntimeError("Selected a particle with zero total propensity.")
+        destination = particle.destination
+        particle.process.action(particle, system, destination)
+        if bimolec:
+            anni_general(
+                system,
+                kmc.bimolecular.bimolec_funcs_array,
+                destination,
+            )
+        particle.stamp_time(system)
+        _invalidate_changed_rates(system, before)
+        return True
+    return False
+
+
+def _energy_array(system, particle):
+    if particle.species == "electron" and hasattr(system, "lumo"):
+        return system.lumo
+    if particle.species == "hole" and hasattr(system, "homo"):
+        return system.homo
+    if particle.species == "triplet" and hasattr(system, "t1"):
+        return system.t1
+    return system.s1
+
+
+def _finalize(system):
+    for particle in system.particles.copy():
+        particle.kill("alive", system, _energy_array(system, particle), "alive")
+        particle.stamp_time(system)
+
+
 def step_nonani(system):
-    global particle_condition #so that it can be changed
-    while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
-        #print(system.IT,f'{system.time:.2e}',len(system.particles))
-        #cond = (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit))
-        #print(f"{system.time:.2e}",cond,system.count_particles() > 0)
-        system.IT += 1
-        event_g, K_g = chose_generation(system)
-        
-        Ss = system.particles.copy()
-        Rs = np.array([decision(s, system) for s in Ss])
-        sum_Rs = np.sum(Rs)
-        
-        #if time above this threshold, no creation allowed
-        if system.time >= creation_threshold:
-            if system.count_particles() == 0:
-                print("pop criteria fulfilled. Terminating this loop")
-                break
-            K_g = 0
-            particle_condition = True        
-        #######
-        
-        R_total = sum_Rs + K_g
-        Prob    = [K_g,sum_Rs]
-        Prob    = np.cumsum(Prob)/R_total
-        #print(Prob)
-        dt = (1 / R_total) * np.log(1 / random.uniform(0, 1))
-        
-        #print([K_g,sum_Rs],dt)
-        #print(system.IT,f'{system.time:.2e}',len(system.particles))
-        #print()
-        #print(f"{R_total:0e}, {2*1E5:0e}")
-        #print(Rs)
-        #print()
-        system.time += dt
-        #print(dt,[K_g,sum_Rs])
-        #print(Prob,particle_condition,system.time)
-        #print(f'IT {system.IT} before:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
-        #print(f'IT {system.IT} before:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles])
-        print("###########")
-        for s in system.particles:
-          print ([s.species,s.status,s.position])
-        u = random.uniform(0, 1)
-        if u < Prob[0]:
-            # --- GENERATION EVENT ---
-            event_g.action(system, num=1)
-            #print(f'at time {system.time:.10e}, event: generation, dt: {dt:.2e}')
-        else:
-            # --- PARTICLE-BASED EVENT ---
-            u_part = random.uniform(0, 1)#u - K_g 
-            prob_part = np.cumsum(Rs)/sum_Rs
-            choose_part = np.argmax(prob_part >= u_part)
-            
-            s = Ss[choose_part]
-            
-            # Execute the action
-            s.process.action(s, system, s.destination)
-            bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
-            s.stamp_time(system)
-            #print(prob_part,u,prob_part[choose_part])
-            print(f'at time {system.time:.10e}, type: {s.species}, event: {s.process}, dt: {dt:.2e}')
-            #print([system.mats[s.position] for s in system.particles])
-        #print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
-        #print([ s.species for s in system.particles])             
-    Ss = system.particles.copy()
-    for s in Ss:
-        s.kill('alive',system,system.s1,'alive')
-        s.stamp_time(system)
-    particle_condition = particle_condition_base #returning to its initial state
+    while _advance_to_next_event(system):
+        pass
+    _finalize(system)
+
+
 def step_ani(system):
-    global particle_condition #so that it can be changed
-    while (((not particle_condition) or (system.count_particles() > 0)) and (system.time < system.time_limit)): # if particle_condition = True  this equals to system.count_particles() > 0 and system.time < system.time_limit
-        #print(system.IT,f'{system.time:.2e}',len(system.particles))
-        system.IT += 1
-        event_g, K_g = chose_generation(system)
-        
-        Ss = system.particles.copy()
-        Rs = np.array([decision(s, system) for s in Ss])
-        sum_Rs = np.sum(Rs)
+    if _advance_to_next_event(system):
+        return system.particles.copy()
+    return []
 
-        #if time above this threshold, no creation allowed
-        if system.time >= creation_threshold:
-            if system.count_particles() == 0:
-                print("pop criteria fulfilled. Terminating this loop")
-                break
-            K_g = 0
-            particle_condition = True        
-        #######
-        
-        R_total = sum_Rs + K_g
-        Prob    = [K_g,sum_Rs]
-        Prob    = np.cumsum(Prob)/R_total
-        
-        dt = (1 / R_total) * np.log(1 / random.uniform(0, 1))
-        system.time += dt
 
-        #print(Prob)
-        #print(f'IT {system.IT} before:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
-        #print(f'IT {system.IT} before:',Rs)
-        u = random.uniform(0, 1)
-        if u < Prob[0]:
-            # --- GENERATION EVENT ---
-            event_g.action(system, num=1)
-            #print(f'at time {system.time:.10e}, event: generation, dt: {dt:.2e}')
-        else:
-            # --- PARTICLE-BASED EVENT ---
-            u_part = random.uniform(0, 1)#u - K_g 
-            prob_part = np.cumsum(Rs)/sum_Rs
-            choose_part = np.argmax(prob_part >= u_part)
-            
-            s = Ss[choose_part]
-            
-            # Execute the action
-            s.process.action(s, system, s.destination)
-            bi_func(system, kmc.bimolecular.bimolec_funcs_array, s.destination)
-            s.stamp_time(system)
-            #print(prob_part,u,prob_part[choose_part])
-            #print(f'at time {system.time:.10e}, event: {s.process}, specie: {s.species}, dt: {dt:.2e}')
-            #print()
-            #print([system.mats[s.position] for s in system.particles])
-        #print(f'IT {system.IT} after:',[[s.species,s.status,s.position,s.ghost_site] for s in system.particles if s.species == "frenkelpair"])
-        return system.particles.copy() #Ss  <--- returns wrong number if generation is active                
-    Ss = system.particles.copy()
-    for s in Ss:
-        s.kill('alive',system,system.s1,'alive')
-        s.stamp_time(system)
-##########################################################################################
+step = step_ani if animation_mode else step_nonani
 
-if animation_mode:
-    step = step_ani
-else:
-    step = step_nonani
 
 def open_log():
     filename = f"Simulation_{identifier}.txt"
-    if os.path.isfile(filename) == False:
-        with open(filename, "w") as f:
-            f.write(output_header)
-            texto = "Time,DeltaX,DeltaY,DeltaZ,Type,Energy,Location,FinalX,FinalY,FinalZ,CausaMortis,Status"
-            f.write(texto+"\n") 
+    if not os.path.isfile(filename) or not append_output:
+        version = package_version()
+        with open(filename, "w", encoding="utf-8") as output:
+            output.write(f"# Version: {version}\n")
+            output.write(f"# Time units: {time_units}\n")
+            output.write(
+                "Time,DeltaX,DeltaY,DeltaZ,Type,Energy,Location,"
+                "FinalX,FinalY,FinalZ,CausaMortis,Status\n"
+            )
     return filename
 
-#Prints Spectra
-def spectra(system,f):
-    texto = ''
-    for s in system.dead:
-        texto += s.write()
-    f.write(texto+f'END\n')
 
-'''
-def draw_sphere(ax, center, radius, color, margin_size, resolution=30):
-    [[x_min,y_min,z_min],[x_max,y_max,z_max]] = margin_size
+def spectra_text(system):
+    return "".join(particle.write() for particle in system.dead) + "END\n"
 
 
-    u = np.linspace(0, 2*np.pi, resolution)
-    v = np.linspace(0, np.pi, resolution)
-
-    x = (radius*(x_max-x_min))* np.outer(np.cos(u), np.sin(v)) + center[0]
-    y = (radius*(y_max-y_min)) * np.outer(np.sin(u), np.sin(v)) + center[1]
-    z = (radius*(z_max-z_min)) * np.outer(np.ones_like(u), np.cos(v)) + center[2]
-
-    ax.plot_surface(x, y, z, color=color, shade=True)
-
-
-def draw_frankelpair(rS,rG,s,ax,marker,color,size,alpha):
-    xs,ys,zs = rS
-    xg,yg,zg = rG
-    ax.plot([xs,xg],[ys,yg],[zs,zg],color=s.color,alpha=0.5,label=s.species,linewidth=10)
-   
-def animate(num,system,ax,marker_option,rotate,colors_dic,margin_size):
-    #try: #this is to freeze the frame at each iteration. Good for debug. Keeping here!
-    #   animate.event_source.stop()
-    #except:
-    #   pass
-    Ss = step(system)
-    if Ss is None:
-       Ss = []
-    
-    X, Y, Z = system.X, system.Y, system.Z        
-    mats = system.mats                            
-    ax.clear()
-    if print_site_position:
-      [ax.text(X[i],Y[i],Z[i],i) for i in range(len(X))]
-    #ploting the sites according to mat index
-    n_mats = [ x for x in np.unique(mats) if x != 999]
-    for mat in n_mats:
-        X_mat = X[mats == mat]
-        Y_mat = Y[mats == mat]
-        Z_mat = Z[mats == mat]
-        ax.set_proj_type('persp')
-        
-        if plot_type == "sphere":
-            indx = len(X_mat)
-            for i in range(indx):
-                #draw_sphere(ax, [X_mat[i],Y_mat[i],Z_mat[i]], 0.03*(sizes_dic[int(mat)]/np.amax(list(sizes_dic.values()))), colors_dic.get(int(mat)), margin_size, resolution=40)
-                draw_sphere(ax, [X_mat[i],Y_mat[i],Z_mat[i]], 0.03, colors_dic.get(int(mat)), margin_size, resolution=15)
-        else:
-            ax.scatter(X_mat,Y_mat,Z_mat,alpha=scatter_alpha,color=colors_dic.get(int(mat)),s=sizes_dic[int(mat)],depthshade=True)
-    ########################
-    Ss =[ s for s in Ss if s.status=='alive']
-    for s in Ss:
-        xs = X[s.position]        	
-        ys = Y[s.position]
-        zs = Z[s.position]    
-        if ('frenkelpair' in s.species) or ('I2' in s.species):
-            xg = X[s.ghost_site]        	
-            yg = Y[s.ghost_site]
-            zg = Z[s.ghost_site]
-            #ax.scatter(xg,yg,zg,alpha=scatter_alpha,color=colors_dic.get(int(s.origin_site)),s=sizes_dic[int(s.origin_site)],depthshade=True) #drawing deactivated site
-            draw_frankelpair([xs,ys,zs],[xg,yg,zg],s,ax,marker=s.marker,color=s.color,size=200,alpha=1) #drawing the pair
-            continue
-            #print(system.mat[s.position])                
-        if marker_option == 1:
-            ax.scatter(xs,ys,zs,marker=s.marker,color=s.color,s=200,alpha=1,label=s.species)      
-        if marker_option == 0:
-            ax.scatter(xs,ys,zs,color=s.color,s=100,alpha=1,label=s.species)   
-    ############################              
-    if rotate:#rotating the animation by an angle of IT
-        ax.view_init(azim = system.IT)
-    #removing duplicates on legend    
-    handles, labels = plt.gca().get_legend_handles_labels()
-    # De-duplicate first (dict keeps last handle per label), then sort by label.
-    # Sorting the raw zip breaks when labels repeat because Python tries to
-    # compare the (non-orderable) artist objects to break ties.
-    by_label = dict(zip(labels, handles))
-    by_label = dict(sorted(by_label.items(), key=lambda kv: kv[0]))
-    particle_legend = ax.legend(by_label.values(), by_label.keys())
-    ax.add_artist(particle_legend)
-    #ax.text2D(0.03, 0.97, "time = %.2e ps" % (system.time), transform=ax.transAxes) #time
-    ax.text2D(0.03, 0.97, f"time = {system.time:.2e} {time_units}", transform=ax.transAxes) #time
-    ax.text2D(0.03, 0.93, "npart  = %.0f"  % (len(system.particles)), transform=ax.transAxes) #npart
-             
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')     
-    
-    if square_ratio:
-        ax.set_box_aspect([1, 1, 1])
-    if clean_vis: #cleaning the visualization
-        ax.set_axis_off()
-        ax.grid(False)
-        ax.set_position([0, 0, 1, 1]) #animation occupies more of the screen
-    if material_leg:#here, we add a specific legend for the material species, which is a fixed set of elements
-        legend_elements = []
-        mat_lab = material_label.keys()
-        for mat in mat_lab:
-          leg = Line2D([0], [0],
-               marker='o',
-               linestyle='None',
-               label=mat,
-               markerfacecolor=colors_dic[material_label[mat]],
-               markeredgecolor=colors_dic[material_label[mat]],
-               markersize=10)
-          legend_elements.append(leg)
-        mat_legend = ax.legend(handles=legend_elements, title='Materials', loc='lower right')
-        ax.add_artist(mat_legend)
-    return ax,
-
-def draw_lattice(X,Y,Z,Mats,color_dir,fig_name):
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
-    ax.scatter3D(X, Y, Z,c=color_dir,marker='^');
-    
-    try:
-        plt.show()    
-    except:
-        plt.switch_backend('agg')
-        plt.savefig(fig_name+'.png')
-        
-
-
-
-#setting up the animation object and adding responses to events    
-def run_animation():
-    ani_running = True
-
-    def onClick(event): #if somenone clicks on the ani, this happens
-        nonlocal ani_running
-        if ani_running:
-            ani.event_source.stop()
-            ani_running = False
-        else:
-            ani.event_source.start()
-            ani_running = True
-
-    def pause_plot(event,pause): #if pause = true, this will happen
-        nonlocal ani_running
-        if pause:
-            ani.event_source.stop()
-            ani_running  = False
-
-    system = make_system()
-    
-    
-    #calculating the border for visualization purposes
-
-    p_max = [ np.amax(x) for x in [ list(system.X), list(system.Y),list(system.Z)]]
-    p_min = [ np.amin(x) for x in [ list(system.X), list(system.Y),list(system.Z)]]
-                    
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    fig.canvas.mpl_connect('button_press_event', onClick) #pausing if clicking
-    fig.canvas.mpl_connect('draw_event', lambda event: pause_plot(event, pause)) #pausing if pause = True at the first frame
-       
-    #ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate,colors_dic,[p_min,p_max]],
-    #                                interval=25, blit=True,repeat=False,cache_frame_data=True)#,save_count=1000)  
-                             
-    ani = animation.FuncAnimation(fig, animate, fargs=[system,ax,marker_type,rotate,colors_dic,[p_min,p_max]],
-                                    interval=1, blit=False,repeat=False,cache_frame_data=True,save_count=1000)
-                                    
-    #note for future improvement: blit = true -> good for save animation, blit=false -> good for realtime interaction                                   
-    animate.event_source = ani.event_source
-    return ani 
-'''
-
-def animate(num, viewer):
+def animate(_frame, viewer):
     return viewer.update()
 
 
 def run_animation():
-    ani_running = True
-
-    def onClick(event):
-        nonlocal ani_running
-
-        if ani_running:
-            ani.event_source.stop()
-            ani_running = False
-        else:
-            ani.event_source.start()
-            ani_running = True
-
-    def pause_plot(event, pause):
-        nonlocal ani_running
-
-        if pause:
-            ani.event_source.stop()
-            ani_running = False
-
-    system = make_system()
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection="3d")
-
+    system = make_system(seed=random_seed)
+    figure = plt.figure()
+    axis = figure.add_subplot(111, projection="3d")
     viewer = kmc.vis.KMCViewer(
         system=system,
         step_function=step,
-        fig=fig,
-        ax=ax,
+        fig=figure,
+        ax=axis,
         colors_dic=colors_dic,
         sizes_dic=sizes_dic,
         material_label=material_label,
@@ -587,15 +459,8 @@ def run_animation():
         material_leg=material_leg,
         time_units=time_units,
     )
-
-    fig.canvas.mpl_connect("button_press_event", onClick)
-    fig.canvas.mpl_connect(
-        "draw_event",
-        lambda event: pause_plot(event, pause),
-    )
-
     ani = animation.FuncAnimation(
-        fig,
+        figure,
         animate,
         fargs=[viewer],
         interval=1,
@@ -604,102 +469,102 @@ def run_animation():
         cache_frame_data=False,
         save_count=1000,
     )
-
-    animate.event_source = ani.event_source
-
     return ani
-def draw_lattice(X, Y, Z, Mats, color_dir, fig_name):
-    fig = plt.figure()
-    ax = plt.axes(projection="3d")
-
-    ax.scatter3D(
-        X,
-        Y,
-        Z,
-        c=color_dir,
-        marker="o",
-        depthshade=True,
-        edgecolors="none",
-    )
-
-    try:
-        plt.show()
-    except:
-        plt.switch_backend("agg")
-        plt.savefig(fig_name + ".png")
 
 
+_frozen_template = None
 
 
-#resets particles' initial position for a given system
-def reroll_system(system):
+def _init_worker(template):
+    global _frozen_template
+    _frozen_template = template
+
+
+def _particle_assigners(system):
+    for assigner in assigners:
+        if assigner.__class__.__name__ in PARTICLE_ASSIGNERS:
+            assigner.assign_to_system(system)
+
+
+def reroll_system(system, seed):
+    _seed_legacy_rngs(seed)
     system.reset_particles()
-    for argumento in argumentos:
-        class_name = argumento.__class__.__name__
-        if (class_name in ["Create_Particles","Create_Particles_PROB","Create_ParticlesFP"]):
-            argumento.assign_to_system(system)
-    
-    '''
-    #debug
-    p  = system.particles
-    pp = [ part.position for part in p ]
-    print(pp,system.s1)    
-    '''
-    return system
-    
-    
-#RUN of a single round       
-def RUN(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE IS RECALCULATED
-    system = make_system()
-    step(system)
+    system.set_rng(seed)
+    _particle_assigners(system)
     return system
 
-def RUN_FREEZE(dynamic): #ROUND DYNAMICS WHERE, FOR EACH INSTANCE, THE LATTICE REMAINS INTACT
-    syst = dynamic[1]
-    system = reroll_system(copy.deepcopy(syst)) 
-    step(system)
-    return system
 
-    
+def run_dynamic(task):
+    _, seed = task
+    system = make_system(seed=seed)
+    step_nonani(system)
+    return spectra_text(system)
+
+
+def run_frozen(task):
+    _, seed = task
+    if _frozen_template is None:
+        raise RuntimeError("Frozen-lattice worker was not initialized.")
+    system = reroll_system(copy.deepcopy(_frozen_template), seed)
+    step_nonani(system)
+    return spectra_text(system)
+
+
+def _round_seeds():
+    sequence = np.random.SeedSequence(random_seed)
+    return [int(child.generate_state(1)[0]) for child in sequence.spawn(rounds)]
+
+
 def main():
-        
+    version = package_version()
+    print("####################################################################")
+    print("Xcharge: A Kinetic Monte Carlo Model for Exciton and Charge Dynamics")
+    print(f"Version  : {version}\n")
+
     if animation_mode:
         ani = run_animation()
-        path=identifier+"_animation."+animation_exten
-                                                   
-        if save_animation:                   
-            
-            #save .gif
-            if animation_exten == 'gif':
-                ani.save(path, writer='pillow', fps=10)
-            
-            #save .mp4
-            if animation_exten == 'mp4':
-                writervideo = animation.FFMpegWriter(fps=10,extra_args=["-crf", "10","-preset", "slow","-pix_fmt", "yuv420p"]) 
-                ani.save(path, writer=writervideo)
-        
+        path = identifier + "_animation." + animation_exten
+        if save_animation and animation_exten == "gif":
+            ani.save(path, writer="pillow", fps=10)
+        elif save_animation and animation_exten == "mp4":
+            writer = animation.FFMpegWriter(
+                fps=10,
+                extra_args=["-crf", "10", "-preset", "slow", "-pix_fmt", "yuv420p"],
+            )
+            ani.save(path, writer=writer)
         plt.show()
-    else:      
-        p = multiprocessing.Pool(n_proc) 
-        filename = open_log()      
-        if not frozen_lattice: # at every round, the entire lattice is recalculated
-            run = RUN
-            args = [(i) for i in range(rounds)]
-        else:# at every round, only particle creation is recalculated
-            syst = make_system()
-            run = RUN_FREEZE
-            args = [(i, syst) for i in range(rounds)]
-        #debug
-        #'''
-        #for arg in args:
-        #    result = run(arg)
-        #    with open(filename, "a") as f:
-        #        spectra(result,f)
-        #'''
-        with open(filename, "a") as f:
-            for result in tqdm.tqdm(p.imap(run, args),total=rounds):
-                spectra(result,f)        
-        #'''
+        return 0
+
+    filename = open_log()
+    seeds = _round_seeds()
+    tasks = list(enumerate(seeds))
+    template = None
+    runner = run_dynamic
+    if frozen_lattice:
+        template_seed = int(np.random.SeedSequence(random_seed).generate_state(1)[0])
+        template = make_system(seed=template_seed, include_particles=False)
+        runner = run_frozen
+
+    with open(filename, "a", encoding="utf-8") as output:
+        if n_proc == 1:
+            _init_worker(template)
+            results = map(runner, tasks)
+            iterator = tqdm.tqdm(results, total=rounds) if tqdm else results
+            for result in iterator:
+                output.write(result)
+        else:
+            chunksize = max(1, rounds // (4 * n_proc))
+            with multiprocessing.Pool(
+                n_proc,
+                initializer=_init_worker,
+                initargs=(template,),
+            ) as pool:
+                results = pool.imap(runner, tasks, chunksize=chunksize)
+                iterator = tqdm.tqdm(results, total=rounds) if tqdm else results
+                for result in iterator:
+                    output.write(result)
+    return 0
+
 
 if __name__ == "__main__":
-    sys.exit(main())        
+    raise SystemExit(main())

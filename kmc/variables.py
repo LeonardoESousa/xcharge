@@ -16,6 +16,9 @@ n_proc          = 1
 rounds          = 1
 cutoff          = np.inf
 FPcutoff        = 3
+first_neighbor_rtol = 0.15
+random_seed     = None
+append_output   = False
 time_units      = 'ps'
 particle_condition = True
 creation_threshold = np.inf
@@ -31,5 +34,3 @@ scatter_alpha  = 0.3
 clean_vis      = True
 print_site_position = False
 ###############################################################
-
-

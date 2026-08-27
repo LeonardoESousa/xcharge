@@ -18,6 +18,8 @@ n_proc             = 1      # Number of cores to be used
 frozen_lattice     = True   # if you want for the lattice to remain the same for all rounds
 periodic           = False  # if you want periodic boundary conditions
 bimolec            = False  # Turn on annihilation
+time_units         = 's'
+first_neighbor_rtol = 0.15
 ###ANIMATION SETTINGS####################################################################
 square_ratio       = False
 pause              = False  # if you want that the annimation stops in the first frame (debug purposes)
@@ -40,7 +42,7 @@ I          = material_label['I']
 
 
 # FRENKEL PAIR DISSOCIAITON
-k_diss = {(Cs,Cs):0, (Cs,I):1e-5, (I,Cs):0, (I,I):0} # dissociation rates for each material combination
+k_diss = {Cs:0, I:1e-5}
 dissociation = DissociationFP(k=k_diss)
 
 # FRENKEL PAIR ANNIHILATION
@@ -52,13 +54,13 @@ k_migration = {(Cs,Cs):1e-5, (Cs,I):0, (I,Cs):0, (I,I):1e-5} # migration rates f
 migration = Migration(k=k_migration)
 
 # FRENKEL PAIR FORMATION (VACANCY + INTERSTITIAL)
-k_formation = 1e-4 # formation rates for each material combination
+k_formation = {(Cs,Cs):0, (Cs,I):1e-4, (I,Cs):1e-4, (I,I):0}
 formation = Formation(k=k_formation)
 
 ###PROCESSES#############################################################################
 
-processes = {'vacancy':[migration, formation], 'interstitial':[migration], 'frenkelpair':[dissociation]}
-monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair':[annihilation]}
+processes = {'vacancy':[migration, formation], 'interstitial':[migration, formation], 'frenkelpair2':[]}
+monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair2':[annihilation, dissociation]}
 #########################################################################################
 
 ###MORPHOLOGY############################################################################
@@ -86,6 +88,6 @@ a2 = morphology.Gaussian_energy(t1s)
 
 
 ##GENERATE PARTICLES#####################################################################
-method    = morphology.randomized
-exciton   = morphology.Create_Particles('frenkelpair', 2, method, mat=[0]) # creates 1 singlet exciton randomly at either material 0 or 1
+generation_pairs = [[I, Cs]]
+exciton = morphology.Create_ParticlesFP(num=2, pairs=generation_pairs)
 #########################################################################################

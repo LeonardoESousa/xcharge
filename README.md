@@ -127,6 +127,27 @@ Then, run the job
 kmc your_input.py
 ```
 
+### Defect first-neighbor topology
+
+`Migration`, `Formation`, `I2Formation`, and `FP_generation` use a
+precomputed first-neighbor graph. Their rates do not depend on the global
+`cutoff`. The nearest shell is determined separately for each destination
+material and uses the full periodic CIF lattice matrix, including triclinic
+cells.
+
+Equivalent first-neighbor distances in distorted structures are grouped with
+the relative tolerance `first_neighbor_rtol` (default `0.15`). Set this in the
+input when a narrower or wider distorted shell is physically appropriate:
+
+```python
+first_neighbor_rtol = 0.10
+random_seed = 12345
+time_units = "s"
+```
+
+The `cutoff` setting remains applicable to distance-dependent exciton and
+charge-transfer processes. Their cutoff neighbor lists are also precomputed.
+
 ### Analysis Dashboard
 
 <p align="center">
@@ -159,4 +180,3 @@ Click in <em> Upload </em>, choose you file and press <em>Read File </em>.
     <td align="center"><a href="https://github.com/TSA-Cassiano"><img style="border-radius: 50%;" src="https://avatars.githubusercontent.com/u/26448170?s=400&u=b0820613fd46515f0cfe1806f7251a414d4c249b&v=4" width="100px;" alt=""/><br /><sub><b>MSc Tiago de Sousa Araújo Cassiano</b></sub></a><br />Phd student at the University of Brasília (UnB)<br /><sub><b><a href="mailto:tiagofis96@gmail.com">EMAIL</a><br /></td>
   </tr>
 </table>
-

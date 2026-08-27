@@ -167,6 +167,8 @@ class Dissociation_electron:
         system   = kwargs['system']
         r        = kwargs['r']
         particle = kwargs['particle']
+        local    = particle.position
+        cut      = kwargs['cut']
         mats   = kwargs['mats']
         mat    = kwargs['matlocal']
         num      = len(mats)
@@ -181,7 +183,7 @@ class Dissociation_electron:
         AtH        = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
         
-        DEe = lumos - (homos[local] + s1s[local])
+        DEe = lumos[cut] - (homos[local] + s1s[local])
         taxae = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -(DEe+abs(DEe))/(2*kb*self.T))
         taxae[r == 0] = 0
         return taxae
@@ -208,6 +210,7 @@ class Dissociation_hole:
         r        = kwargs['r']
         particle = kwargs['particle']
         local    = particle.position 
+        cut      = kwargs['cut']
         mats   = kwargs['mats']
         mat    = kwargs['matlocal']
         num      = len(mats)
@@ -222,7 +225,7 @@ class Dissociation_hole:
         AtH        = raios(num,self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
         
-        DEh = (lumos[local] - s1s[local]) - homos  
+        DEh = (lumos[local] - s1s[local]) - homos[cut]
         taxah = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -(DEh+abs(DEh))/(2*kb*self.T))
         taxah[r == 0] = 0
         return taxah
@@ -236,37 +239,39 @@ class Dissociation_hole:
 #########################################################################################
 
 
-def corrected_energies(system,s,r,dx,dy,dz):
-    potential = system.electrostatic() - (
+def corrected_energies(system,s,r,dx,dy,dz,cut):
+    electrostatic = system.electrostatic()
+    potential = electrostatic[cut] - (
         system.field[0] * dx + system.field[1] * dy + system.field[2] * dz
     )
     r_safe = np.where(r != 0, r, np.inf)
     potential -= s.charge * abs(e) / (4 * np.pi * system.epsilon * r_safe)
-    indices_e = np.fromiter(
-        (pos for pos in system.positions_by_species.get("electron", set()) if pos != s.position),
-        dtype=int,
+    electron_sites = set(system.species_positions("electron")) - {s.position}
+    hole_sites = set(system.species_positions("hole")) - {s.position}
+    electron_mask = np.fromiter(
+        (int(site) in electron_sites for site in cut), dtype=bool, count=len(cut)
     )
-    indices_h = np.fromiter(
-        (pos for pos in system.positions_by_species.get("hole", set()) if pos != s.position),
-        dtype=int,
+    hole_mask = np.fromiter(
+        (int(site) in hole_sites for site in cut), dtype=bool, count=len(cut)
     )
+    origin_potential = electrostatic[s.position]
 
     if s.species == 'electron':
-        engs  = np.array(system.lumo, copy=True)
-        if indices_h.size:
-            engs[indices_h] = system.homo[indices_h]
-        if indices_e.size:
-            engs[indices_e] = np.inf
-        engs += -1*potential
-        DE = (engs - engs[s.position]) + abs(engs - engs[s.position])
+        engs = np.array(system.lumo[cut], copy=True)
+        engs[hole_mask] = system.homo[cut[hole_mask]]
+        engs[electron_mask] = np.inf
+        engs -= potential
+        origin_energy = system.lumo[s.position] - origin_potential
+        difference = engs - origin_energy
+        DE = difference + abs(difference)
     elif s.species == 'hole':
-        engs  = np.array(system.homo, copy=True)
-        if indices_e.size:
-            engs[indices_e] = system.lumo[indices_e]
-        if indices_h.size:
-            engs[indices_h] = -np.inf
-        engs += -1*potential
-        DE = (engs[s.position] - engs) + abs(engs[s.position] - engs)
+        engs = np.array(system.homo[cut], copy=True)
+        engs[electron_mask] = system.lumo[cut[electron_mask]]
+        engs[hole_mask] = -np.inf
+        engs -= potential
+        origin_energy = system.homo[s.position] - origin_potential
+        difference = origin_energy - engs
+        DE = difference + abs(difference)
     return DE
 
 
@@ -286,6 +291,7 @@ class MillerAbrahams:
         dy        = kwargs['dy']
         dz        = kwargs['dz']
         particle  = kwargs['particle']
+        cut       = kwargs['cut']
         mats   = kwargs['mats']
         mat    = kwargs['matlocal']
         num      = len(mats)        
@@ -293,7 +299,7 @@ class MillerAbrahams:
         AtH        = raios(len(r),self.AtH,mat,self.inv,mats)
         in_loc_rad = self.inv[mat]
 
-        DE = corrected_energies(system,particle,r,dx,dy,dz)                            	               
+        DE = corrected_energies(system,particle,r,dx,dy,dz,cut)
         taxa = (1e-12)*(AtH)*np.exp(-2*in_loc_rad*r -DE/(2*kb*self.T)) 
         
         taxa[r == 0] = 0
@@ -369,53 +375,36 @@ class ISC:
 
 
 def filter(num,ks, mat, mats, materials_list):
-  # Initialize the Raios array with the value of Rf[(mat,mat)]
-  taxas = np.empty(num)
-  ks[(999,999)] =0
-  taxas.fill(ks[(mat,mat)])
-  
-  # Use NumPy's where function to set the values of Raios for the other materials
-  taxas = np.where(mats == 999, 0, taxas) # negating hop to ghost site
-  for m in materials_list:
-    ks[(999,m)] = 0
-    if m != mat:
-      taxas = np.where(mats == m, ks[(mat,m)], taxas) # where mats == m, rate will be ks[(m,m)]). To be stored in the already initialized taxas vec
-  return taxas
+    rates = np.zeros(num, dtype=float)
+    for material in materials_list:
+        if material == 999:
+            continue
+        rates[mats == material] = ks.get((mat, material), 0.0)
+    return rates
 
 
 ##DEFECTS MIGRATION RATE##############################################################
 class Migration:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.k = kwargs['k']
-        self.materials_list = list(set([key[0] for key in self.k.keys()]))
+        self.neighbor_mode = 'first'
+        self.k = dict(kwargs['k'])
+        self.materials_list = list({key[1] for key in self.k})
 
     def rate(self,**kwargs):
-        r        = kwargs['r']
         system   = kwargs['system']
-        particle = kwargs['particle']
         mats     = kwargs['mats']    
-        local    = np.argwhere(r == 0)[0][0]
-        mat      = mats[local]
+        mat      = kwargs['matlocal']
         cut      = kwargs['cut']   # full-lattice indices of those neighbors
-        
-        if cut is None:
-            # Fallback: assume contiguous slice from 0
-            cut = np.arange(len(r))        
-        
+
         #migration can not occur in occupied sites!
-        forbidden_sites  = set().union(*(system.positions_by_species.values()))
-        occupied = np.fromiter((site in forbidden_sites for site in cut),
-                               dtype=bool, count=len(r))
-                               
-                               
+        occupied = np.fromiter(
+            (system.occupancy.get(int(site), 0) > 0 for site in cut),
+            dtype=bool,
+            count=len(cut),
+        )
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
-        taxa = np.where(occupied, 0.0, taxa) # if occupied, rate is 0, else, remain the calc value
-        
-        
-        taxa[local] = 0
-        
-        return taxa
+        return np.where(occupied, 0.0, taxa)
 
 
     def action(self,particle,system,local):
@@ -423,7 +412,7 @@ class Migration:
 class DissociationFP:
     def __init__(self,**kwargs):
         self.kind = 'dissociation_fp'
-        self.k = kwargs['k']
+        self.k = dict(kwargs['k'])
         self.k[999] = 0
     def rate(self,**kwargs):
         return self.k[kwargs['material']]
@@ -443,7 +432,7 @@ class DissociationFP:
 class Annihilation:
     def __init__(self,**kwargs):
         self.kind = 'annihilation'
-        self.k = kwargs['k']
+        self.k = dict(kwargs['k'])
         self.k[999] = 0
     def rate(self,**kwargs):
         return self.k[kwargs['material']]
@@ -456,43 +445,46 @@ class Annihilation:
 class Formation:
     def __init__(self, **kwargs):
         self.kind = 'formation'
-        self.k = kwargs['k']
-        self.materials_list = list(set([key[0] for key in self.k.keys()]))
+        self.neighbor_mode = 'first'
+        supplied_rate = kwargs['k']
+        if np.isscalar(supplied_rate):
+            self.k = None
+            self.scalar_rate = float(supplied_rate)
+            self.materials_list = []
+        else:
+            self.k = dict(supplied_rate)
+            self.scalar_rate = None
+            self.materials_list = list({key[1] for key in self.k})
     def rate(self, **kwargs):
-        r        = kwargs['r']
         system   = kwargs['system']
         particle = kwargs['particle']
         mats     = kwargs['mats']    
-        local    = np.argwhere(r == 0)[0][0]
-        mat      = mats[local]
-        
+        mat      = kwargs['matlocal']
         cut      = kwargs['cut']   # full-lattice indices of those neighbors
-        
-        if cut is None:
-            # Fallback: assume contiguous slice from 0
-            cut = np.arange(len(r))
-            
-        sites_above_FPradius  = set(np.where(r > system.FPcutoff)[0])  #formation/generation cutoff should be more severe than hopping cutoff
-        
+
         origin_type = particle.species
-        #two forms of formation: I first  or V first
         if origin_type == 'interstitial':
             neigh_type = 'vacancy'
-        if origin_type == 'vacancy':
+        elif origin_type == 'vacancy':
             neigh_type = 'interstitial'        
-        
-        interstitial_sites = system.positions_by_species.get(neigh_type, set())
-        interstitial_sites = interstitial_sites- sites_above_FPradius
-        # Boolean occupancy mask aligned with r/mats via cut
-        occupied = np.fromiter((site in interstitial_sites for site in cut),
-                               dtype=bool, count=len(r))
+        else:
+            return np.zeros(len(cut), dtype=float)
+
+        neighbor_positions = system.species_positions(neigh_type)
+        occupied = np.fromiter(
+            (int(site) in neighbor_positions for site in cut),
+            dtype=bool,
+            count=len(cut),
+        )
 
         # Rate: k when destination has an insterstitial, else 0
-        taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
+        if self.k is None:
+            taxa = np.full(len(mats), self.scalar_rate, dtype=float)
+            taxa[mats == 999] = 0.0
+        else:
+            taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
         taxa = np.where(occupied, taxa, 0.0)
 
-        # Never hop to self
-        taxa[r == 0] = 0
         return taxa
 
 
@@ -521,7 +513,7 @@ class Formation:
         
         FP = Frenkelpair0(FP_position)
         FP.ghost_site = Ghost_position
-        FP.origin_site = system.mats[FP_position]
+        FP.origin_site = system.mats[Ghost_position]
         system.mats[Ghost_position] = 999
         
         
@@ -548,41 +540,26 @@ class Formation:
 class I2Formation:
     def __init__(self, **kwargs):
         self.kind = 'formation'
-        self.k = kwargs['k']
-        self.materials_list = list(set([key[0] for key in self.k.keys()]))
+        self.neighbor_mode = 'first'
+        self.k = dict(kwargs['k'])
+        self.materials_list = list({key[1] for key in self.k})
     def rate(self, **kwargs):
-        r        = kwargs['r']
         system   = kwargs['system']
-        particle = kwargs['particle']
         mats     = kwargs['mats']    
-        local    = np.argwhere(r == 0)[0][0]
-        mat      = mats[local]
-        
+        mat      = kwargs['matlocal']
         cut      = kwargs['cut']   # full-lattice indices of those neighbors
-        
-        if cut is None:
-            # Fallback: assume contiguous slice from 0
-            cut = np.arange(len(r))
-            
-        sites_above_FPradius  = set(np.where(r > system.FPcutoff)[0])  #formation/generation cutoff should be more severe than hopping cutoff
-        
-        origin_type = particle.species
 
-        origin_type = 'interstitial'
-        neigh_type  = 'interstitial'      
-        
-        interstitial_sites = system.positions_by_species.get(neigh_type, set())
-        interstitial_sites = interstitial_sites- sites_above_FPradius
-        # Boolean occupancy mask aligned with r/mats via cut
-        occupied = np.fromiter((site in interstitial_sites for site in cut),
-                               dtype=bool, count=len(r))
+        interstitial_sites = system.species_positions('interstitial')
+        occupied = np.fromiter(
+            (int(site) in interstitial_sites for site in cut),
+            dtype=bool,
+            count=len(cut),
+        )
 
         # Rate: k when destination has an insterstitial, else 0
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
         taxa = np.where(occupied, taxa, 0.0)
 
-        # Never hop to self
-        taxa[r == 0] = 0
         return taxa
 
 
@@ -601,7 +578,7 @@ class I2Formation:
 class I2Dissociation:
     def __init__(self,**kwargs):
         self.kind = 'dissociation_I2'
-        self.k = kwargs['k']
+        self.k = dict(kwargs['k'])
         self.k[999] = 0
     def rate(self,**kwargs):
         return self.k[kwargs['material']]
@@ -622,12 +599,34 @@ class FP_generation:
         self.kind = 'generation'
         self.k = kwargs['k']
         self.pairs = kwargs['pairs']
-        try:
-          self.causamortis = kwargs['causamortis']
-        except:
-          self.causamortis = "generated"
-    def rate(self,**kwargs):
-        return self.k#[kwargs['material']]
+        self.causamortis = kwargs.get('causamortis', "generated")
+
+    def available_pairs(self, system):
+        occupied = system.occupancy
+        available = []
+        for vacancy_material, interstitial_material in self.pairs:
+            interstitial_sites = np.flatnonzero(
+                system.mats == interstitial_material
+            )
+            for interstitial_site in interstitial_sites:
+                interstitial_site = int(interstitial_site)
+                if occupied.get(interstitial_site, 0):
+                    continue
+                vacancy_sites = system.first_neighbors_of_material(
+                    interstitial_site, vacancy_material
+                )
+                for vacancy_site in vacancy_sites:
+                    vacancy_site = int(vacancy_site)
+                    if not occupied.get(vacancy_site, 0):
+                        available.append((interstitial_site, vacancy_site))
+        return available
+
+    def rate(self, system=None, **kwargs):
+        if self.k <= 0:
+            return 0.0
+        if system is not None and not self.available_pairs(system):
+            return 0.0
+        return float(self.k)
     def create(self,system,selected,ghost,**kwargs):
         FP = Frenkelpair2(selected)
         FP.ghost_site = ghost
@@ -646,53 +645,30 @@ class FP_generation:
         #print(self.causamortis,dist)
     def select(self,system,**kwargs):
         num = kwargs['num']
-        pairs            = self.pairs
-        avails,avails_viz = [],[]
-        for pair in pairs:
-            V_site_type,I_site_type = pair        
-            forbidden_sites  = set().union(*(system.positions_by_species.values()))
-            all_I_sites      = np.where(system.mats == I_site_type)[0]
-            all_V_sites      = np.where(system.mats == V_site_type)[0]
-            sites999         = np.where(system.mats == 999)[0] #cant create FP at 999 materials
-            avail_sites      = list(set(all_I_sites)-forbidden_sites-set(sites999))
-            avail_sites      = random.sample(avail_sites, k=len(avail_sites))        
-            for i, site in enumerate(avail_sites):
-              orig_mat     = system.mats[site]
-              dx, dy, dz   = system.distance(system,site)
-              r            = kmc.utils.distances(dx,dy,dz,len(dx))
-              uncut        = np.where(r > system.FPcutoff)[0] 
-              hopsites     = list(set(all_V_sites) - set(uncut) - set([i]) -set(sites999) -set(forbidden_sites))
-              if len(hopsites) > 0:
-                  avails.append(site)
-                  avails_viz.append(hopsites)
-                  
-        all_unique_pairs=[]
-        for i,base in enumerate(avails):
-          all_unique_pairs = all_unique_pairs + [ [base, viz] for viz in avails_viz[i] ]
-        random.shuffle(all_unique_pairs)
-        chosen_pairs = []
-        chosen_pairs.append(all_unique_pairs[0])
-        counter = 0
-        for pair in all_unique_pairs:
-          A, B = list(np.array(chosen_pairs)[:,0]), list(np.array(chosen_pairs)[:,1])
-          p1,p2 = pair
-          if ((p1 not in A) and (p2 not in B)):  
-            chosen_pairs.append(pair)
-            counter =+ 1
-            if counter >= num:
-              break
-        #chosen_pairs = np.array(random.sample(all_unique_pairs,num))
-        #print(chosen_pairs)
-        chosen = np.array(chosen_pairs)[:num,0]
-        chosen_viz = np.array(chosen_pairs)[:num,1]
-        return chosen,chosen_viz                
+        candidates = self.available_pairs(system)
+        random.shuffle(candidates)
+        chosen = []
+        used_sites = set()
+        for interstitial_site, vacancy_site in candidates:
+            if (
+                interstitial_site in used_sites
+                or vacancy_site in used_sites
+            ):
+                continue
+            chosen.append((interstitial_site, vacancy_site))
+            used_sites.update((interstitial_site, vacancy_site))
+            if len(chosen) == num:
+                break
+        if len(chosen) < num:
+            raise ValueError(
+                f"Requested {num} Frenkel pairs, but only {len(chosen)} "
+                "disjoint first-neighbor pairs are available."
+            )
+        selected, ghost = zip(*chosen)
+        return np.asarray(selected, dtype=int), np.asarray(ghost, dtype=int)
 
     def action(self,system,**kwargs):
         num = kwargs['num']
-        try:
-          chosen,chosen_viz = self.select(system,num=num)
-          for i, (selec,viz) in enumerate(zip(chosen,chosen_viz)):
-            self.create(system,selec,viz)
-        except Exception as e:
-          print(f'This is a warning, generation/creation was not successful for some reason! {e}')
-
+        chosen, chosen_viz = self.select(system, num=num)
+        for selected, ghost in zip(chosen, chosen_viz):
+            self.create(system, selected, ghost)

@@ -1,49 +1,56 @@
-
-import os
-import time
 import shutil
+import subprocess
+import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-#txts = [ x for x in os.listdir(BASE_DIR) if ".txt" in x ]
-#for txt in txts:
-#    os.remove(txt)
 
 
-INPUT = f"{BASE_DIR}/FP_generation_input.py"
-#CONFIGS = [10**x for x in [-5,-6,-7,-8]]
-CONFIGS = [10**x for x in [-5,-6,-7]]
-THRESHOLD = 1E-2
+BASE_DIR = Path(__file__).resolve().parent
+CONFIGS = [10**power for power in (-5, -6, -7)]
+THRESHOLD = 1e-2
 
-def read_dat(fn):
-  data = pd.read_csv(fn,comment='#')
-  data = data[data.Time != 'END']
-  #data.loc[(data.Time == '0'),'Time'] = 1
-  return data
 
-def average_genpop(filename):
-  data = read_dat(filename)
-  time = sorted(data[data['CausaMortis'] == 'generated']['Time'].to_numpy(dtype=float))
-  pop = np.cumsum(np.ones([len(time)]))/1000
-  x = np.mean([pop[i]/time[i] for i in range(len(pop))])
-  return x
-  
-for conf in CONFIGS:
-  print(f'running {conf}')
-  os.system(f'kmc {INPUT} {conf}')
+def force_single_process(input_path: Path) -> None:
+    text = input_path.read_text(encoding="utf-8")
+    updated = re.sub(r"^\s*n_proc\s*=\s*\d+", "n_proc = 1", text, count=1, flags=re.MULTILINE)
+    if updated != text:
+        input_path.write_text(updated, encoding="utf-8")
 
-print("run finished")
-print(os.listdir())
-#estimated_K = [ average_genpop(f'{BASE_DIR}/Simulation_generation_{conf}.txt') for conf in CONFIGS ]
-estimated_K = [ average_genpop(f'Simulation_generation_{conf}.txt') for conf in CONFIGS ]
 
-rms = np.array(CONFIGS)-np.array(estimated_K)
-rms = np.sqrt( sum([ x**2 for x in rms])/len(rms))
+def read_data(path):
+    data = pd.read_csv(path, comment="#")
+    return data[data.Time.astype(str) != "END"]
 
-print(f'rms: {rms:.2e}')
-def testFP():
-  assert rms < THRESHOLD
+
+def average_generation_population(path):
+    data = read_data(path)
+    times = sorted(
+        data[data["CausaMortis"] == "generated"]["Time"].to_numpy(dtype=float)
+    )
+    population = np.arange(1, len(times) + 1, dtype=float) / 1000
+    return float(np.mean(population / times))
+
+
+def test_frenkel_pair_generation_rate(tmp_path):
+    test_data = tmp_path / "pytest"
+    test_data.mkdir()
+    shutil.copy2(BASE_DIR / "FP_generation_input.py", test_data)
+    shutil.copy2(BASE_DIR / "cifexample.cif", test_data)
+    force_single_process(test_data / "FP_generation_input.py")
+
+    estimates = []
+    for configured_rate in CONFIGS:
+        subprocess.run(
+            ["kmc", "pytest/FP_generation_input.py", str(configured_rate)],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        output = tmp_path / f"Simulation_generation_{configured_rate}.txt"
+        estimates.append(average_generation_population(output))
+
+    rms = float(np.sqrt(np.mean((np.asarray(CONFIGS) - estimates) ** 2)))
+    assert rms < THRESHOLD

@@ -3,8 +3,6 @@ import random
 from kmc.particles import *
 import sys
 from collections import Counter
-from pymatgen.core import Structure
-from pymatgen.core import IMolecule
 import kmc.utils
 import kmc.rates
 import re
@@ -26,31 +24,19 @@ def randomized(available_sites, num_sites, system, kwargs):
     Returns:
     - selected_sites (list): A list of the indices of the selected sites.
     """
-    acceptable_materials = kwargs['mat']
-    
-    # Initially select random sites
-    initial_selection = random.sample(available_sites, num_sites)
-    selected_sites = {site for site in initial_selection if system.mats[site] in acceptable_materials}
-
-    # Set a cutoff for number of attempts to select sites
-    cutoff = 10000 * num_sites * np.sqrt(len(available_sites))
-
-    attempts = 0
-    while len(selected_sites) < num_sites and attempts < cutoff:
-        attempts += 1
-        
-        # Select additional sites
-        additional_selection = random.sample(available_sites, num_sites - len(selected_sites))
-        acceptable_sites = {site for site in additional_selection if system.mats[site] in acceptable_materials}
-
-        # Add new sites to the set of selected sites
-        selected_sites.update(acceptable_sites)
-    
-    if attempts == cutoff:
-        raise Exception(f"Could not find {num_sites} suitable sites for particle creation after {cutoff} attempts.")
-    
-    # Convert the set of selected sites back to a list before returning
-    return list(selected_sites)
+    acceptable_materials = set(kwargs['mat'])
+    candidates = [
+        int(site)
+        for site in available_sites
+        if system.mats[site] in acceptable_materials
+        and system.occupancy.get(int(site), 0) == 0
+    ]
+    if len(candidates) < num_sites:
+        raise ValueError(
+            f"Requested {num_sites} particles, but only {len(candidates)} "
+            "compatible unoccupied sites are available."
+        )
+    return random.sample(candidates, num_sites)
 
               
 def interface(available, number, system, kwargs):
@@ -58,13 +44,13 @@ def interface(available, number, system, kwargs):
     neighbors = kwargs['neigh']
     available = [i for i in available if system.mats[i] in mat]
     new_available = []
-    for i in range(len(available)):
-        R = np.copy(system.R) 
-        dR = R - R[i,:]
+    for site in available:
+        R = system.R
+        dR = R - R[site, :]
         modulo = np.sqrt(np.sum(dR*dR,axis=1))
         indices = np.argsort(modulo)[1:neighbors+1]
-        if np.any(system.mats[indices] != system.mats[i]):
-            new_available.append(i)
+        if np.any(system.mats[indices] != system.mats[site]):
+            new_available.append(site)
         
     selected = random.sample(new_available,number)        
     return selected            
@@ -90,9 +76,10 @@ class Create_Particles():
         selected = self.method(range(len(system.X)),self.num, system, self.argv)
         part_name = getattr(sys.modules[__name__], self.kind.title()).__name__
         if part_name.lower() == "frenkelpair":
-            selected = self.method(range(len(system.X)),3*self.num, system, self.argv) #this is a hardfix to ensure enough molecule pool to enter in the FP filter. This may break if restrictions in create_FP are too harsh
-            [create_FP(selected,system) for _ in range(self.num)]
-            return #this fucker needs to be here
+            raise ValueError(
+                "Use Create_ParticlesFP(num=..., pairs=...) to create "
+                "first-neighbor Frenkel pairs."
+            )
         Particula = getattr(sys.modules[__name__], self.kind.title())
         particles = [Particula(number) for number in selected]
         system.set_particles(particles)
@@ -191,12 +178,15 @@ class Lattice():
         Mats = np.zeros(total)
         for i in reversed(range(len(self.composition))):
             Mats[ luck < self.composition[i] ] = i
+        self.cell = np.diag(
+            [numx * self.vector[0], numy * self.vector[1], numz * self.vector[2]]
+        )
         return X,Y,Z,Mats     
     
         
     def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
         X, Y, Z, Mats = self.make()
-        system.set_morph(X,Y,Z,Mats)
+        system.set_morph(X,Y,Z,Mats,cell=self.cell)
         
 #list sites' indexes of all neighbors of one given position
 def filter_mats_by_distance(r,X,Y,Z,Mats,cutoff,r_index):
@@ -277,7 +267,7 @@ class Lattice_BHJ():
                     
     def assign_to_system(self, system): #adding the X,Y,Z,Mats to the system
         X, Y, Z, Mats = self.make()
-        system.set_morph(X,Y,Z,Mats)
+        system.set_morph(X,Y,Z,Mats,cell=self.lattice.cell)
          
 class Electric():
     def __init__(self,**kwargs):
@@ -289,32 +279,15 @@ class Electric():
         system.set_electric_field(self.field)
 #################### CIF READER ##########################
 class ReadCIF():
-    def __init__(self,file,mult_cell,label,remove_species=[]):
+    def __init__(self,file,mult_cell,label,remove_species=None):
         self.file = file
         self.mult_cell = mult_cell 
         self.label = label
-        self.remove_species = remove_species
-    def assign_to_system(self,system):      
-        structure = Structure.from_file(self.file)
-        
-        if self.remove_species:
-            structure.remove_species(self.remove_species)
-        
-        structure = structure.make_supercell(self.mult_cell)
-        xyz       = structure.cart_coords
-        species   = [ x.symbol for x in structure.species]
-        index     = [ self.label[x] for x in species]
-
-        system.set_morph(xyz[:,0],xyz[:,1],xyz[:,2],index) 
-        
-class ReadCIF():
-    def __init__(self,file,mult_cell,label,remove_species=[]):
-        self.file = file
-        self.mult_cell = mult_cell 
-        self.label = label
-        self.remove_species = remove_species
+        self.remove_species = [] if remove_species is None else remove_species
 
     def assign_to_system(self,system):      
+        from pymatgen.core import Structure
+
         structure = Structure.from_file(self.file)
         
         if self.remove_species:
@@ -327,11 +300,12 @@ class ReadCIF():
         #print(cif_label)
         index     = [self.label[x] for x in cif_label]
 
-        system.set_morph(xyz[:,0], xyz[:,1], xyz[:,2], index)
-
-        # minimal fix: overwrite box lengths with the true supercell lattice lengths
-        system.Lx = structure.lattice.a
-        system.Ly = structure.lattice.b
-        system.Lz = structure.lattice.c        
+        system.set_morph(
+            xyz[:,0],
+            xyz[:,1],
+            xyz[:,2],
+            index,
+            cell=structure.lattice.matrix,
+        )
         
         

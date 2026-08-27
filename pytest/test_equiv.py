@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import time
 import uuid
 import shutil
@@ -12,6 +13,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 import pytest
+from _pytest.tmpdir import TempPathFactory
 
 
 LOG_NAME_EQUIV = "input_test1.py"
@@ -112,6 +114,13 @@ def _kmc_args_for(log_name: str, params: Sequence[int], unique_label: str) -> li
     return [*map(str, params)]
 
 
+def _force_single_process(input_path: Path) -> None:
+    text = input_path.read_text(encoding="utf-8")
+    updated = re.sub(r"^\s*n_proc\s*=\s*\d+", "n_proc = 1", text, count=1, flags=re.MULTILINE)
+    if updated != text:
+        input_path.write_text(updated, encoding="utf-8")
+
+
 def run_kmc_once(
     *,
     kmc_exe: str,
@@ -181,6 +190,7 @@ def run_batch(
     # So copy the input file into the workdir and run from there
     local_input = workdir / Path(log_name).name
     shutil.copy2(input_path, local_input)
+    _force_single_process(local_input)
 
     outputs: list[Path] = []
     for params in configs:
@@ -217,27 +227,37 @@ def kmc_exe() -> str:
     return os.environ.get("KMC_EXE", "kmc")
 
 
-@pytest.fixture
-def sim_outputs_equiv(tmp_path: Path, repo_root: Path, kmc_exe: str, record_property) -> list[Path]:
+@pytest.fixture(scope="session")
+def sim_outputs_equiv(
+    tmp_path_factory: TempPathFactory,
+    repo_root: Path,
+    kmc_exe: str,
+) -> list[Path]:
+    tmp_path = tmp_path_factory.mktemp("kmc_equiv")
     return run_batch(
         kmc_exe=kmc_exe,
         repo_root=repo_root,
         tmp_path=tmp_path,
         log_name=LOG_NAME_EQUIV,
         configs=CONFIG_EQUIV,
-        record_property=record_property,
+        record_property=lambda *_args, **_kwargs: None,
     )
 
 
-@pytest.fixture
-def sim_outputs_rf(tmp_path: Path, repo_root: Path, kmc_exe: str, record_property) -> list[Path]:
+@pytest.fixture(scope="session")
+def sim_outputs_rf(
+    tmp_path_factory: TempPathFactory,
+    repo_root: Path,
+    kmc_exe: str,
+) -> list[Path]:
+    tmp_path = tmp_path_factory.mktemp("kmc_rf")
     return run_batch(
         kmc_exe=kmc_exe,
         repo_root=repo_root,
         tmp_path=tmp_path,
         log_name=LOG_NAME_RF,
         configs=CONFIG_RF,
-        record_property=record_property,
+        record_property=lambda *_args, **_kwargs: None,
     )
 
 

@@ -10,14 +10,14 @@ name = "KMC"
 version = "0.0.1"
 description = "Kinetic Monte Carlo"
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.6"
-license = {file= "LICENSE"}
+requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
 authors = [
   { name = "Leonardo Evaristo de Sousa", email = "ledso@dtu.dk" },
   { name = "Tiago de Sousa Araújo Cassiano" }
 ]
 
-urls = { Homepage = "https://github.com/LeonardoESousa/KMC" }
+urls = { Homepage = "https://github.com/LeonardoESousa/xcharge" }
 
 dependencies = [
   "numpy<2",
@@ -25,7 +25,6 @@ dependencies = [
   "joblib",
   "matplotlib",
   "tqdm",
-  "importlib_metadata",
   "pandas",
   "pymatgen",
 ]
@@ -49,3 +48,4 @@ exclude = ["tests", "tests.*", "*.tests", "*.tests.*"]
 [[tool.setuptools.ext-modules]]
 name = "kmc.utils"
 sources = ["kmc/utils.c"]
+optional = true

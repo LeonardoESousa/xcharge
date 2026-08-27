@@ -7,10 +7,11 @@ from kmc.particles import *
 
 #recombination electron-hole pair
 def ele_hol_recomb(Ss,system,superp):
-    if random.uniform(0,1) <= 0.75 and abs(Ss[0].identity) != abs(Ss[1].identity):
-        system.set_particles([Triplet(Ss[0].position)])
+    first, second = (Ss[int(index)] for index in superp)
+    if random.uniform(0,1) <= 0.75 and abs(first.identity) != abs(second.identity):
+        system.set_particles([Triplet(first.position)])
     else:
-        system.set_particles([Singlet(Ss[0].position)])
+        system.set_particles([Singlet(first.position)])
 
     for i in superp:
         Ss[i].kill('recomb',system,system.lumo,'converted')
@@ -22,7 +23,8 @@ def anni_sing(Ss,system,superp):
 
 
 def formation(Ss,system,superp):
-    system.set_particles([Frenkelpair(Ss[0].position)])
+    first = Ss[int(superp[0])]
+    system.set_particles([Frenkelpair(first.position)])
 
     for i in superp:
         Ss[i].kill('recomb',system,system.lumo,'converted')

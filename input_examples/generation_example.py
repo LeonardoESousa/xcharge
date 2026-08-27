@@ -43,7 +43,7 @@ I          = material_label['I']
 
 # FRENKEL PAIR DISSOCIAITON
 kd = 0.0#1E-5
-k_diss = {(Cs,Cs):0, (Cs,I):kd, (I,Cs):0, (I,I):0} # dissociation rates for each material combination
+k_diss = {Cs:0, I:kd}
 dissociation = DissociationFP(k=k_diss)
 
 # FRENKEL PAIR ANNIHILATION
@@ -57,16 +57,17 @@ k_migration = {(Cs,Cs):km, (Cs,I):0, (I,Cs):0, (I,I):km} # migration rates for e
 migration = Migration(k=k_migration)
 
 # FRENKEL PAIR FORMATION (VACANCY + INTERSTITIAL)
-k_formation = 1e-1 # formation rates for each material combination
+k_formation = {(Cs,Cs):0, (Cs,I):1e-1, (I,Cs):1e-1, (I,I):0}
 formation = Formation(k=k_formation)
 
 k_generation =1E-7#{Cs:1e-8, I:0} # annihilation rates for each material combination
-gen = FP_generation(k=k_generation)
+generation_pairs = [[I, Cs]]
+gen = FP_generation(k=k_generation, pairs=generation_pairs)
 ###PROCESSES#############################################################################
 
 #processes = {'vacancy':[migration, formation], 'interstitial':[migration], 'frenkelpair':[dissociation]}
-processes = {'vacancy':[migration,formation], 'interstitial':[migration], 'frenkelpair':[dissociation]}
-monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair':[annihilation]}
+processes = {'vacancy':[migration,formation], 'interstitial':[migration,formation], 'frenkelpair2':[]}
+monomolecular = {'vacancy':[], 'interstitial':[], 'frenkelpair2':[annihilation,dissociation]}
 generation = [gen]#{'vacancy':[], 'interstitial':[], 'frenkelpair':[gen]}
 #########################################################################################
 
@@ -95,6 +96,5 @@ a2 = morphology.Gaussian_energy(t1s)
 
 
 ##GENERATE PARTICLES#####################################################################
-method    = morphology.randomized
-exciton   = morphology.Create_Particles('frenkelpair', 1, method, mat=[0]) # creates 1 singlet exciton randomly at either material 0 or 1
+exciton = morphology.Create_ParticlesFP(num=1, pairs=generation_pairs)
 #########################################################################################

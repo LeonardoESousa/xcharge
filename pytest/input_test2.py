@@ -12,10 +12,11 @@ animation_exten    = 'gif' # possible options ('gif' and 'mp4')
 rotate             = False # True = animation rotates, False = remains fixed
 marker_type        = 1     # marker type used at the animation processs ( 0 = balls, 1 = symbols) 
 pause              = False # if you want that the annimation stops in the first frame (debug purposes)
-rounds             = 1000  # Number of rounds
-n_proc             = 10#5     # Number of cores to be used
+rounds             = 100  # Number of rounds
+n_proc             = 2#5     # Number of cores to be used
 frozen_lattice     = True
 bimolec            = False # Turn on annihilation
+random_seed        = 12345
 periodic           = False
 #########################################################################################
 

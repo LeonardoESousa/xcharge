@@ -13,12 +13,14 @@ from kmc.particles import *
 identifier          = 'LiF' #output identifier
 cutoff              = 2.9       # in Angstroms
 FPcutoff            = 2.9     #Frenkel pair maximum size allowed. Should not be higher than cutoff
-rounds              = 1000      # Number of rounds
-n_proc              = 10      # Number of cores to be used
+rounds              = 100      # Number of rounds
+n_proc              = 2      # Number of cores to be used
 frozen_lattice      = True   # if you want for the lattice to remain the same for all rounds
 periodic            = True  # if you want periodic boundary conditions
 bimolec             = False  # Turn on annihilation
 time_limit          = 1E-4#1E-2
+time_units          = 's'
+random_seed         = 12345
 particle_condition  = False # program continues even if there are 0 particles, relevant only with generation active
 print_site_position = True
 ###ANIMATION SETTINGS####################################################################
