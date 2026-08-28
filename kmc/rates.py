@@ -383,6 +383,24 @@ def filter(num,ks, mat, mats, materials_list):
     return rates
 
 
+def apply_migration_barrier(rates, system, destinations):
+    """Apply an optional destination-dependent barrier change to hop rates."""
+    barrier = getattr(system, "migration_barrier_change", None)
+    if barrier is None:
+        return rates
+
+    kbt = getattr(system, "migration_kbt", None)
+    if kbt is None or kbt <= 0:
+        raise ValueError("Invalid temperature for the migration barrier.")
+
+    delta_barrier = np.asarray(barrier, dtype=float)[destinations]
+    exponent = np.clip(-delta_barrier / kbt, -700.0, 700.0)
+    biased_rates = np.asarray(rates, dtype=float) * np.exp(exponent)
+    if np.any(~np.isfinite(biased_rates)):
+        raise ValueError("Migration barrier produced a non-finite rate.")
+    return biased_rates
+
+
 ##DEFECTS MIGRATION RATE##############################################################
 class Migration:
     def __init__(self,**kwargs):
@@ -404,7 +422,8 @@ class Migration:
             count=len(cut),
         )
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
-        return np.where(occupied, 0.0, taxa)
+        taxa = np.where(occupied, 0.0, taxa)
+        return apply_migration_barrier(taxa, system, cut)
 
 
     def action(self,particle,system,local):

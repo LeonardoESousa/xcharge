@@ -5,7 +5,7 @@ import sys
 from collections import Counter
 import kmc.utils
 import kmc.rates
-import re
+
 # SET OF FUNCS THAT GENERATE THE MORPHOLOGY OF THE SYSTEM
 # note: always define the function by list (param) that contains the things needed
 #### CHOOSE A FUNC TO GENERATE PARTICLES
@@ -278,34 +278,51 @@ class Electric():
         system.set_medium(self.eps)    
         system.set_electric_field(self.field)
 #################### CIF READER ##########################
-class ReadCIF():
-    def __init__(self,file,mult_cell,label,remove_species=None):
+class ReadCIF:
+    def __init__(
+        self,
+        file,
+        mult_cell,
+        label,
+        remove_species=None,
+    ):
         self.file = file
-        self.mult_cell = mult_cell 
+        self.mult_cell = mult_cell
         self.label = label
-        self.remove_species = [] if remove_species is None else remove_species
+        self.remove_species = (
+            [] if remove_species is None else remove_species
+        )
 
-    def assign_to_system(self,system):      
+    def assign_to_system(self, system):
         from pymatgen.core import Structure
 
         structure = Structure.from_file(self.file)
-        
+
         if self.remove_species:
             structure.remove_species(self.remove_species)
-        
+
         structure.make_supercell(self.mult_cell)
-        xyz       = structure.cart_coords
-        #species   = [x.symbol for x in structure.species]
-        cif_label = [re.sub(r"\d+", "", x) for x in structure.labels]
-        #print(cif_label)
-        index     = [self.label[x] for x in cif_label]
+
+        # Use chemical symbols rather than CIF site labels. Pymatgen may
+        # modify site labels when constructing a supercell.
+        species = [site.specie.symbol for site in structure]
+
+        missing = sorted(set(species) - set(self.label))
+        if missing:
+            raise ValueError(
+                "The material-label dictionary does not contain the "
+                "following CIF species: "
+                + ", ".join(missing)
+            )
+
+        xyz = structure.cart_coords
+        materials = [self.label[symbol] for symbol in species]
 
         system.set_morph(
-            xyz[:,0],
-            xyz[:,1],
-            xyz[:,2],
-            index,
+            xyz[:, 0],
+            xyz[:, 1],
+            xyz[:, 2],
+            materials,
             cell=structure.lattice.matrix,
         )
-        
         

@@ -33,6 +33,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "cython>=0.29.36",
+  "pytest>=8",
 ]
 
 [project.scripts]
@@ -43,9 +44,19 @@ build = "kmc.build_morph:main"
 include-package-data = true
 
 [tool.setuptools.packages.find]
-exclude = ["tests", "tests.*", "*.tests", "*.tests.*"]
+exclude = [
+  "tests",
+  "tests.*",
+  "*.tests",
+  "*.tests.*",
+  "pytest",
+  "pytest.*",
+]
 
 [[tool.setuptools.ext-modules]]
 name = "kmc.utils"
 sources = ["kmc/utils.c"]
 optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

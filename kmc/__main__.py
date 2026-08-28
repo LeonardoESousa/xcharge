@@ -148,10 +148,18 @@ def make_system(seed=None, include_particles=True):
     )
 
     for assigner in assigners:
-        if assigner.__class__.__name__ not in PARTICLE_ASSIGNERS:
+        if (
+            assigner.__class__.__name__ not in PARTICLE_ASSIGNERS
+            and not getattr(assigner, "requires_morphology", False)
+        ):
             assigner.assign_to_system(system)
     if not hasattr(system, "R"):
         raise ValueError("No morphology was assigned to the system.")
+
+    for assigner in assigners:
+        if getattr(assigner, "requires_morphology", False):
+            assigner.assign_to_system(system)
+
     system.build_neighbor_topology()
 
     if include_particles:
