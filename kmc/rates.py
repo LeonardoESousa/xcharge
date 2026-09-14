@@ -383,8 +383,8 @@ def filter(num,ks, mat, mats, materials_list):
     return rates
 
 
-def apply_migration_barrier(rates, system, destinations):
-    """Apply an optional destination-dependent barrier change to hop rates."""
+def apply_migration_barrier(rates, system, origin, destinations):
+    """Apply an optional spatial and directional barrier change to hop rates."""
     barrier = getattr(system, "migration_barrier_change", None)
     if barrier is None:
         return rates
@@ -393,7 +393,37 @@ def apply_migration_barrier(rates, system, destinations):
     if kbt is None or kbt <= 0:
         raise ValueError("Invalid temperature for the migration barrier.")
 
-    delta_barrier = np.asarray(barrier, dtype=float)[destinations]
+    barrier = np.asarray(barrier, dtype=float)
+    coupling = getattr(system, "migration_barrier_coupling", "destination")
+    if coupling == "destination":
+        delta_barrier = barrier[destinations]
+    elif coupling == "symmetric":
+        delta_barrier = 0.5 * (barrier[destinations] - barrier[origin])
+    else:
+        raise ValueError("Invalid migration-barrier coupling.")
+
+    if getattr(system, "migration_barrier_directional", False):
+        axis = getattr(system, "migration_barrier_axis", None)
+        angular_exponent = getattr(
+            system,
+            "migration_barrier_angular_exponent",
+            2.0,
+        )
+        if axis not in (0, 1, 2):
+            raise ValueError("Invalid migration-barrier direction.")
+
+        displacement = np.asarray(
+            system.minimum_image_displacement(origin, destinations),
+            dtype=float,
+        ).T
+        distance = np.linalg.norm(displacement, axis=1)
+        if np.any(distance <= 0):
+            raise ValueError("Migration hop has zero displacement.")
+
+        cosine = np.abs(displacement[:, axis]) / distance
+        direction_weight = np.clip(cosine, 0.0, 1.0) ** angular_exponent
+        delta_barrier = delta_barrier * direction_weight
+
     exponent = np.clip(-delta_barrier / kbt, -700.0, 700.0)
     biased_rates = np.asarray(rates, dtype=float) * np.exp(exponent)
     if np.any(~np.isfinite(biased_rates)):
@@ -411,6 +441,7 @@ class Migration:
 
     def rate(self,**kwargs):
         system   = kwargs['system']
+        particle = kwargs['particle']
         mats     = kwargs['mats']    
         mat      = kwargs['matlocal']
         cut      = kwargs['cut']   # full-lattice indices of those neighbors
@@ -423,7 +454,12 @@ class Migration:
         )
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
         taxa = np.where(occupied, 0.0, taxa)
-        return apply_migration_barrier(taxa, system, cut)
+        return apply_migration_barrier(
+            taxa,
+            system,
+            particle.position,
+            cut,
+        )
 
 
     def action(self,particle,system,local):

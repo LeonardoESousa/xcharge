@@ -9,24 +9,57 @@ BOLTZMANN_EV = 8.617333262e-5
 class MigrationBarrier:
     """Precompute a one-dimensional migration-barrier correction.
 
-    ``function(coordinate, period)`` must return the change in activation
-    barrier, in eV, at every supplied coordinate. For a periodic simulation,
-    coordinates are wrapped into ``[0, period)`` before the function is called.
+    ``function(coordinate, period)`` must return an energy profile, in eV, at
+    every supplied coordinate. For a periodic simulation, coordinates are
+    wrapped into ``[0, period)`` before the function is called.
+
+    With ``coupling="destination"``, the profile is interpreted as an absolute
+    correction to the destination barrier. With ``coupling="symmetric"``, it
+    is interpreted as a site-energy landscape and half of the destination
+    minus origin energy is added to the barrier. The latter preserves the
+    supplied rate in spatially flat regions and obeys detailed balance for
+    symmetric unmodified hop rates.
+
+    If ``directional`` is true, the correction is multiplied by
+    ``abs(cos(theta)) ** angular_exponent``, where theta is the angle between
+    the minimum-image hop displacement and ``axis``.
 
     Xcharge evaluates this assigner after the morphology has been constructed.
     """
 
-    def __init__(self, function, temperature, axis="x"):
+    def __init__(
+        self,
+        function,
+        temperature,
+        axis="x",
+        directional=True,
+        angular_exponent=2.0,
+        coupling="destination",
+    ):
         if not callable(function):
             raise TypeError("MigrationBarrier function must be callable.")
         if temperature <= 0:
             raise ValueError("MigrationBarrier temperature must be positive.")
         if axis not in {"x", "y", "z"}:
             raise ValueError("MigrationBarrier axis must be 'x', 'y', or 'z'.")
+        if not isinstance(directional, (bool, np.bool_)):
+            raise TypeError("MigrationBarrier directional must be boolean.")
+        if not np.isfinite(angular_exponent) or angular_exponent <= 0:
+            raise ValueError(
+                "MigrationBarrier angular_exponent must be positive."
+            )
+        if coupling not in {"destination", "symmetric"}:
+            raise ValueError(
+                "MigrationBarrier coupling must be 'destination' or "
+                "'symmetric'."
+            )
 
         self.function = function
         self.temperature = float(temperature)
         self.axis = axis
+        self.directional = bool(directional)
+        self.angular_exponent = float(angular_exponent)
+        self.coupling = coupling
         self.requires_morphology = True
 
     def assign_to_system(self, system):
@@ -76,3 +109,7 @@ class MigrationBarrier:
 
         system.migration_barrier_change = values
         system.migration_kbt = BOLTZMANN_EV * self.temperature
+        system.migration_barrier_axis = axis_index
+        system.migration_barrier_directional = self.directional
+        system.migration_barrier_angular_exponent = self.angular_exponent
+        system.migration_barrier_coupling = self.coupling
