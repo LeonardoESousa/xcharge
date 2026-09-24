@@ -1,0 +1,1066 @@
+diff --git a/kmc/__main__.py b/kmc/__main__.py
+index 5cd2937..46b6861 100644
+--- a/kmc/__main__.py
++++ b/kmc/__main__.py
+@@ -1,4 +1,3 @@
+-import copy
+ import importlib
+ import inspect
+ import multiprocessing
+@@ -18,6 +17,7 @@ except ImportError:  # pragma: no cover - optional progress display
+ import kmc.bimolecular
+ import kmc.variables
+ import kmc.vis
++from kmc.events import EventScheduler, ParticleEvents
+ from kmc.system import System
+ 
+ try:
+@@ -166,18 +166,16 @@ def make_system(seed=None, include_particles=True):
+         for assigner in assigners:
+             if assigner.__class__.__name__ in PARTICLE_ASSIGNERS:
+                 assigner.assign_to_system(system)
++        system.event_scheduler = EventScheduler(system, _build_particle_events)
++        system._clear_event_changes()
+     return system
+ 
+ 
+ def anni_general(system, reactions, local):
+-    particles = system.particles.copy()
+-    overlapping = [
+-        index for index, particle in enumerate(particles)
+-        if particle.position == local
+-    ]
+-    if len(overlapping) < 2:
++    particles = list(system.particles_at_site(local))
++    if len(particles) < 2:
+         return
+-    pair = overlapping[:2]
++    pair = [0, 1]
+     key = tuple(sorted(particles[index].species for index in pair))
+     reaction = reactions.get(key)
+     if reaction is not None:
+@@ -193,7 +191,7 @@ def _checked_rates(values, process):
+     return values
+ 
+ 
+-def decision(particle, system):
++def _build_particle_events(particle, system):
+     local = particle.position
+     rate_blocks = []
+     destinations = []
+@@ -219,94 +217,43 @@ def decision(particle, system):
+             raise ValueError(
+                 f"{transfer!r} returned {len(rates)} rates for {len(cut)} destinations."
+             )
+-        rate_blocks.append(rates)
+-        destinations.append(cut)
+-        labels.append(transfer)
++        positive = rates > 0.0
++        if np.any(positive):
++            selected_rates = rates[positive]
++            rate_blocks.append(selected_rates)
++            destinations.append(np.asarray(cut[positive], dtype=np.int32))
++            labels.extend([transfer] * len(selected_rates))
+ 
+     for process in system.monomolecular[particle.species]:
+         rate = _checked_rates(
+             [process.rate(material=system.mats[local])], process
+         )
+-        rate_blocks.append(rate)
+-        destinations.append(np.asarray([local], dtype=np.int32))
+-        labels.append(process)
++        if rate[0] > 0.0:
++            rate_blocks.append(rate)
++            destinations.append(np.asarray([local], dtype=np.int32))
++            labels.append(process)
+ 
+     if not rate_blocks:
+-        particle.process = None
+-        particle.destination = None
+-        return 0.0
++        return ParticleEvents.empty()
++
++    rates = np.concatenate(rate_blocks)
++    return ParticleEvents(
++        cumulative_rates=np.cumsum(rates),
++        processes=tuple(labels),
++        destinations=np.concatenate(destinations),
++        total=float(rates.sum()),
++    )
+ 
+-    totals = np.fromiter((rates.sum() for rates in rate_blocks), dtype=float)
+-    total = float(totals.sum())
+-    if total <= 0:
++
++def decision(particle, system):
++    """Compatibility wrapper returning one particle's total propensity."""
++    catalogue = _build_particle_events(particle, system)
++    if catalogue.total <= 0.0:
+         particle.process = None
+         particle.destination = None
+         return 0.0
+-
+-    process_index = int(
+-        np.searchsorted(np.cumsum(totals), system.rng.random() * total, side="right")
+-    )
+-    selected_rates = rate_blocks[process_index]
+-    process_total = totals[process_index]
+-    event_index = int(
+-        np.searchsorted(
+-            np.cumsum(selected_rates),
+-            system.rng.random() * process_total,
+-            side="right",
+-        )
+-    )
+-    particle.process = labels[process_index]
+-    particle.destination = int(destinations[process_index][event_index])
+-    return total
+-
+-
+-def particle_propensity(particle, system):
+-    cached = system.rate_cache.get(particle)
+-    if cached is None:
+-        cached = decision(particle, system)
+-        system.rate_cache[particle] = cached
+-    return cached
+-
+-
+-def _particle_snapshot(system):
+-    return {
+-        particle: (
+-            particle.position,
+-            particle.charge,
+-            getattr(particle, "ghost_site", None),
+-        )
+-        for particle in system.particles
+-    }
+-
+-
+-def _invalidate_changed_rates(system, before):
+-    after = _particle_snapshot(system)
+-    changed_particles = set(before) ^ set(after)
+-    changed_particles.update(
+-        particle
+-        for particle in set(before) & set(after)
+-        if before[particle] != after[particle]
+-    )
+-    changed_sites = set()
+-    charge_changed = False
+-    for particle in changed_particles:
+-        for snapshot in (before.get(particle), after.get(particle)):
+-            if snapshot is None:
+-                continue
+-            position, charge, ghost_site = snapshot
+-            changed_sites.add(position)
+-            if ghost_site is not None:
+-                changed_sites.add(ghost_site)
+-            charge_changed = charge_changed or charge != 0
+-
+-    if charge_changed:
+-        system.rate_cache.clear()
+-        return
+-    affected_origins = system.affected_origins(changed_sites) if changed_sites else set()
+-    alive = set(system.particles)
+-    for particle in list(system.rate_cache):
+-        if particle not in alive or particle.position in affected_origins:
+-            system.rate_cache.pop(particle, None)
++    particle.process, particle.destination = catalogue.select(system.rng)
++    return catalogue.total
+ 
+ 
+ def choose_generation(system):
+@@ -340,11 +287,10 @@ def _advance_to_next_event(system):
+         else:
+             generation_event, generation_rate = None, 0.0
+ 
+-        particles = system.particles.copy()
+-        particle_rates = np.fromiter(
+-            (particle_propensity(particle, system) for particle in particles), dtype=float
+-        )
+-        particle_total = float(particle_rates.sum())
++        if system.event_scheduler is None:
++            system.event_scheduler = EventScheduler(system, _build_particle_events)
++            system._clear_event_changes()
++        particle_total = system.event_scheduler.total_rate
+         total_rate = generation_rate + particle_total
+ 
+         boundaries = [system.time_limit]
+@@ -365,22 +311,22 @@ def _advance_to_next_event(system):
+ 
+         system.time += dt
+         system.IT += 1
+-        before = _particle_snapshot(system)
+         target = system.rng.random() * total_rate
+         if target < generation_rate:
++            system.begin_event()
+             generation_event.action(system, num=1)
+-            _invalidate_changed_rates(system, before)
++            system.event_scheduler.apply_changes(system.consume_event_changes())
+             return True
+ 
+         target -= generation_rate
+-        particle_index = int(
+-            np.searchsorted(np.cumsum(particle_rates), target, side="right")
+-        )
+-        particle = particles[particle_index]
+-        if particle.process is None:
+-            raise RuntimeError("Selected a particle with zero total propensity.")
+-        destination = particle.destination
+-        particle.process.action(particle, system, destination)
++        # Guard against the last-bit roundoff that can otherwise put a target
++        # exactly on the open upper edge of the Fenwick tree.
++        target = min(target, np.nextafter(particle_total, -np.inf))
++        particle, process, destination = system.event_scheduler.select(target)
++        particle.process = process
++        particle.destination = destination
++        system.begin_event(particle, destination)
++        process.action(particle, system, destination)
+         if bimolec:
+             anni_general(
+                 system,
+@@ -388,7 +334,9 @@ def _advance_to_next_event(system):
+                 destination,
+             )
+         particle.stamp_time(system)
+-        _invalidate_changed_rates(system, before)
++        system.event_scheduler.apply_changes(
++            system.consume_event_changes()
++        )
+         return True
+     return False
+ 
+@@ -499,6 +447,8 @@ def reroll_system(system, seed):
+     system.reset_particles()
+     system.set_rng(seed)
+     _particle_assigners(system)
++    system.event_scheduler = EventScheduler(system, _build_particle_events)
++    system._clear_event_changes()
+     return system
+ 
+ 
+@@ -513,7 +463,7 @@ def run_frozen(task):
+     _, seed = task
+     if _frozen_template is None:
+         raise RuntimeError("Frozen-lattice worker was not initialized.")
+-    system = reroll_system(copy.deepcopy(_frozen_template), seed)
++    system = reroll_system(_frozen_template, seed)
+     step_nonani(system)
+     return spectra_text(system)
+ 
+diff --git a/kmc/particles.py b/kmc/particles.py
+index 34e0f59..a91dd1c 100644
+--- a/kmc/particles.py
++++ b/kmc/particles.py
+@@ -8,7 +8,7 @@ class Particles:
+         self.position = initial
+         self.status   = 'alive'
+         self.identity = random.uniform(0,5)
+-        self.report   = ''
++        self._report_lines = []
+         self.texto    = ''
+         self.process  = None
+         self.destination  = None
+@@ -18,7 +18,7 @@ class Particles:
+         
+     def move(self,local,system):
+         old_position = self.position
+-        Dx, Dy, Dz = system.distance(system,self.position,local)
++        Dx, Dy, Dz = system.edge_displacement(self.position, local)
+         self.Dx += Dx
+         self.Dy += Dy
+         self.Dz += Dz
+@@ -38,7 +38,7 @@ class Particles:
+         if self.texto != '':
+             texto = self.texto
+             texto = texto.replace('TEMPO',f'{system.time:.12e}')
+-            self.report += texto+'\n'
++            self._report_lines.append(texto + '\n')
+             self.texto = ''
+         
+     def kill(self,causamortis,system,energies,result):
+@@ -48,7 +48,16 @@ class Particles:
+         system.remove(self)
+     
+     def write(self):
+-        return self.report
++        return ''.join(self._report_lines)
++
++    @property
++    def report(self):
++        """Backward-compatible text view of the buffered particle report."""
++        return ''.join(self._report_lines)
++
++    @report.setter
++    def report(self, value):
++        self._report_lines = [value] if value else []
+ 
+ 
+         
+diff --git a/kmc/rates.py b/kmc/rates.py
+index a8ffba3..6b1fc18 100644
+--- a/kmc/rates.py
++++ b/kmc/rates.py
+@@ -389,43 +389,8 @@ def apply_migration_barrier(rates, system, origin, destinations):
+     if barrier is None:
+         return rates
+ 
+-    kbt = getattr(system, "migration_kbt", None)
+-    if kbt is None or kbt <= 0:
+-        raise ValueError("Invalid temperature for the migration barrier.")
+-
+-    barrier = np.asarray(barrier, dtype=float)
+-    coupling = getattr(system, "migration_barrier_coupling", "destination")
+-    if coupling == "destination":
+-        delta_barrier = barrier[destinations]
+-    elif coupling == "symmetric":
+-        delta_barrier = 0.5 * (barrier[destinations] - barrier[origin])
+-    else:
+-        raise ValueError("Invalid migration-barrier coupling.")
+-
+-    if getattr(system, "migration_barrier_directional", False):
+-        axis = getattr(system, "migration_barrier_axis", None)
+-        angular_exponent = getattr(
+-            system,
+-            "migration_barrier_angular_exponent",
+-            2.0,
+-        )
+-        if axis not in (0, 1, 2):
+-            raise ValueError("Invalid migration-barrier direction.")
+-
+-        displacement = np.asarray(
+-            system.minimum_image_displacement(origin, destinations),
+-            dtype=float,
+-        ).T
+-        distance = np.linalg.norm(displacement, axis=1)
+-        if np.any(distance <= 0):
+-            raise ValueError("Migration hop has zero displacement.")
+-
+-        cosine = np.abs(displacement[:, axis]) / distance
+-        direction_weight = np.clip(cosine, 0.0, 1.0) ** angular_exponent
+-        delta_barrier = delta_barrier * direction_weight
+-
+-    exponent = np.clip(-delta_barrier / kbt, -700.0, 700.0)
+-    biased_rates = np.asarray(rates, dtype=float) * np.exp(exponent)
++    factors = system.migration_rate_factors(origin, destinations)
++    biased_rates = np.asarray(rates, dtype=float) * factors
+     if np.any(~np.isfinite(biased_rates)):
+         raise ValueError("Migration barrier produced a non-finite rate.")
+     return biased_rates
+@@ -447,11 +412,7 @@ class Migration:
+         cut      = kwargs['cut']   # full-lattice indices of those neighbors
+ 
+         #migration can not occur in occupied sites!
+-        occupied = np.fromiter(
+-            (system.occupancy.get(int(site), 0) > 0 for site in cut),
+-            dtype=bool,
+-            count=len(cut),
+-        )
++        occupied = system.site_occupancy[np.asarray(cut, dtype=np.intp)] > 0
+         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
+         taxa = np.where(occupied, 0.0, taxa)
+         return apply_migration_barrier(
+@@ -478,7 +439,7 @@ class DissociationFP:
+         # ->ghost  position is reserved for the vacancy
+         I = Interstitial(particle.position)
+         V = Vacancy(particle.ghost_site)
+-        system.mats[particle.ghost_site] = particle.origin_site 
++        system.set_material(particle.ghost_site, particle.origin_site)
+         system.set_particles([I,V])
+         #print(f'diss:vac->{particle.ghost_site} inter->{particle.position}')
+         particle.kill(self.kind,system,system.s1,'converted')
+@@ -494,7 +455,7 @@ class Annihilation:
+      
+     def action(self,particle,system,local):
+         #print('ani:',particle.species,particle.ghost_site,particle.origin_site,particle.status)
+-        system.mats[particle.ghost_site] = particle.origin_site #reverting the ghost site
++        system.set_material(particle.ghost_site, particle.origin_site)
+         particle.kill(self.kind,system,system.s1,'dead') 
+ #########################################################################################
+ class Formation:
+@@ -525,12 +486,7 @@ class Formation:
+         else:
+             return np.zeros(len(cut), dtype=float)
+ 
+-        neighbor_positions = system.species_positions(neigh_type)
+-        occupied = np.fromiter(
+-            (int(site) in neighbor_positions for site in cut),
+-            dtype=bool,
+-            count=len(cut),
+-        )
++        occupied = system.species_occupancy(neigh_type, cut)
+ 
+         # Rate: k when destination has an insterstitial, else 0
+         if self.k is None:
+@@ -569,7 +525,7 @@ class Formation:
+         FP = Frenkelpair0(FP_position)
+         FP.ghost_site = Ghost_position
+         FP.origin_site = system.mats[Ghost_position]
+-        system.mats[Ghost_position] = 999
++        system.set_material(Ghost_position, 999)
+         
+         
+         system.set_particles([FP])
+@@ -580,10 +536,8 @@ class Formation:
+         #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
+         #dist = np.sqrt(dx**2 + dy**2+dz**2)
+         #print('form:',dist,particle.position,local)
+-        inters = [ p for p in system.particles if p.species==neigh_type]
+-        for p in inters:
+-            if p.position == local:
+-                p.kill(self.kind, system, system.s1, 'converted')
++        for counterpart in system.particles_at_site(local, neigh_type):
++            counterpart.kill(self.kind, system, system.s1, 'converted')
+         '''
+         for p in system.particles:
+             if isinstance(p, Interstitial) and p.position == local:
+@@ -604,12 +558,7 @@ class I2Formation:
+         mat      = kwargs['matlocal']
+         cut      = kwargs['cut']   # full-lattice indices of those neighbors
+ 
+-        interstitial_sites = system.species_positions('interstitial')
+-        occupied = np.fromiter(
+-            (int(site) in interstitial_sites for site in cut),
+-            dtype=bool,
+-            count=len(cut),
+-        )
++        occupied = system.species_occupancy('interstitial', cut)
+ 
+         # Rate: k when destination has an insterstitial, else 0
+         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
+@@ -622,13 +571,11 @@ class I2Formation:
+         I2_part = I2(local)
+         I2_part.ghost_site = particle.position
+         I2_part.origin_site = system.mats[particle.position]
+-        system.mats[particle.position] = 999
++        system.set_material(particle.position, 999)
+         system.set_particles([I2_part])
+         particle.kill(self.kind, system, system.s1, 'converted')
+-        inters = [ p for p in system.particles if p.species=="interstitial"]
+-        for p in inters:
+-            if p.position == local:
+-                p.kill(self.kind, system, system.s1, 'converted')
++        for counterpart in system.particles_at_site(local, "interstitial"):
++            counterpart.kill(self.kind, system, system.s1, 'converted')
+ 
+ class I2Dissociation:
+     def __init__(self,**kwargs):
+@@ -644,7 +591,7 @@ class I2Dissociation:
+         # ->ghost  position is reserved for the other I
+         IA = Interstitial(particle.position)
+         IB = Interstitial(particle.ghost_site)
+-        system.mats[particle.ghost_site] = particle.origin_site 
++        system.set_material(particle.ghost_site, particle.origin_site)
+         system.set_particles([IA,IB])
+         #print(f'diss:vac->{particle.ghost_site} inter->{particle.position}')
+         particle.kill(self.kind,system,system.s1,'converted')    
+@@ -686,7 +633,7 @@ class FP_generation:
+         FP = Frenkelpair2(selected)
+         FP.ghost_site = ghost
+         FP.origin_site = system.mats[ghost] #storing the old material type
+-        system.mats[ghost] = 999 #changing the mat
++        system.set_material(ghost, 999)
+         system.set_particles([FP])
+         causamortis = self.causamortis
+         FP.make_text(system,system.s1,causamortis=causamortis)
+diff --git a/kmc/system.py b/kmc/system.py
+index 25e8539..c2a89b2 100644
+--- a/kmc/system.py
++++ b/kmc/system.py
+@@ -20,11 +20,24 @@ class System:
+         self.IT = 0
+         self.positions_by_species = {}
+         self.occupancy = Counter()
++        self.site_occupancy = np.empty(0, dtype=np.int32)
++        self._species_site_counts = {}
++        self._particles_at_site = []
++        self._particle_indices = {}
+         self.cell = None
++        self.periodic = False
+         self._cutoff_neighbors = None
+         self._first_neighbors = None
+         self._reverse_neighbors = None
+         self.rate_cache = {}
++        self.event_scheduler = None
++        self._event_added = set()
++        self._event_removed = set()
++        self._event_changed_sites = set()
++        self._event_dirty_particles = set()
++        self._event_charge_changed = False
++        self._edge_displacements = []
++        self._migration_rate_factors = {}
+         self.rng = np.random.default_rng()
+ 
+     def set_morph(self, X, Y, Z, Mats, cell=None):
+@@ -33,7 +46,10 @@ class System:
+         self.Z = np.asarray(Z, dtype=float)
+         self.R = np.column_stack((self.X, self.Y, self.Z))
+         self.mats = np.asarray(Mats, dtype=np.int32)
++        self._base_mats = self.mats.copy()
+         self.uniq = np.unique(self.mats)
++        self.site_occupancy = np.zeros(len(self.mats), dtype=np.int32)
++        self._particles_at_site = [{} for _ in range(len(self.mats))]
+         if cell is not None:
+             self.set_cell(cell)
+         else:
+@@ -86,8 +102,12 @@ class System:
+         self.rng = np.random.default_rng(seed)
+ 
+     def _translation_vectors(self):
++        cached = getattr(self, "_cached_translations", None)
++        if cached is not None:
++            return cached
+         if not self.periodic:
+-            return np.zeros((1, 3))
++            self._cached_translations = np.zeros((1, 3))
++            return self._cached_translations
+         if self.cell is None:
+             raise ValueError(
+                 "Periodic simulations require the full lattice cell. "
+@@ -100,7 +120,8 @@ class System:
+             for coefficient, vector in zip(coefficients, active):
+                 shift += coefficient * vector
+             shifts.append(shift)
+-        return np.asarray(shifts)
++        self._cached_translations = np.asarray(shifts)
++        return self._cached_translations
+ 
+     @staticmethod
+     def _deduplicate_neighbors(
+@@ -215,6 +236,84 @@ class System:
+                 for destination in data[0]:
+                     reverse[int(destination)].add(origin)
+         self._reverse_neighbors = reverse
++        self._build_edge_displacements()
++        self._build_migration_rate_factors()
++
++    def _build_edge_displacements(self):
++        """Index already-computed minimum-image vectors by directed edge."""
++        self._edge_displacements = [dict() for _ in range(len(self.R))]
++        for neighborhood in (self._cutoff_neighbors, self._first_neighbors):
++            for origin, (destinations, dx, dy, dz, _distance) in enumerate(
++                neighborhood
++            ):
++                edge_data = self._edge_displacements[origin]
++                for destination, x, y, z in zip(destinations, dx, dy, dz):
++                    edge_data[int(destination)] = (float(x), float(y), float(z))
++
++    def edge_displacement(self, origin, destination):
++        if self._edge_displacements:
++            displacement = self._edge_displacements[int(origin)].get(int(destination))
++            if displacement is not None:
++                return displacement
++        return self.minimum_image_displacement(origin, destination)
++
++    def _migration_factor_for(self, origin, destinations, dx, dy, dz, distance):
++        barrier = getattr(self, "migration_barrier_change", None)
++        if barrier is None:
++            return None
++        barrier = np.asarray(barrier, dtype=float)
++        kbt = getattr(self, "migration_kbt", None)
++        if kbt is None or kbt <= 0:
++            raise ValueError("Invalid temperature for the migration barrier.")
++
++        coupling = getattr(self, "migration_barrier_coupling", "destination")
++        if coupling == "destination":
++            delta = barrier[destinations]
++        elif coupling == "symmetric":
++            delta = 0.5 * (barrier[destinations] - barrier[origin])
++        else:
++            raise ValueError("Invalid migration-barrier coupling.")
++
++        if getattr(self, "migration_barrier_directional", False):
++            axis = getattr(self, "migration_barrier_axis", None)
++            if axis not in (0, 1, 2):
++                raise ValueError("Invalid migration-barrier direction.")
++            components = (dx, dy, dz)[axis]
++            if np.any(distance <= 0):
++                raise ValueError("Migration hop has zero displacement.")
++            cosine = np.clip(np.abs(components) / distance, 0.0, 1.0)
++            exponent = getattr(self, "migration_barrier_angular_exponent", 2.0)
++            delta = delta * cosine**exponent
++
++        return np.exp(np.clip(-delta / kbt, -700.0, 700.0))
++
++    def _build_migration_rate_factors(self):
++        """Precompute static potential factors for every neighbor array."""
++        self._migration_rate_factors = {}
++        if getattr(self, "migration_barrier_change", None) is None:
++            return
++        for neighborhood in (self._cutoff_neighbors, self._first_neighbors):
++            for origin, data in enumerate(neighborhood):
++                destinations, dx, dy, dz, distance = data
++                factors = self._migration_factor_for(
++                    origin, destinations, dx, dy, dz, distance
++                )
++                self._migration_rate_factors[id(destinations)] = factors
++
++    def migration_rate_factors(self, origin, destinations):
++        """Return cached factors, or compute them for an external destination array."""
++        cached = self._migration_rate_factors.get(id(destinations))
++        if cached is not None:
++            return cached
++        if getattr(self, "migration_barrier_directional", False):
++            dx, dy, dz = self.minimum_image_displacement(origin, destinations)
++            distance = np.sqrt(dx * dx + dy * dy + dz * dz)
++        else:
++            dx = dy = dz = np.zeros(len(destinations), dtype=float)
++            distance = np.ones(len(destinations), dtype=float)
++        return self._migration_factor_for(
++            origin, destinations, dx, dy, dz, distance
++        )
+ 
+     def neighbor_data(self, site, mode="cutoff"):
+         if self._cutoff_neighbors is None or self._first_neighbors is None:
+@@ -232,32 +331,69 @@ class System:
+ 
+     def affected_origins(self, changed_sites):
+         affected = set(int(site) for site in changed_sites)
++        if self._reverse_neighbors is None:
++            return affected
+         for site in changed_sites:
+             affected.update(self._reverse_neighbors[int(site)])
+         return affected
+ 
+     def set_particles(self, particles):
+         for particle in particles:
++            if particle in self._particle_indices:
++                raise ValueError("The same particle cannot be added twice.")
++            self._particle_indices[particle] = len(self.particles)
+             self.particles.append(particle)
+             species_positions = self.positions_by_species.setdefault(
+                 particle.species, Counter()
+             )
+             species_positions[particle.position] += 1
+             self.occupancy[particle.position] += 1
++            self.site_occupancy[particle.position] += 1
++            counts = self._species_site_counts.setdefault(
++                particle.species,
++                np.zeros(len(self.mats), dtype=np.int32),
++            )
++            counts[particle.position] += 1
++            self._particles_at_site[particle.position][particle] = None
++            if particle in self._event_removed:
++                self._event_removed.remove(particle)
++            else:
++                self._event_added.add(particle)
++            self._event_changed_sites.add(int(particle.position))
++            self._event_charge_changed |= particle.charge != 0
+ 
+     def reset_particles(self):
+         self.particles = []
+         self.dead = []
+         self.positions_by_species = {}
+         self.occupancy = Counter()
++        self.site_occupancy.fill(0)
++        self._species_site_counts = {}
++        self._particles_at_site = [{} for _ in range(len(self.mats))]
++        self._particle_indices = {}
++        np.copyto(self.mats, self._base_mats)
+         self.time = 0.0
+         self.potential_time = -1.0
+         self.IT = 0
+         self.rate_cache = {}
++        self.event_scheduler = None
++        self._clear_event_changes()
+ 
+     def species_positions(self, species):
+         return self.positions_by_species.get(species, {}).keys()
+ 
++    def species_occupancy(self, species, sites):
++        counts = self._species_site_counts.get(species)
++        if counts is None:
++            return np.zeros(len(sites), dtype=bool)
++        return counts[np.asarray(sites, dtype=np.intp)] > 0
++
++    def particles_at_site(self, site, species=None):
++        particles = self._particles_at_site[int(site)]
++        if species is None:
++            return tuple(particles)
++        return tuple(particle for particle in particles if particle.species == species)
++
+     def set_dipoles(self, mus):
+         self.mu = mus
+         self.norma_mu = np.sqrt(np.sum(mus * mus, axis=1))
+@@ -283,12 +419,28 @@ class System:
+             del counter[key]
+ 
+     def remove(self, particle):
+-        self.particles.remove(particle)
++        index = self._particle_indices.pop(particle)
++        last = self.particles.pop()
++        if last is not particle:
++            self.particles[index] = last
++            self._particle_indices[last] = index
+         species_positions = self.positions_by_species.get(particle.species)
+         if species_positions is not None:
+             self._decrement(species_positions, particle.position)
+         self._decrement(self.occupancy, particle.position)
++        self.site_occupancy[particle.position] -= 1
++        self._species_site_counts[particle.species][particle.position] -= 1
++        del self._particles_at_site[particle.position][particle]
+         self.dead.append(particle)
++        if particle in self._event_added:
++            self._event_added.remove(particle)
++        else:
++            self._event_removed.add(particle)
++        self._event_changed_sites.add(int(particle.position))
++        ghost_site = getattr(particle, "ghost_site", None)
++        if ghost_site is not None:
++            self._event_changed_sites.add(int(ghost_site))
++        self._event_charge_changed |= particle.charge != 0
+ 
+     def set_electric_field(self, field):
+         self.field = np.asarray(field, dtype=float) / 1e8
+@@ -335,3 +487,46 @@ class System:
+         species_positions[new_position] += 1
+         self._decrement(self.occupancy, old_position)
+         self.occupancy[new_position] += 1
++        self.site_occupancy[old_position] -= 1
++        self.site_occupancy[new_position] += 1
++        counts = self._species_site_counts[particle.species]
++        counts[old_position] -= 1
++        counts[new_position] += 1
++        del self._particles_at_site[old_position][particle]
++        self._particles_at_site[new_position][particle] = None
++        self._event_changed_sites.update((int(old_position), int(new_position)))
++        self._event_dirty_particles.add(particle)
++        self._event_charge_changed |= particle.charge != 0
++
++    def set_material(self, site, material):
++        site = int(site)
++        if self.mats[site] == material:
++            return
++        self.mats[site] = material
++        self._event_changed_sites.add(site)
++
++    def begin_event(self, particle=None, destination=None):
++        self._clear_event_changes()
++        if particle is not None:
++            self._event_dirty_particles.add(particle)
++            self._event_changed_sites.add(int(particle.position))
++        if destination is not None:
++            self._event_changed_sites.add(int(destination))
++
++    def consume_event_changes(self):
++        changes = (
++            tuple(self._event_removed),
++            tuple(self._event_added),
++            set(self._event_changed_sites),
++            set(self._event_dirty_particles),
++            bool(self._event_charge_changed),
++        )
++        self._clear_event_changes()
++        return changes
++
++    def _clear_event_changes(self):
++        self._event_added.clear()
++        self._event_removed.clear()
++        self._event_changed_sites.clear()
++        self._event_dirty_particles.clear()
++        self._event_charge_changed = False
+diff --git a/kmc/events.py b/kmc/events.py
+new file mode 100644
+index 0000000..dd079b6
+--- /dev/null
++++ b/kmc/events.py
+@@ -0,0 +1,187 @@
++"""Indexed event storage for the exact KMC direct method.
++
++The classes in this module do not know about particular particle species or
++rate models.  They only require a callback that builds the event catalogue of
++one particle, which keeps the scheduler usable by future mechanisms.
++"""
++
++from dataclasses import dataclass
++
++import numpy as np
++
++
++@dataclass(slots=True)
++class ParticleEvents:
++    """All currently available events for one particle."""
++
++    cumulative_rates: np.ndarray
++    processes: tuple
++    destinations: np.ndarray
++    total: float
++
++    @classmethod
++    def empty(cls):
++        return cls(
++            cumulative_rates=np.empty(0, dtype=float),
++            processes=(),
++            destinations=np.empty(0, dtype=np.int32),
++            total=0.0,
++        )
++
++    def select(self, rng):
++        if self.total <= 0.0:
++            raise RuntimeError("Cannot select from an empty event catalogue.")
++        target = rng.random() * self.total
++        index = int(np.searchsorted(self.cumulative_rates, target, side="right"))
++        return self.processes[index], int(self.destinations[index])
++
++
++class FenwickTree:
++    """Dynamically sized Fenwick tree of non-negative propensities."""
++
++    def __init__(self, capacity=16):
++        self.capacity = max(1, int(capacity))
++        self.values = np.zeros(self.capacity, dtype=float)
++        self.tree = np.zeros(self.capacity + 1, dtype=float)
++        self.total = 0.0
++
++    def _rebuild(self):
++        self.tree.fill(0.0)
++        for index, value in enumerate(self.values):
++            if value:
++                tree_index = index + 1
++                while tree_index <= self.capacity:
++                    self.tree[tree_index] += value
++                    tree_index += tree_index & -tree_index
++        self.total = float(self.values.sum())
++
++    def grow(self, capacity):
++        capacity = int(capacity)
++        if capacity <= self.capacity:
++            return
++        values = np.zeros(capacity, dtype=float)
++        values[: self.capacity] = self.values
++        self.capacity = capacity
++        self.values = values
++        self.tree = np.zeros(capacity + 1, dtype=float)
++        self._rebuild()
++
++    def set(self, index, value):
++        value = float(value)
++        if not np.isfinite(value) or value < 0.0:
++            raise ValueError("KMC propensities must be finite and non-negative.")
++        delta = value - self.values[index]
++        if delta == 0.0:
++            return
++        self.values[index] = value
++        self.total += delta
++        tree_index = index + 1
++        while tree_index <= self.capacity:
++            self.tree[tree_index] += delta
++            tree_index += tree_index & -tree_index
++
++    def find(self, target):
++        """Return the index containing ``target`` in ``[0, total)``."""
++        if not 0.0 <= target < self.total:
++            raise ValueError("Fenwick-tree target is outside the total rate.")
++        index = 0
++        accumulated = 0.0
++        bit = 1 << (self.capacity.bit_length() - 1)
++        while bit:
++            candidate = index + bit
++            if (
++                candidate <= self.capacity
++                and accumulated + self.tree[candidate] <= target
++            ):
++                index = candidate
++                accumulated += self.tree[candidate]
++            bit >>= 1
++        return index
++
++
++class EventScheduler:
++    """Exact particle-event scheduler with local propensity updates."""
++
++    def __init__(self, system, event_builder):
++        self.system = system
++        self.event_builder = event_builder
++        capacity = max(16, 2 * len(system.particles))
++        self.tree = FenwickTree(capacity)
++        self.slots = [None] * capacity
++        self.free_slots = list(range(capacity - 1, -1, -1))
++        self.particle_slots = {}
++        self.catalogues = {}
++        for particle in system.particles:
++            self.register(particle)
++
++    @property
++    def total_rate(self):
++        return self.tree.total
++
++    def _grow(self):
++        old_capacity = len(self.slots)
++        new_capacity = max(16, 2 * old_capacity)
++        self.tree.grow(new_capacity)
++        self.slots.extend([None] * (new_capacity - old_capacity))
++        self.free_slots.extend(range(new_capacity - 1, old_capacity - 1, -1))
++
++    def register(self, particle):
++        if particle in self.particle_slots:
++            self.refresh_particle(particle)
++            return
++        if not self.free_slots:
++            self._grow()
++        slot = self.free_slots.pop()
++        self.slots[slot] = particle
++        self.particle_slots[particle] = slot
++        self.refresh_particle(particle)
++
++    def unregister(self, particle):
++        slot = self.particle_slots.pop(particle, None)
++        self.catalogues.pop(particle, None)
++        if slot is None:
++            return
++        self.tree.set(slot, 0.0)
++        self.slots[slot] = None
++        self.free_slots.append(slot)
++
++    def refresh_particle(self, particle):
++        slot = self.particle_slots.get(particle)
++        if slot is None:
++            return
++        catalogue = self.event_builder(particle, self.system)
++        self.catalogues[particle] = catalogue
++        self.tree.set(slot, catalogue.total)
++
++    def refresh_all(self):
++        for particle in tuple(self.particle_slots):
++            self.refresh_particle(particle)
++
++    def apply_changes(self, changes):
++        removed, added, changed_sites, dirty_particles, charge_changed = changes
++        for particle in removed:
++            self.unregister(particle)
++        for particle in added:
++            self.register(particle)
++
++        if charge_changed:
++            self.refresh_all()
++            return
++
++        dirty = set(dirty_particles)
++        if changed_sites:
++            affected_origins = self.system.affected_origins(changed_sites)
++            for site in affected_origins:
++                dirty.update(self.system.particles_at_site(site))
++        for particle in dirty:
++            if particle in self.particle_slots:
++                self.refresh_particle(particle)
++
++    def select(self, target):
++        slot = self.tree.find(target)
++        particle = self.slots[slot]
++        if particle is None:  # pragma: no cover - guards internal consistency
++            raise RuntimeError("Selected an empty KMC event slot.")
++        catalogue = self.catalogues[particle]
++        process, destination = catalogue.select(self.system.rng)
++        return particle, process, destination
+diff --git a/tests/test_event_scheduler.py b/tests/test_event_scheduler.py
+new file mode 100644
+index 0000000..c197997
+--- /dev/null
++++ b/tests/test_event_scheduler.py
+@@ -0,0 +1,107 @@
++import numpy as np
++
++from kmc.events import EventScheduler, FenwickTree, ParticleEvents
++from kmc.particles import Vacancy
++from kmc.system import System
++
++
++def _catalogue(total):
++    return ParticleEvents(
++        cumulative_rates=np.asarray([total], dtype=float),
++        processes=("move",),
++        destinations=np.asarray([0], dtype=np.int32),
++        total=float(total),
++    )
++
++
++def test_fenwick_tree_updates_and_selects_exact_intervals():
++    tree = FenwickTree(4)
++    for index, value in enumerate((2.0, 0.0, 3.0, 5.0)):
++        tree.set(index, value)
++
++    assert tree.total == 10.0
++    assert [tree.find(value) for value in (0.0, 1.999, 2.0, 4.999, 5.0, 9.999)] == [
++        0,
++        0,
++        2,
++        2,
++        3,
++        3,
++    ]
++
++    tree.grow(9)
++    tree.set(2, 1.0)
++    tree.set(8, 4.0)
++    assert tree.total == 12.0
++    assert tree.find(11.999) == 8
++
++
++def test_system_particle_indexes_follow_add_move_and_remove():
++    system = System()
++    system.set_morph([0.0, 1.0, 2.0], [0.0] * 3, [0.0] * 3, [0, 0, 0])
++    first = Vacancy(0)
++    second = Vacancy(2)
++    system.set_particles([first, second])
++    system._clear_event_changes()
++
++    first.move(1, system)
++    assert system.site_occupancy.tolist() == [0, 1, 1]
++    assert system.species_occupancy("vacancy", [0, 1, 2]).tolist() == [
++        False,
++        True,
++        True,
++    ]
++    assert system.particles_at_site(1) == (first,)
++
++    system.remove(first)
++    assert system.particles == [second]
++    assert system.particles_at_site(1) == ()
++    assert system.site_occupancy.tolist() == [0, 0, 1]
++
++
++def test_scheduler_refreshes_only_particles_affected_by_local_change():
++    system = System()
++    system.set_morph([0.0, 1.0, 5.0], [0.0] * 3, [0.0] * 3, [0, 0, 0])
++    moving = Vacancy(0)
++    nearby = Vacancy(1)
++    distant = Vacancy(2)
++    system.set_particles([moving, nearby, distant])
++    system._reverse_neighbors = [{0, 1}, {0, 1}, {2}]
++    system._clear_event_changes()
++
++    evaluations = {moving: 0, nearby: 0, distant: 0}
++
++    def build(particle, _system):
++        evaluations[particle] += 1
++        return _catalogue(particle.position + 1.0)
++
++    scheduler = EventScheduler(system, build)
++    evaluations.update({moving: 0, nearby: 0, distant: 0})
++
++    system.begin_event(moving, 1)
++    moving.move(1, system)
++    scheduler.apply_changes(system.consume_event_changes())
++
++    assert evaluations[moving] == 1
++    assert evaluations[nearby] == 1
++    assert evaluations[distant] == 0
++    assert scheduler.total_rate == 2.0 + 2.0 + 3.0
++
++
++def test_scheduler_registers_and_unregisters_particles():
++    system = System()
++    system.set_morph([0.0, 1.0], [0.0, 0.0], [0.0, 0.0], [0, 0])
++    original = Vacancy(0)
++    system.set_particles([original])
++    system._clear_event_changes()
++    scheduler = EventScheduler(system, lambda particle, _: _catalogue(2.0))
++
++    system.begin_event(original, 1)
++    replacement = Vacancy(1)
++    system.set_particles([replacement])
++    system.remove(original)
++    scheduler.apply_changes(system.consume_event_changes())
++
++    assert original not in scheduler.particle_slots
++    assert replacement in scheduler.particle_slots
++    assert scheduler.total_rate == 2.0

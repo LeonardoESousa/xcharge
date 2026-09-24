@@ -8,7 +8,7 @@ class Particles:
         self.position = initial
         self.status   = 'alive'
         self.identity = random.uniform(0,5)
-        self.report   = ''
+        self._report_lines = []
         self.texto    = ''
         self.process  = None
         self.destination  = None
@@ -18,7 +18,7 @@ class Particles:
         
     def move(self,local,system):
         old_position = self.position
-        Dx, Dy, Dz = system.distance(system,self.position,local)
+        Dx, Dy, Dz = system.edge_displacement(self.position, local)
         self.Dx += Dx
         self.Dy += Dy
         self.Dz += Dz
@@ -38,7 +38,7 @@ class Particles:
         if self.texto != '':
             texto = self.texto
             texto = texto.replace('TEMPO',f'{system.time:.12e}')
-            self.report += texto+'\n'
+            self._report_lines.append(texto + '\n')
             self.texto = ''
         
     def kill(self,causamortis,system,energies,result):
@@ -48,7 +48,16 @@ class Particles:
         system.remove(self)
     
     def write(self):
-        return self.report
+        return ''.join(self._report_lines)
+
+    @property
+    def report(self):
+        """Backward-compatible text view of the buffered particle report."""
+        return ''.join(self._report_lines)
+
+    @report.setter
+    def report(self, value):
+        self._report_lines = [value] if value else []
 
 
         

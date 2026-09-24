@@ -1,4 +1,3 @@
-import copy
 import importlib
 import inspect
 import multiprocessing
@@ -18,6 +17,7 @@ except ImportError:  # pragma: no cover - optional progress display
 import kmc.bimolecular
 import kmc.variables
 import kmc.vis
+from kmc.events import EventScheduler, ParticleEvents
 from kmc.system import System
 
 try:
@@ -166,18 +166,16 @@ def make_system(seed=None, include_particles=True):
         for assigner in assigners:
             if assigner.__class__.__name__ in PARTICLE_ASSIGNERS:
                 assigner.assign_to_system(system)
+        system.event_scheduler = EventScheduler(system, _build_particle_events)
+        system._clear_event_changes()
     return system
 
 
 def anni_general(system, reactions, local):
-    particles = system.particles.copy()
-    overlapping = [
-        index for index, particle in enumerate(particles)
-        if particle.position == local
-    ]
-    if len(overlapping) < 2:
+    particles = list(system.particles_at_site(local))
+    if len(particles) < 2:
         return
-    pair = overlapping[:2]
+    pair = [0, 1]
     key = tuple(sorted(particles[index].species for index in pair))
     reaction = reactions.get(key)
     if reaction is not None:
@@ -193,7 +191,7 @@ def _checked_rates(values, process):
     return values
 
 
-def decision(particle, system):
+def _build_particle_events(particle, system):
     local = particle.position
     rate_blocks = []
     destinations = []
@@ -219,94 +217,43 @@ def decision(particle, system):
             raise ValueError(
                 f"{transfer!r} returned {len(rates)} rates for {len(cut)} destinations."
             )
-        rate_blocks.append(rates)
-        destinations.append(cut)
-        labels.append(transfer)
+        positive = rates > 0.0
+        if np.any(positive):
+            selected_rates = rates[positive]
+            rate_blocks.append(selected_rates)
+            destinations.append(np.asarray(cut[positive], dtype=np.int32))
+            labels.extend([transfer] * len(selected_rates))
 
     for process in system.monomolecular[particle.species]:
         rate = _checked_rates(
             [process.rate(material=system.mats[local])], process
         )
-        rate_blocks.append(rate)
-        destinations.append(np.asarray([local], dtype=np.int32))
-        labels.append(process)
+        if rate[0] > 0.0:
+            rate_blocks.append(rate)
+            destinations.append(np.asarray([local], dtype=np.int32))
+            labels.append(process)
 
     if not rate_blocks:
+        return ParticleEvents.empty()
+
+    rates = np.concatenate(rate_blocks)
+    return ParticleEvents(
+        cumulative_rates=np.cumsum(rates),
+        processes=tuple(labels),
+        destinations=np.concatenate(destinations),
+        total=float(rates.sum()),
+    )
+
+
+def decision(particle, system):
+    """Compatibility wrapper returning one particle's total propensity."""
+    catalogue = _build_particle_events(particle, system)
+    if catalogue.total <= 0.0:
         particle.process = None
         particle.destination = None
         return 0.0
-
-    totals = np.fromiter((rates.sum() for rates in rate_blocks), dtype=float)
-    total = float(totals.sum())
-    if total <= 0:
-        particle.process = None
-        particle.destination = None
-        return 0.0
-
-    process_index = int(
-        np.searchsorted(np.cumsum(totals), system.rng.random() * total, side="right")
-    )
-    selected_rates = rate_blocks[process_index]
-    process_total = totals[process_index]
-    event_index = int(
-        np.searchsorted(
-            np.cumsum(selected_rates),
-            system.rng.random() * process_total,
-            side="right",
-        )
-    )
-    particle.process = labels[process_index]
-    particle.destination = int(destinations[process_index][event_index])
-    return total
-
-
-def particle_propensity(particle, system):
-    cached = system.rate_cache.get(particle)
-    if cached is None:
-        cached = decision(particle, system)
-        system.rate_cache[particle] = cached
-    return cached
-
-
-def _particle_snapshot(system):
-    return {
-        particle: (
-            particle.position,
-            particle.charge,
-            getattr(particle, "ghost_site", None),
-        )
-        for particle in system.particles
-    }
-
-
-def _invalidate_changed_rates(system, before):
-    after = _particle_snapshot(system)
-    changed_particles = set(before) ^ set(after)
-    changed_particles.update(
-        particle
-        for particle in set(before) & set(after)
-        if before[particle] != after[particle]
-    )
-    changed_sites = set()
-    charge_changed = False
-    for particle in changed_particles:
-        for snapshot in (before.get(particle), after.get(particle)):
-            if snapshot is None:
-                continue
-            position, charge, ghost_site = snapshot
-            changed_sites.add(position)
-            if ghost_site is not None:
-                changed_sites.add(ghost_site)
-            charge_changed = charge_changed or charge != 0
-
-    if charge_changed:
-        system.rate_cache.clear()
-        return
-    affected_origins = system.affected_origins(changed_sites) if changed_sites else set()
-    alive = set(system.particles)
-    for particle in list(system.rate_cache):
-        if particle not in alive or particle.position in affected_origins:
-            system.rate_cache.pop(particle, None)
+    particle.process, particle.destination = catalogue.select(system.rng)
+    return catalogue.total
 
 
 def choose_generation(system):
@@ -340,11 +287,10 @@ def _advance_to_next_event(system):
         else:
             generation_event, generation_rate = None, 0.0
 
-        particles = system.particles.copy()
-        particle_rates = np.fromiter(
-            (particle_propensity(particle, system) for particle in particles), dtype=float
-        )
-        particle_total = float(particle_rates.sum())
+        if system.event_scheduler is None:
+            system.event_scheduler = EventScheduler(system, _build_particle_events)
+            system._clear_event_changes()
+        particle_total = system.event_scheduler.total_rate
         total_rate = generation_rate + particle_total
 
         boundaries = [system.time_limit]
@@ -365,22 +311,22 @@ def _advance_to_next_event(system):
 
         system.time += dt
         system.IT += 1
-        before = _particle_snapshot(system)
         target = system.rng.random() * total_rate
         if target < generation_rate:
+            system.begin_event()
             generation_event.action(system, num=1)
-            _invalidate_changed_rates(system, before)
+            system.event_scheduler.apply_changes(system.consume_event_changes())
             return True
 
         target -= generation_rate
-        particle_index = int(
-            np.searchsorted(np.cumsum(particle_rates), target, side="right")
-        )
-        particle = particles[particle_index]
-        if particle.process is None:
-            raise RuntimeError("Selected a particle with zero total propensity.")
-        destination = particle.destination
-        particle.process.action(particle, system, destination)
+        # Guard against the last-bit roundoff that can otherwise put a target
+        # exactly on the open upper edge of the Fenwick tree.
+        target = min(target, np.nextafter(particle_total, -np.inf))
+        particle, process, destination = system.event_scheduler.select(target)
+        particle.process = process
+        particle.destination = destination
+        system.begin_event(particle, destination)
+        process.action(particle, system, destination)
         if bimolec:
             anni_general(
                 system,
@@ -388,7 +334,9 @@ def _advance_to_next_event(system):
                 destination,
             )
         particle.stamp_time(system)
-        _invalidate_changed_rates(system, before)
+        system.event_scheduler.apply_changes(
+            system.consume_event_changes()
+        )
         return True
     return False
 
@@ -499,6 +447,8 @@ def reroll_system(system, seed):
     system.reset_particles()
     system.set_rng(seed)
     _particle_assigners(system)
+    system.event_scheduler = EventScheduler(system, _build_particle_events)
+    system._clear_event_changes()
     return system
 
 
@@ -513,7 +463,7 @@ def run_frozen(task):
     _, seed = task
     if _frozen_template is None:
         raise RuntimeError("Frozen-lattice worker was not initialized.")
-    system = reroll_system(copy.deepcopy(_frozen_template), seed)
+    system = reroll_system(_frozen_template, seed)
     step_nonani(system)
     return spectra_text(system)
 

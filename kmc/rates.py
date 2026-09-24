@@ -389,43 +389,8 @@ def apply_migration_barrier(rates, system, origin, destinations):
     if barrier is None:
         return rates
 
-    kbt = getattr(system, "migration_kbt", None)
-    if kbt is None or kbt <= 0:
-        raise ValueError("Invalid temperature for the migration barrier.")
-
-    barrier = np.asarray(barrier, dtype=float)
-    coupling = getattr(system, "migration_barrier_coupling", "destination")
-    if coupling == "destination":
-        delta_barrier = barrier[destinations]
-    elif coupling == "symmetric":
-        delta_barrier = 0.5 * (barrier[destinations] - barrier[origin])
-    else:
-        raise ValueError("Invalid migration-barrier coupling.")
-
-    if getattr(system, "migration_barrier_directional", False):
-        axis = getattr(system, "migration_barrier_axis", None)
-        angular_exponent = getattr(
-            system,
-            "migration_barrier_angular_exponent",
-            2.0,
-        )
-        if axis not in (0, 1, 2):
-            raise ValueError("Invalid migration-barrier direction.")
-
-        displacement = np.asarray(
-            system.minimum_image_displacement(origin, destinations),
-            dtype=float,
-        ).T
-        distance = np.linalg.norm(displacement, axis=1)
-        if np.any(distance <= 0):
-            raise ValueError("Migration hop has zero displacement.")
-
-        cosine = np.abs(displacement[:, axis]) / distance
-        direction_weight = np.clip(cosine, 0.0, 1.0) ** angular_exponent
-        delta_barrier = delta_barrier * direction_weight
-
-    exponent = np.clip(-delta_barrier / kbt, -700.0, 700.0)
-    biased_rates = np.asarray(rates, dtype=float) * np.exp(exponent)
+    factors = system.migration_rate_factors(origin, destinations)
+    biased_rates = np.asarray(rates, dtype=float) * factors
     if np.any(~np.isfinite(biased_rates)):
         raise ValueError("Migration barrier produced a non-finite rate.")
     return biased_rates
@@ -447,11 +412,7 @@ class Migration:
         cut      = kwargs['cut']   # full-lattice indices of those neighbors
 
         #migration can not occur in occupied sites!
-        occupied = np.fromiter(
-            (system.occupancy.get(int(site), 0) > 0 for site in cut),
-            dtype=bool,
-            count=len(cut),
-        )
+        occupied = system.site_occupancy[np.asarray(cut, dtype=np.intp)] > 0
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
         taxa = np.where(occupied, 0.0, taxa)
         return apply_migration_barrier(
@@ -478,7 +439,7 @@ class DissociationFP:
         # ->ghost  position is reserved for the vacancy
         I = Interstitial(particle.position)
         V = Vacancy(particle.ghost_site)
-        system.mats[particle.ghost_site] = particle.origin_site 
+        system.set_material(particle.ghost_site, particle.origin_site)
         system.set_particles([I,V])
         #print(f'diss:vac->{particle.ghost_site} inter->{particle.position}')
         particle.kill(self.kind,system,system.s1,'converted')
@@ -494,7 +455,7 @@ class Annihilation:
      
     def action(self,particle,system,local):
         #print('ani:',particle.species,particle.ghost_site,particle.origin_site,particle.status)
-        system.mats[particle.ghost_site] = particle.origin_site #reverting the ghost site
+        system.set_material(particle.ghost_site, particle.origin_site)
         particle.kill(self.kind,system,system.s1,'dead') 
 #########################################################################################
 class Formation:
@@ -525,12 +486,7 @@ class Formation:
         else:
             return np.zeros(len(cut), dtype=float)
 
-        neighbor_positions = system.species_positions(neigh_type)
-        occupied = np.fromiter(
-            (int(site) in neighbor_positions for site in cut),
-            dtype=bool,
-            count=len(cut),
-        )
+        occupied = system.species_occupancy(neigh_type, cut)
 
         # Rate: k when destination has an insterstitial, else 0
         if self.k is None:
@@ -569,7 +525,7 @@ class Formation:
         FP = Frenkelpair0(FP_position)
         FP.ghost_site = Ghost_position
         FP.origin_site = system.mats[Ghost_position]
-        system.mats[Ghost_position] = 999
+        system.set_material(Ghost_position, 999)
         
         
         system.set_particles([FP])
@@ -580,10 +536,8 @@ class Formation:
         #dx,dy,dz =  xg-xfp, yg-yfp, zg-zfp
         #dist = np.sqrt(dx**2 + dy**2+dz**2)
         #print('form:',dist,particle.position,local)
-        inters = [ p for p in system.particles if p.species==neigh_type]
-        for p in inters:
-            if p.position == local:
-                p.kill(self.kind, system, system.s1, 'converted')
+        for counterpart in system.particles_at_site(local, neigh_type):
+            counterpart.kill(self.kind, system, system.s1, 'converted')
         '''
         for p in system.particles:
             if isinstance(p, Interstitial) and p.position == local:
@@ -604,12 +558,7 @@ class I2Formation:
         mat      = kwargs['matlocal']
         cut      = kwargs['cut']   # full-lattice indices of those neighbors
 
-        interstitial_sites = system.species_positions('interstitial')
-        occupied = np.fromiter(
-            (int(site) in interstitial_sites for site in cut),
-            dtype=bool,
-            count=len(cut),
-        )
+        occupied = system.species_occupancy('interstitial', cut)
 
         # Rate: k when destination has an insterstitial, else 0
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
@@ -622,13 +571,11 @@ class I2Formation:
         I2_part = I2(local)
         I2_part.ghost_site = particle.position
         I2_part.origin_site = system.mats[particle.position]
-        system.mats[particle.position] = 999
+        system.set_material(particle.position, 999)
         system.set_particles([I2_part])
         particle.kill(self.kind, system, system.s1, 'converted')
-        inters = [ p for p in system.particles if p.species=="interstitial"]
-        for p in inters:
-            if p.position == local:
-                p.kill(self.kind, system, system.s1, 'converted')
+        for counterpart in system.particles_at_site(local, "interstitial"):
+            counterpart.kill(self.kind, system, system.s1, 'converted')
 
 class I2Dissociation:
     def __init__(self,**kwargs):
@@ -644,7 +591,7 @@ class I2Dissociation:
         # ->ghost  position is reserved for the other I
         IA = Interstitial(particle.position)
         IB = Interstitial(particle.ghost_site)
-        system.mats[particle.ghost_site] = particle.origin_site 
+        system.set_material(particle.ghost_site, particle.origin_site)
         system.set_particles([IA,IB])
         #print(f'diss:vac->{particle.ghost_site} inter->{particle.position}')
         particle.kill(self.kind,system,system.s1,'converted')    
@@ -686,7 +633,7 @@ class FP_generation:
         FP = Frenkelpair2(selected)
         FP.ghost_site = ghost
         FP.origin_site = system.mats[ghost] #storing the old material type
-        system.mats[ghost] = 999 #changing the mat
+        system.set_material(ghost, 999)
         system.set_particles([FP])
         causamortis = self.causamortis
         FP.make_text(system,system.s1,causamortis=causamortis)

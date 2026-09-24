@@ -20,11 +20,24 @@ class System:
         self.IT = 0
         self.positions_by_species = {}
         self.occupancy = Counter()
+        self.site_occupancy = np.empty(0, dtype=np.int32)
+        self._species_site_counts = {}
+        self._particles_at_site = []
+        self._particle_indices = {}
         self.cell = None
+        self.periodic = False
         self._cutoff_neighbors = None
         self._first_neighbors = None
         self._reverse_neighbors = None
         self.rate_cache = {}
+        self.event_scheduler = None
+        self._event_added = set()
+        self._event_removed = set()
+        self._event_changed_sites = set()
+        self._event_dirty_particles = set()
+        self._event_charge_changed = False
+        self._edge_displacements = []
+        self._migration_rate_factors = {}
         self.rng = np.random.default_rng()
 
     def set_morph(self, X, Y, Z, Mats, cell=None):
@@ -33,7 +46,10 @@ class System:
         self.Z = np.asarray(Z, dtype=float)
         self.R = np.column_stack((self.X, self.Y, self.Z))
         self.mats = np.asarray(Mats, dtype=np.int32)
+        self._base_mats = self.mats.copy()
         self.uniq = np.unique(self.mats)
+        self.site_occupancy = np.zeros(len(self.mats), dtype=np.int32)
+        self._particles_at_site = [{} for _ in range(len(self.mats))]
         if cell is not None:
             self.set_cell(cell)
         else:
@@ -86,8 +102,12 @@ class System:
         self.rng = np.random.default_rng(seed)
 
     def _translation_vectors(self):
+        cached = getattr(self, "_cached_translations", None)
+        if cached is not None:
+            return cached
         if not self.periodic:
-            return np.zeros((1, 3))
+            self._cached_translations = np.zeros((1, 3))
+            return self._cached_translations
         if self.cell is None:
             raise ValueError(
                 "Periodic simulations require the full lattice cell. "
@@ -100,7 +120,8 @@ class System:
             for coefficient, vector in zip(coefficients, active):
                 shift += coefficient * vector
             shifts.append(shift)
-        return np.asarray(shifts)
+        self._cached_translations = np.asarray(shifts)
+        return self._cached_translations
 
     @staticmethod
     def _deduplicate_neighbors(
@@ -215,6 +236,84 @@ class System:
                 for destination in data[0]:
                     reverse[int(destination)].add(origin)
         self._reverse_neighbors = reverse
+        self._build_edge_displacements()
+        self._build_migration_rate_factors()
+
+    def _build_edge_displacements(self):
+        """Index already-computed minimum-image vectors by directed edge."""
+        self._edge_displacements = [dict() for _ in range(len(self.R))]
+        for neighborhood in (self._cutoff_neighbors, self._first_neighbors):
+            for origin, (destinations, dx, dy, dz, _distance) in enumerate(
+                neighborhood
+            ):
+                edge_data = self._edge_displacements[origin]
+                for destination, x, y, z in zip(destinations, dx, dy, dz):
+                    edge_data[int(destination)] = (float(x), float(y), float(z))
+
+    def edge_displacement(self, origin, destination):
+        if self._edge_displacements:
+            displacement = self._edge_displacements[int(origin)].get(int(destination))
+            if displacement is not None:
+                return displacement
+        return self.minimum_image_displacement(origin, destination)
+
+    def _migration_factor_for(self, origin, destinations, dx, dy, dz, distance):
+        barrier = getattr(self, "migration_barrier_change", None)
+        if barrier is None:
+            return None
+        barrier = np.asarray(barrier, dtype=float)
+        kbt = getattr(self, "migration_kbt", None)
+        if kbt is None or kbt <= 0:
+            raise ValueError("Invalid temperature for the migration barrier.")
+
+        coupling = getattr(self, "migration_barrier_coupling", "destination")
+        if coupling == "destination":
+            delta = barrier[destinations]
+        elif coupling == "symmetric":
+            delta = 0.5 * (barrier[destinations] - barrier[origin])
+        else:
+            raise ValueError("Invalid migration-barrier coupling.")
+
+        if getattr(self, "migration_barrier_directional", False):
+            axis = getattr(self, "migration_barrier_axis", None)
+            if axis not in (0, 1, 2):
+                raise ValueError("Invalid migration-barrier direction.")
+            components = (dx, dy, dz)[axis]
+            if np.any(distance <= 0):
+                raise ValueError("Migration hop has zero displacement.")
+            cosine = np.clip(np.abs(components) / distance, 0.0, 1.0)
+            exponent = getattr(self, "migration_barrier_angular_exponent", 2.0)
+            delta = delta * cosine**exponent
+
+        return np.exp(np.clip(-delta / kbt, -700.0, 700.0))
+
+    def _build_migration_rate_factors(self):
+        """Precompute static potential factors for every neighbor array."""
+        self._migration_rate_factors = {}
+        if getattr(self, "migration_barrier_change", None) is None:
+            return
+        for neighborhood in (self._cutoff_neighbors, self._first_neighbors):
+            for origin, data in enumerate(neighborhood):
+                destinations, dx, dy, dz, distance = data
+                factors = self._migration_factor_for(
+                    origin, destinations, dx, dy, dz, distance
+                )
+                self._migration_rate_factors[id(destinations)] = factors
+
+    def migration_rate_factors(self, origin, destinations):
+        """Return cached factors, or compute them for an external destination array."""
+        cached = self._migration_rate_factors.get(id(destinations))
+        if cached is not None:
+            return cached
+        if getattr(self, "migration_barrier_directional", False):
+            dx, dy, dz = self.minimum_image_displacement(origin, destinations)
+            distance = np.sqrt(dx * dx + dy * dy + dz * dz)
+        else:
+            dx = dy = dz = np.zeros(len(destinations), dtype=float)
+            distance = np.ones(len(destinations), dtype=float)
+        return self._migration_factor_for(
+            origin, destinations, dx, dy, dz, distance
+        )
 
     def neighbor_data(self, site, mode="cutoff"):
         if self._cutoff_neighbors is None or self._first_neighbors is None:
@@ -232,31 +331,68 @@ class System:
 
     def affected_origins(self, changed_sites):
         affected = set(int(site) for site in changed_sites)
+        if self._reverse_neighbors is None:
+            return affected
         for site in changed_sites:
             affected.update(self._reverse_neighbors[int(site)])
         return affected
 
     def set_particles(self, particles):
         for particle in particles:
+            if particle in self._particle_indices:
+                raise ValueError("The same particle cannot be added twice.")
+            self._particle_indices[particle] = len(self.particles)
             self.particles.append(particle)
             species_positions = self.positions_by_species.setdefault(
                 particle.species, Counter()
             )
             species_positions[particle.position] += 1
             self.occupancy[particle.position] += 1
+            self.site_occupancy[particle.position] += 1
+            counts = self._species_site_counts.setdefault(
+                particle.species,
+                np.zeros(len(self.mats), dtype=np.int32),
+            )
+            counts[particle.position] += 1
+            self._particles_at_site[particle.position][particle] = None
+            if particle in self._event_removed:
+                self._event_removed.remove(particle)
+            else:
+                self._event_added.add(particle)
+            self._event_changed_sites.add(int(particle.position))
+            self._event_charge_changed |= particle.charge != 0
 
     def reset_particles(self):
         self.particles = []
         self.dead = []
         self.positions_by_species = {}
         self.occupancy = Counter()
+        self.site_occupancy.fill(0)
+        self._species_site_counts = {}
+        self._particles_at_site = [{} for _ in range(len(self.mats))]
+        self._particle_indices = {}
+        np.copyto(self.mats, self._base_mats)
         self.time = 0.0
         self.potential_time = -1.0
         self.IT = 0
         self.rate_cache = {}
+        self.event_scheduler = None
+        self._clear_event_changes()
 
     def species_positions(self, species):
         return self.positions_by_species.get(species, {}).keys()
+
+    def species_occupancy(self, species, sites):
+        counts = self._species_site_counts.get(species)
+        if counts is None:
+            return np.zeros(len(sites), dtype=bool)
+        return counts[np.asarray(sites, dtype=np.intp)] > 0
+
+    def particles_at_site(self, site, species=None):
+        particles = self._particles_at_site[int(site)]
+        if species is None:
+            return tuple(particles)
+        return tuple(particle for particle in particles if particle.species == species)
 
     def set_dipoles(self, mus):
         self.mu = mus
@@ -283,12 +419,28 @@ class System:
             del counter[key]
 
     def remove(self, particle):
-        self.particles.remove(particle)
+        index = self._particle_indices.pop(particle)
+        last = self.particles.pop()
+        if last is not particle:
+            self.particles[index] = last
+            self._particle_indices[last] = index
         species_positions = self.positions_by_species.get(particle.species)
         if species_positions is not None:
             self._decrement(species_positions, particle.position)
         self._decrement(self.occupancy, particle.position)
+        self.site_occupancy[particle.position] -= 1
+        self._species_site_counts[particle.species][particle.position] -= 1
+        del self._particles_at_site[particle.position][particle]
         self.dead.append(particle)
+        if particle in self._event_added:
+            self._event_added.remove(particle)
+        else:
+            self._event_removed.add(particle)
+        self._event_changed_sites.add(int(particle.position))
+        ghost_site = getattr(particle, "ghost_site", None)
+        if ghost_site is not None:
+            self._event_changed_sites.add(int(ghost_site))
+        self._event_charge_changed |= particle.charge != 0
 
     def set_electric_field(self, field):
         self.field = np.asarray(field, dtype=float) / 1e8
@@ -335,3 +487,46 @@ class System:
         species_positions[new_position] += 1
         self._decrement(self.occupancy, old_position)
         self.occupancy[new_position] += 1
+        self.site_occupancy[old_position] -= 1
+        self.site_occupancy[new_position] += 1
+        counts = self._species_site_counts[particle.species]
+        counts[old_position] -= 1
+        counts[new_position] += 1
+        del self._particles_at_site[old_position][particle]
+        self._particles_at_site[new_position][particle] = None
+        self._event_changed_sites.update((int(old_position), int(new_position)))
+        self._event_dirty_particles.add(particle)
+        self._event_charge_changed |= particle.charge != 0
+
+    def set_material(self, site, material):
+        site = int(site)
+        if self.mats[site] == material:
+            return
+        self.mats[site] = material
+        self._event_changed_sites.add(site)
+
+    def begin_event(self, particle=None, destination=None):
+        self._clear_event_changes()
+        if particle is not None:
+            self._event_dirty_particles.add(particle)
+            self._event_changed_sites.add(int(particle.position))
+        if destination is not None:
+            self._event_changed_sites.add(int(destination))
+
+    def consume_event_changes(self):
+        changes = (
+            tuple(self._event_removed),
+            tuple(self._event_added),
+            set(self._event_changed_sites),
+            set(self._event_dirty_particles),
+            bool(self._event_charge_changed),
+        )
+        self._clear_event_changes()
+        return changes
+
+    def _clear_event_changes(self):
+        self._event_added.clear()
+        self._event_removed.clear()
+        self._event_changed_sites.clear()
+        self._event_dirty_particles.clear()
+        self._event_charge_changed = False
