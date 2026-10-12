@@ -111,7 +111,9 @@ def test_directional_profile_uses_smooth_angular_weight():
         cut=cut,
     )
 
-    expected_barriers = np.asarray([0.06, 0.0, 0.03])
+    # Angular weighting affects the symmetric bond term. The half energy
+    # difference is retained even for perpendicular and oblique hops.
+    expected_barriers = np.asarray([0.06, 0.03, 0.045])
     expected = 10.0 * np.exp(
         -expected_barriers / system.migration_kbt
     )

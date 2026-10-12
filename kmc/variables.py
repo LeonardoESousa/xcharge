@@ -19,6 +19,7 @@ FPcutoff        = 3
 first_neighbor_rtol = 0.15
 random_seed     = None
 append_output   = False
+diffusion_average = False
 time_units      = 'ps'
 particle_condition = True
 creation_threshold = np.inf

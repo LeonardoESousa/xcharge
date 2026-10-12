@@ -20,9 +20,12 @@ class MigrationBarrier:
     supplied rate in spatially flat regions and obeys detailed balance for
     symmetric unmodified hop rates.
 
-    If ``directional`` is true, the correction is multiplied by
-    ``abs(cos(theta)) ** angular_exponent``, where theta is the angle between
-    the minimum-image hop displacement and ``axis``.
+    If ``directional`` is true in destination mode, angular weighting applies
+    to the symmetric bond part (the mean endpoint correction), while the
+    half energy difference remains unweighted. This preserves detailed balance
+    on reciprocal graphs with symmetric base rates. In symmetric mode the
+    profile supplies only a site-energy difference, so it is never angularly
+    weighted. Scalar site profiles are nondirectional by default.
 
     Xcharge evaluates this assigner after the morphology has been constructed.
     """
@@ -32,7 +35,7 @@ class MigrationBarrier:
         function,
         temperature,
         axis="x",
-        directional=True,
+        directional=False,
         angular_exponent=2.0,
         coupling="destination",
     ):

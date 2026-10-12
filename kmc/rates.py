@@ -400,7 +400,7 @@ def apply_migration_barrier(rates, system, origin, destinations):
 class Migration:
     def __init__(self,**kwargs):
         self.kind = 'jump'
-        self.neighbor_mode = 'first'
+        self.neighbor_mode = 'migration'
         self.k = dict(kwargs['k'])
         self.materials_list = list({key[1] for key in self.k})
 
@@ -413,6 +413,10 @@ class Migration:
 
         #migration can not occur in occupied sites!
         occupied = system.site_occupancy[np.asarray(cut, dtype=np.intp)] > 0
+        # A jump to an image of this particle's own wrapped site is allowed.
+        own_image = (np.asarray(cut) == particle.position) & (
+            system.site_occupancy[np.asarray(cut, dtype=np.intp)] <= 1)
+        occupied = occupied & ~own_image
         taxa = filter(len(mats),self.k,mat,mats,self.materials_list)
         taxa = np.where(occupied, 0.0, taxa)
         return apply_migration_barrier(
@@ -424,7 +428,22 @@ class Migration:
 
 
     def action(self,particle,system,local):
-        particle.move(local,system)
+        cut, dx, dy, dz, r = system.neighbor_data(particle.position, self.neighbor_mode)
+        indices = np.flatnonzero(cut == local)
+        if not len(indices):
+            raise ValueError("Selected migration destination is not an available edge.")
+        if len(indices) == 1:
+            selected = int(indices[0])
+        else:
+            # The scheduler selects a wrapped destination. Sample its physical
+            # image conditional on that destination using the original rates.
+            rates = self.rate(system=system, particle=particle, mats=system.mats[cut],
+                              matlocal=system.mats[particle.position], cut=cut)
+            weights = np.asarray(rates)[indices]
+            if weights.sum() <= 0:
+                raise ValueError("Selected migration images have zero total rate.")
+            selected = int(system.rng.choice(indices, p=weights/weights.sum()))
+        particle.move(local, system, displacement=(dx[selected], dy[selected], dz[selected]))
 class DissociationFP:
     def __init__(self,**kwargs):
         self.kind = 'dissociation_fp'

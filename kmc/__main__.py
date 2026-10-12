@@ -94,6 +94,7 @@ print_site_position = set_variable("print_site_position")
 first_neighbor_rtol = set_variable("first_neighbor_rtol")
 random_seed = set_variable("random_seed")
 append_output = set_variable("append_output")
+diffusion_average = set_variable("diffusion_average")
 
 PARTICLE_ASSIGNERS = {
     "Create_Particles",
@@ -161,6 +162,10 @@ def make_system(seed=None, include_particles=True):
             assigner.assign_to_system(system)
 
     system.build_neighbor_topology()
+    if diffusion_average:
+        from kmc.diffusion_average import DiffusionAverager
+
+        system.diffusion_averager = DiffusionAverager(system, _build_particle_events)
 
     if include_particles:
         for assigner in assigners:
@@ -279,6 +284,12 @@ def _active(system):
 
 
 def _advance_to_next_event(system):
+    if system.diffusion_averager is not None:
+        return system.diffusion_averager.advance(_advance_to_next_event_direct)
+    return _advance_to_next_event_direct(system)
+
+
+def _advance_to_next_event_direct(system):
     """Execute one exact KMC event, respecting deterministic time boundaries."""
     while _active(system):
         generation_enabled = system.time < system.creation_threshold
@@ -374,15 +385,25 @@ step = step_ani if animation_mode else step_nonani
 
 def open_log():
     filename = f"Simulation_{identifier}.txt"
+    header = "Time,DeltaX,DeltaY,DeltaZ,Type,Energy,Location,FinalX,FinalY,FinalZ,CausaMortis,Status"
+    if diffusion_average:
+        from kmc.particles import DIFFUSION_LOG_COLUMNS
+        header += ',' + ','.join(DIFFUSION_LOG_COLUMNS)
+    if os.path.isfile(filename) and append_output:
+        with open(filename, encoding="utf-8") as existing:
+            previous_header = next((line.strip() for line in existing
+                                    if not line.startswith('#')), '')
+        if previous_header != header:
+            raise ValueError("Cannot append output with a different column schema.")
     if not os.path.isfile(filename) or not append_output:
         version = package_version()
         with open(filename, "w", encoding="utf-8") as output:
             output.write(f"# Version: {version}\n")
             output.write(f"# Time units: {time_units}\n")
-            output.write(
-                "Time,DeltaX,DeltaY,DeltaZ,Type,Energy,Location,"
-                "FinalX,FinalY,FinalZ,CausaMortis,Status\n"
-            )
+            if diffusion_average:
+                output.write("# D_est: coordinate_units^2/time_unit; MSD_est and Cov_est: coordinate_units^2; unwrapped long-time estimates\n")
+                output.write("# MSD_est = Var_est + MeanDelta_est^2; D_est is centered diffusion; Drift_est: coordinate_units/time_unit\n")
+            output.write(header + '\n')
     return filename
 
 
@@ -447,6 +468,10 @@ def reroll_system(system, seed):
     system.reset_particles()
     system.set_rng(seed)
     _particle_assigners(system)
+    if diffusion_average:
+        from kmc.diffusion_average import DiffusionAverager
+
+        system.diffusion_averager = DiffusionAverager(system, _build_particle_events)
     system.event_scheduler = EventScheduler(system, _build_particle_events)
     system._clear_event_changes()
     return system

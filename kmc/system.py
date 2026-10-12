@@ -28,9 +28,11 @@ class System:
         self.periodic = False
         self._cutoff_neighbors = None
         self._first_neighbors = None
+        self._migration_neighbors = None
         self._reverse_neighbors = None
         self.rate_cache = {}
         self.event_scheduler = None
+        self.diffusion_averager = None
         self._event_added = set()
         self._event_removed = set()
         self._event_changed_sites = set()
@@ -140,7 +142,11 @@ class System:
             displacement = image_coordinates[image_index] - coordinates[origin]
             distance = float(np.linalg.norm(displacement))
             previous = selected.get(destination)
-            if previous is None or distance < previous[0]:
+            canonical = tuple(displacement if origin < destination else -displacement)
+            previous_canonical = (tuple(previous[1] if origin < destination else -previous[1])
+                                  if previous is not None else None)
+            tied = previous is not None and np.isclose(distance, previous[0], rtol=1e-12, atol=1e-12)
+            if previous is None or (distance < previous[0] and not tied) or (tied and canonical < previous_canonical):
                 selected[destination] = (distance, displacement)
         ordered = sorted(selected.items())
         if not ordered:
@@ -160,6 +166,7 @@ class System:
 
     def build_neighbor_topology(self):
         """Precompute cutoff neighbors and material-resolved first shells."""
+        self._cached_translations = None
         translations = self._translation_vectors()
         n_sites = len(self.R)
         image_coordinates = np.concatenate(
@@ -182,6 +189,7 @@ class System:
             )
 
         first_by_site = [dict() for _ in range(n_sites)]
+        reaction_by_site = [dict() for _ in range(n_sites)]
         for material in self.uniq:
             material_sites = np.flatnonzero(self.mats == material).astype(np.int32)
             material_images = np.concatenate(
@@ -197,41 +205,75 @@ class System:
                 distances = np.atleast_1d(distances)
                 indices = np.atleast_1d(indices)
                 nearest = None
+                reaction_nearest = None
                 for distance, image_index in zip(distances, indices):
                     destination = int(material_image_sites[int(image_index)])
-                    if destination != origin and distance > 1e-12:
+                    if distance > 1e-12 and nearest is None:
                         nearest = float(distance)
+                    if destination != origin and distance > 1e-12:
+                        reaction_nearest = float(distance)
                         break
+                if reaction_nearest is not None:
+                    reaction_indices = tree.query_ball_point(
+                        coordinate, reaction_nearest * (1.0 + self.first_neighbor_rtol) + 1e-10)
+                    reaction_data = self._deduplicate_neighbors(
+                        origin, reaction_indices, material_image_sites, material_images, self.R)
+                    if reaction_data[0].size:
+                        reaction_by_site[origin][int(material)] = reaction_data
                 if nearest is None:
                     continue
                 radius = nearest * (1.0 + self.first_neighbor_rtol) + 1e-10
                 image_indices = tree.query_ball_point(coordinate, radius)
-                data = self._deduplicate_neighbors(
-                    origin,
-                    image_indices,
-                    material_image_sites,
-                    material_images,
-                    self.R,
-                )
+                # Migration channels retain separate periodic images, including
+                # hops to a translated copy of the same wrapped site.
+                neighbors = []
+                for image_index in image_indices:
+                    displacement = material_images[image_index] - coordinate
+                    distance = float(np.linalg.norm(displacement))
+                    if distance > 1e-12:
+                        neighbors.append((int(material_image_sites[image_index]),
+                                          displacement, distance))
+                neighbors.sort(key=lambda item: (item[0], *item[1]))
+                cut = np.asarray([item[0] for item in neighbors], dtype=np.int32)
+                vectors = np.asarray([item[1] for item in neighbors], dtype=float).reshape(-1, 3)
+                data = (cut, vectors[:, 0], vectors[:, 1], vectors[:, 2],
+                        np.asarray([item[2] for item in neighbors]))
                 if data[0].size:
                     first_by_site[origin][int(material)] = data
 
+        # Preserve the existing reaction/generation partner rule. Reciprocity
+        # and image multiplicity are fixes to migration channels only.
         self._first_neighbors = []
-        for material_data in first_by_site:
+        for origin, material_data in enumerate(reaction_by_site):
             parts = list(material_data.values())
-            if not parts:
-                empty_i = np.empty(0, dtype=np.int32)
-                empty_f = np.empty(0, dtype=float)
-                self._first_neighbors.append(
-                    (empty_i, empty_f, empty_f.copy(), empty_f.copy(), empty_f.copy())
-                )
-                continue
-            self._first_neighbors.append(
-                tuple(np.concatenate([part[i] for part in parts]) for i in range(5))
-            )
+            if parts:
+                cut, dx, dy, dz, _ = tuple(np.concatenate([part[i] for part in parts]) for i in range(5))
+                vectors = np.column_stack((dx, dy, dz))
+            else:
+                cut = np.empty(0, dtype=np.int32)
+                vectors = np.empty((0, 3))
+            self._first_neighbors.append(self._deduplicate_neighbors(
+                origin, range(len(cut)), cut, vectors + self.R[origin], self.R))
+        directed = [dict() for _ in range(n_sites)]
+        for origin, material_data in enumerate(first_by_site):
+            for destinations, dx, dy, dz, distances in material_data.values():
+                for j, x, y, z, distance in zip(destinations, dx, dy, dz, distances):
+                    vector = (float(x), float(y), float(z))
+                    key = (int(j), *np.round(vector, 12))
+                    directed[origin][key] = (int(j), vector, float(distance))
+                    reverse = tuple(-value for value in vector)
+                    key_reverse = (origin, *np.round(reverse, 12))
+                    directed[int(j)][key_reverse] = (origin, reverse, float(distance))
+        self._migration_neighbors = []
+        for origin, entries in enumerate(directed):
+            ordered = [entries[key] for key in sorted(entries)]
+            cut = np.asarray([item[0] for item in ordered], dtype=np.int32)
+            vectors = np.asarray([item[1] for item in ordered], dtype=float).reshape(-1, 3)
+            distances = np.asarray([item[2] for item in ordered], dtype=float)
+            self._migration_neighbors.append((cut, *vectors.T, distances))
 
         reverse = [set() for _ in range(n_sites)]
-        for neighborhood in (self._cutoff_neighbors, self._first_neighbors):
+        for neighborhood in (self._cutoff_neighbors, self._first_neighbors, self._migration_neighbors):
             for origin, data in enumerate(neighborhood):
                 for destination in data[0]:
                     reverse[int(destination)].add(origin)
@@ -274,7 +316,7 @@ class System:
         else:
             raise ValueError("Invalid migration-barrier coupling.")
 
-        if getattr(self, "migration_barrier_directional", False):
+        if getattr(self, "migration_barrier_directional", False) and coupling == "destination":
             axis = getattr(self, "migration_barrier_axis", None)
             if axis not in (0, 1, 2):
                 raise ValueError("Invalid migration-barrier direction.")
@@ -283,7 +325,11 @@ class System:
                 raise ValueError("Migration hop has zero displacement.")
             cosine = np.clip(np.abs(components) / distance, 0.0, 1.0)
             exponent = getattr(self, "migration_barrier_angular_exponent", 2.0)
-            delta = delta * cosine**exponent
+            # Weight the symmetric bond part, not the conservative energy
+            # difference. Reverse rate ratios then remain exp(-(Uj-Ui)/kBT).
+            mean = 0.5 * (barrier[destinations] + barrier[origin])
+            difference = 0.5 * (barrier[destinations] - barrier[origin])
+            delta = difference + mean * cosine**exponent
 
         return np.exp(np.clip(-delta / kbt, -700.0, 700.0))
 
@@ -292,19 +338,31 @@ class System:
         self._migration_rate_factors = {}
         if getattr(self, "migration_barrier_change", None) is None:
             return
-        for neighborhood in (self._cutoff_neighbors, self._first_neighbors):
+        for neighborhood in (self._cutoff_neighbors, self._first_neighbors, self._migration_neighbors):
             for origin, data in enumerate(neighborhood):
                 destinations, dx, dy, dz, distance = data
                 factors = self._migration_factor_for(
                     origin, destinations, dx, dy, dz, distance
                 )
-                self._migration_rate_factors[id(destinations)] = factors
+                self._migration_rate_factors[id(destinations)] = (destinations, factors)
 
     def migration_rate_factors(self, origin, destinations):
         """Return cached factors, or compute them for an external destination array."""
         cached = self._migration_rate_factors.get(id(destinations))
-        if cached is not None:
-            return cached
+        if cached is not None and cached[0] is destinations:
+            return cached[1]
+        # Array ids change after multiprocessing pickles a frozen morphology.
+        # Recover the actual image-specific vectors rather than collapsing the
+        # repeated wrapped destinations to one minimum-image displacement.
+        for neighborhood in (self._migration_neighbors, self._first_neighbors, self._cutoff_neighbors):
+            if neighborhood is None:
+                continue
+            data = neighborhood[origin]
+            if data[0] is destinations:
+                _, dx, dy, dz, distance = data
+                factors = self._migration_factor_for(origin, destinations, dx, dy, dz, distance)
+                self._migration_rate_factors[id(destinations)] = (destinations, factors)
+                return factors
         if getattr(self, "migration_barrier_directional", False):
             dx, dy, dz = self.minimum_image_displacement(origin, destinations)
             distance = np.sqrt(dx * dx + dy * dy + dz * dz)
@@ -320,6 +378,8 @@ class System:
             raise RuntimeError("Neighbor topology has not been initialized.")
         if mode == "first":
             return self._first_neighbors[site]
+        if mode == "migration":
+            return self._migration_neighbors[site]
         if mode == "cutoff":
             return self._cutoff_neighbors[site]
         raise ValueError(f"Unknown neighbor mode: {mode}")
@@ -377,6 +437,7 @@ class System:
         self.IT = 0
         self.rate_cache = {}
         self.event_scheduler = None
+        self.diffusion_averager = None
         self._clear_event_changes()
 
     def species_positions(self, species):
@@ -456,10 +517,20 @@ class System:
             raise ValueError("Periodic displacement requested without a lattice cell.")
         best = np.array(displacement, copy=True)
         best_norm = np.sum(best * best, axis=-1)
+        targets = np.arange(len(self.R)) if destination is None else np.asarray(destination)
+        orientation = np.where(local < targets, 1.0, -1.0)
         for translation in self._translation_vectors():
             candidate = displacement + translation
             norm = np.sum(candidate * candidate, axis=-1)
-            mask = norm < best_norm
+            tied = np.isclose(norm, best_norm, rtol=1e-12, atol=1e-12)
+            candidate_key = candidate * np.expand_dims(orientation, -1)
+            best_key = best * np.expand_dims(orientation, -1)
+            lexical = np.zeros_like(norm, dtype=bool)
+            equal = np.ones_like(norm, dtype=bool)
+            for axis in range(3):
+                lexical |= equal & (candidate_key[..., axis] < best_key[..., axis])
+                equal &= candidate_key[..., axis] == best_key[..., axis]
+            mask = ((norm < best_norm) & ~tied) | (tied & lexical)
             best = np.where(np.expand_dims(mask, axis=-1), candidate, best)
             best_norm = np.where(mask, norm, best_norm)
         return tuple(np.moveaxis(best, -1, 0))
