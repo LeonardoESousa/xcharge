@@ -294,6 +294,7 @@ class ReadCIF:
         )
 
     def assign_to_system(self, system):
+        import re
         from pymatgen.core import Structure
 
         structure = Structure.from_file(self.file)
@@ -303,20 +304,26 @@ class ReadCIF:
 
         structure.make_supercell(self.mult_cell)
 
-        # Use chemical symbols rather than CIF site labels. Pymatgen may
-        # modify site labels when constructing a supercell.
+        # Elements define neighbor geometry. Explicit labels (including _GB)
+        # still select the material-dependent rates supplied by the input.
         species = [site.specie.symbol for site in structure]
+        labels = []
+        for site, symbol in zip(structure, species):
+            label = re.sub(r"\d+", "", site.label or symbol).rstrip("_")
+            labels.append(
+                label if label in self.label or label.endswith("_GB") else symbol
+            )
 
-        missing = sorted(set(species) - set(self.label))
+        missing = sorted(set(labels) - set(self.label))
         if missing:
             raise ValueError(
                 "The material-label dictionary does not contain the "
-                "following CIF species: "
+                "following CIF species or labels: "
                 + ", ".join(missing)
             )
 
         xyz = structure.cart_coords
-        materials = [self.label[symbol] for symbol in species]
+        materials = [self.label[label] for label in labels]
 
         system.set_morph(
             xyz[:, 0],
@@ -325,4 +332,5 @@ class ReadCIF:
             materials,
             cell=structure.lattice.matrix,
         )
+        system.neighbor_species = np.asarray(species)
         

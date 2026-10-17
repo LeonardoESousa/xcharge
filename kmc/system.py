@@ -41,6 +41,8 @@ class System:
         self.rng = np.random.default_rng()
 
     def set_morph(self, X, Y, Z, Mats, cell=None):
+        # CIF morphologies replace these default groups with element symbols.
+        self.neighbor_species = np.asarray(Mats).copy()
         self.X = np.asarray(X, dtype=float)
         self.Y = np.asarray(Y, dtype=float)
         self.Z = np.asarray(Z, dtype=float)
@@ -159,7 +161,7 @@ class System:
         )
 
     def build_neighbor_topology(self):
-        """Precompute cutoff neighbors and material-resolved first shells."""
+        """Precompute cutoff neighbors and physical-sublattice first shells."""
         translations = self._translation_vectors()
         n_sites = len(self.R)
         image_coordinates = np.concatenate(
@@ -182,8 +184,11 @@ class System:
             )
 
         first_by_site = [dict() for _ in range(n_sites)]
-        for material in self.uniq:
-            material_sites = np.flatnonzero(self.mats == material).astype(np.int32)
+        groups = np.asarray(getattr(self, "neighbor_species", self.mats))
+        if groups.shape != self.mats.shape:
+            raise ValueError("Neighbor species must contain one group per site.")
+        for material in np.unique(groups):
+            material_sites = np.flatnonzero(groups == material).astype(np.int32)
             material_images = np.concatenate(
                 [self.R[material_sites] + translation for translation in translations],
                 axis=0,
@@ -214,7 +219,7 @@ class System:
                     self.R,
                 )
                 if data[0].size:
-                    first_by_site[origin][int(material)] = data
+                    first_by_site[origin][material] = data
 
         self._first_neighbors = []
         for material_data in first_by_site:
@@ -229,6 +234,26 @@ class System:
             self._first_neighbors.append(
                 tuple(np.concatenate([part[i] for part in parts]) for i in range(5))
             )
+
+        # Distorted sites can select slightly different first shells. Migration
+        # within one sublattice needs an undirected geometric graph: retain the
+        # union of those shells and give every hop its opposite reverse vector.
+        # Cross-sublattice reaction shells keep their existing origin-based rule.
+        first_edges = [dict() for _ in range(n_sites)]
+        for origin, (destinations, dx, dy, dz, distances) in enumerate(self._first_neighbors):
+            for destination, x, y, z, distance in zip(destinations, dx, dy, dz, distances):
+                first_edges[origin][int(destination)] = (x, y, z, distance)
+        for origin, data in enumerate(self._first_neighbors):
+            for destination, x, y, z, distance in zip(*data):
+                destination = int(destination)
+                if groups[origin] == groups[destination]:
+                    if origin < destination or origin not in first_edges[destination]:
+                        first_edges[destination][origin] = (-x, -y, -z, distance)
+        self._first_neighbors = []
+        for edges in first_edges:
+            destinations = np.asarray(sorted(edges), dtype=np.int32)
+            values = np.asarray([edges[int(j)] for j in destinations], dtype=float).reshape(-1, 4)
+            self._first_neighbors.append((destinations, *values.T))
 
         reverse = [set() for _ in range(n_sites)]
         for neighborhood in (self._cutoff_neighbors, self._first_neighbors):

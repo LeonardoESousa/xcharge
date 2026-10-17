@@ -20,9 +20,13 @@ class MigrationBarrier:
     supplied rate in spatially flat regions and obeys detailed balance for
     symmetric unmodified hop rates.
 
-    If ``directional`` is true, the correction is multiplied by
+    With ``coupling="destination"``, if ``directional`` is true the
+    correction is multiplied by
     ``abs(cos(theta)) ** angular_exponent``, where theta is the angle between
-    the minimum-image hop displacement and ``axis``.
+    the minimum-image hop displacement and ``axis``. Site-energy coupling
+    always uses the full energy difference to preserve detailed balance.
+    Its dependence on the axis already makes the correction zero for hops
+    parallel to a plane of constant energy, with a smooth change on tilted hops.
 
     Xcharge evaluates this assigner after the morphology has been constructed.
     """
@@ -110,6 +114,10 @@ class MigrationBarrier:
         system.migration_barrier_change = values
         system.migration_kbt = BOLTZMANN_EV * self.temperature
         system.migration_barrier_axis = axis_index
-        system.migration_barrier_directional = self.directional
+        # Weighting site-energy differences by hop angle creates artificial
+        # cycle affinities. U(axis) already gives a smooth directional bias.
+        system.migration_barrier_directional = (
+            self.directional and self.coupling == "destination"
+        )
         system.migration_barrier_angular_exponent = self.angular_exponent
         system.migration_barrier_coupling = self.coupling
