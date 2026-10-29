@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "KMC"
-version = "0.0.1"
+version = "1.0.0"
 description = "Kinetic Monte Carlo"
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
@@ -20,7 +20,7 @@ authors = [
 urls = { Homepage = "https://github.com/LeonardoESousa/xcharge" }
 
 dependencies = [
-  "numpy<2",
+  "numpy>=1.26,<3",
   "scipy",
   "joblib",
   "matplotlib",
