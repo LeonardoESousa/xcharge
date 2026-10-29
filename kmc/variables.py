@@ -15,9 +15,22 @@ periodic        = False
 n_proc          = 1
 rounds          = 1
 cutoff          = np.inf
-#####
-
-EPSILON_0 = 8.854187e-12  # Permitivity in C/Vm
-E = -1.60217662e-19  # Electron charge
-KB = 8.617e-5  # Boltzmann constant
-HBAR = 6.582e-16  # Reduced Planck's constant
+FPcutoff        = 3
+first_neighbor_rtol = 0.15
+random_seed     = None
+append_output   = False
+time_units      = 'ps'
+particle_condition = True
+creation_threshold = np.inf
+generation      = []#{'ghost':None}
+##### ANIMATION SETTINGS  ##################################
+material_label = {'mat 0':0,'mat 1':1, 'mat 2': 2}
+colors_dic     = {0:'black', 1:'blue', 2:'red', 3:'green', 4:'yellow'}
+sizes_dic      = {0:50, 1:50, 2:50, 3:50, 4:50}
+square_ratio   = True
+material_leg   = True
+plot_type      = "sphere" # options: sphere or scatter
+scatter_alpha  = 0.3
+clean_vis      = True
+print_site_position = False
+###############################################################

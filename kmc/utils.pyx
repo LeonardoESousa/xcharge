@@ -1,8 +1,7 @@
 import numpy as np
 cimport cython
-from libc.math cimport sqrt
-from libc.math cimport exp
 
+from libc.math cimport sqrt
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 cpdef distances(double[:] dx, double[:] dy, double[:] dz, int num):
@@ -54,19 +53,24 @@ cpdef forster_anni(double[:] Rf,int[:] mats,int num, double alpha_mu, double[:] 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 cpdef jump(double[:] jump_rate, int num, double random_number):
-    cdef double soma
-    cdef double [:] cumsum = np.empty(num)
-    cdef double [:] jump_rate_view = jump_rate
+    cdef double soma = 0.0
+    if num == 0:
+        return 0.0, -1
+    cdef double[:] cumsum = np.empty(num)
+    cdef double[:] jump_rate_view = jump_rate
     cdef int i
     for i in range(num):
         soma += jump_rate_view[i]
         cumsum[i] = soma
-    random_number = random_number*soma
+    if soma <= 0:
+        return 0.0, -1
+    random_number = random_number * soma
     for i in range(num):
         if random_number <= cumsum[i]:
-            return soma,i
+            return soma, i
 
 
+from libc.math cimport exp
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, double[:] r):
@@ -81,22 +85,3 @@ cpdef dexter(double[:] Rd,double invL,double emi_rate,int[:] mats,int num, doubl
       else:
         taxas_view[i] = 0.0
     return taxas
-
-
-@cython.boundscheck(False)  # Deactivate bounds checking
-@cython.wraparound(False)   # Deactivate negative indexing.
-cpdef marcus(double[:] coupling,double[:] energy,double reorg, double prefactor, int[:] mats,int num, double site_energy, double kbt, double decay, double[:] r):
-    taxas = np.empty(num)
-    cdef double [:] taxas_view = taxas 
-    cdef double constant
-    cdef double deltae
-    cdef double lambda_term = 4*reorg*kbt
-    cdef int i
-    for i in range(num):
-      if r[i] != 0:  
-        deltae = energy[mats[i]]-site_energy
-        constant = prefactor*coupling[mats[i]]*coupling[mats[i]]/sqrt(3.1415*lambda_term)
-        taxas_view[i] = constant*exp(-r[i]*decay -deltae*deltae/lambda_term)
-      else:
-        taxas_view[i] = 0.0
-    return taxas    

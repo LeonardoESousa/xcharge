@@ -1,162 +1,282 @@
-<h1 align="center">Xcharge: A Kinetic Monte Carlo Model for Exciton and Charge Dynamics</h1
-  
-<p align="center">Xcharge is a Kinectic Monte Carlo (KMC) algorithm that can be used to study exciton (singlet or triplet) and charge (electron or hole) dynamics in various morphologies. </p>
+# Xcharge
 
-<h4 align="center"> 
-	🚧  Under continuous development...  🚧
-</h4>
+**Kinetic Monte Carlo simulations of defects, excitons, and charge carriers.**
 
-[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
-[![license](https://img.shields.io/github/license/LeonardoESousa/KMC?style=plastic)]()
-[![down](https://img.shields.io/github/downloads/LeonardoESousa/KMC/total?style=plastic)]()
-[![maint](https://img.shields.io/maintenance/yes/2023)]()
-[![commit](https://img.shields.io/github/last-commit/LeonardoESousa/KMC?style=plastic)]()
+Xcharge models stochastic migration and reactions on spatial lattices. It supports
+vacancies, interstitials, Frenkel pairs, singlet and triplet excitons, electrons,
+and holes. Morphologies can be generated in Python or read from a crystal
+structure in CIF format.
 
-<!--
-<p align="center">
-  <kbd>
-    <img width="640" style="border-radius: 25px" height="480" src="https://i.postimg.cc/2yVWMfZc/ezgif-com-gif-maker.gif" alt="demo">
-  </kbd>
-</p>
--->
+Version **1.0.0** is distributed as the Python package `KMC` and provides the
+`kmc` command. Input files import the `kmc` module.
 
-<!--
-<p align="center">
-  <kbd>
-    <img width="441" style="border-radius: 25px" height="340" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">
-  </kbd>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <kbd>
-    <img width="407" style="border-radius: 25px" height="357" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">
-  </kbd>
-</p>
--->
+## Capabilities
 
-<p align="center">
-  <kbd>
-    <!--<img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/Zqnz3gnS/final.gif" alt="demo">-->
-    <!--<img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/7P7KWFJM/kmc.gif" alt="demo">-->
-    <img width="399.3" style="border-radius: 25px" height="308.55" src="https://i.postimg.cc/C1yPf4t0/kmc-opt.gif" alt="demo">
-  </kbd>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <kbd>
-    <!--<img width="335.5" style="border-radius: 25px" height="293.7" src="https://i.postimg.cc/s2hZVnzV/name-cut.gif" alt="demo">-->
-    <img width="335.5" style="border-radius: 25px" height="293.7" src="https://i.postimg.cc/zfNHbbjM/latt.gif" alt="demo">
-  </kbd>
-</p>
+- Defect migration, Frenkel-pair generation, formation, dissociation, and
+  annihilation; interstitial-pair formation and dissociation.
+- First-neighbor defect processes, with separate rates for bulk and grain-boundary
+  environments.
+- Periodic boundary conditions using the full lattice cell, including triclinic
+  cells; cumulative displacements across periodic boundaries.
+- Optional spatial energy profiles for migration, such as attractive GB wells.
+- Exciton transfer through Förster and Dexter processes, fluorescence,
+  phosphorescence, intersystem crossing, and annihilation.
+- Charge hopping through Miller–Abrahams rates and charge dissociation.
+- Independent simulation rounds across multiple CPU processes, reproducible
+  random seeds, text logs, and animations.
 
-
-
-## Main Features
-
-- [x] Easy to use!
-- [x] Singlet exciton diffusion with Förster transfer rates;
-- [x] Triplet exciton diffusion with Dexter and/or Triplet-to-Singlet transfer rates;
-- [x] Miller-Abrahams Rate;
-- [x] Charge dissociation and recombination;
-- [x] Fully customable morphology (presets: Bulk Heterojunction, Bilayer and more);
-- [x] Lattice distortion effects;
-- [x] Built-in Parallelization;
-- [x] Singlet Annihilation;
-- [x] Native Dashboard for Analysis; 
-- [ ] Include in-site dipole orientation.
-
-
-## Table of Contents
-
-<!--ts-->
-   * [Installation](#installation)
-   * [How to Use](#how-to-use)
-   * [Basic Usage](#basic-usage)
-   *    * [Make Animations](#make-animations)
-   *    * [Parallelization](#parallelization)
-   *    * [Analysis Dashboard](#analysis-dashboards)
-   * [Documentation](#documentation)
-
-<!--te-->
+Processes are enabled explicitly in the input. Defining a rate object alone does
+not activate that mechanism.
 
 ## Installation
+Python 3.10 or later is required. Xcharge supports NumPy 1.26 and 2.x; compatible dependencies are installed automatically by pip.
 
-(Manual installation)
 ```bash
-git clone https://github.com/LeonardoESousa/KMC
-cd KMC/
-pip3 install .
-```
-<!--
-(Auto installation)
-```bash
-pip3 install kmc
-```
--->
-
-If you encounter any error, we recommend you to visit our page of [troubleshooting solutions](https://github.com/LeonardoESousa/xcharge/wiki/Troubleshoot-Install)
-## How to Use
-
-1) Construct your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples)
-2) At the same directory, run
-```bash
-kmc your_input.py
+git clone https://github.com/LeonardoESousa/xcharge.git
+cd xcharge
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install .
 ```
 
-## Basic Usage
+On Windows, activate the environment with `.venv\Scripts\Activate.ps1` in
+PowerShell.
 
-### Make Animations
+An optional C extension accelerates `kmc.utils`. Installation uses its Python
+implementation if compilation is unavailable. Check which implementation is loaded:
 
-Set, at your input (look [here](https://github.com/LeonardoESousa/KMC/tree/main/input_examples) for examples),
+```bash
+python -c "import kmc.utils; print(kmc.utils.__file__)"
+```
+
+A compiled module ends in `.so` on Linux or `.pyd` on Windows. Build it with a
+compiler suitable for the machines where jobs will run.
+
+After updating the source, reinstall it in the environment used by your jobs:
+
+```bash
+python -m pip install --no-deps --force-reinstall .
+```
+
+## Quick start
+
+Run the self-contained migration-barrier example from the repository directory:
+
+```bash
+kmc input_examples/migration_barrier.py
+```
+
+The equivalent module invocation is:
+
+```bash
+python -m kmc input_examples/migration_barrier.py
+```
+
+This example runs four rounds with a vacancy and an interstitial on a periodic
+lattice and writes `Simulation_migration_barrier.txt` to the working directory.
+The other [input examples](input_examples/) cover excitons, charges, and defects;
+some require a structure file or additional command-line arguments.
+
+Inputs are Python programs and can read extra arguments, for example:
+
+```bash
+kmc base.py 100
+```
+
+The meaning of `100` is defined by `base.py`.
+
+## Input structure
+
+An input defines the morphology, initial particles, enabled processes, and run
+settings. These are the main controls:
+
+| Setting | Meaning |
+| --- | --- |
+| `identifier` | Output filename suffix |
+| `rounds` | Number of independent realizations |
+| `n_proc` | Number of worker processes on one machine |
+| `frozen_lattice` | Reuse the morphology between rounds |
+| `periodic` | Enable periodic boundary conditions |
+| `time_limit` | Maximum simulated time per round |
+| `time_units` | Time label written to the log; default is `"ps"` |
+| `random_seed` | Optional seed for reproducible rounds |
+| `append_output` | Append new rounds to an existing log; default is `False` |
+| `animation_mode` | Display the dynamics instead of running the batch workflow |
+
+**Keep units consistent.** `time_units` labels the output; it does not convert
+rates or lifetimes. With CIF coordinates, distances are in ångströms. For rates in
+s⁻¹, use times in seconds and set `time_units = "s"`. An Eyring rate can be defined as:
 
 ```python
-animation_mode = True
-save_animation = True
+import numpy as np
+
+T = 298.0
+kB = 8.617333262e-5  # eV/K
+h = 4.135667696e-15  # eV s
+
+
+def eyring_rate(barrier_eV):
+    return (kB * T / h) * np.exp(-barrier_eV / (kB * T))
 ```
-Then run the job
+
+Register spatial processes in `processes`, local reactions in `monomolecular`,
+and ongoing particle generation in `generation`. For example:
+
 ```python
-kmc your_input.py
+processes = {
+    "vacancy": [vacancy_migration, fp_formation],
+    "interstitial": [interstitial_migration],
+    "frenkelpair0": [],
+    "frenkelpair2": [],
+}
+monomolecular = {
+    "vacancy": [],
+    "interstitial": [],
+    "frenkelpair0": [fp0_annihilation, fp0_dissociation],
+    "frenkelpair2": [fp2_annihilation, fp2_dissociation],
+}
+generation = []
 ```
 
-### Parallelization
+Here, FP formation is initiated only by the vacancy. `generation = []` disables
+ongoing generation; initial particles are assigned separately. The process objects
+in this snippet must be constructed with the rates appropriate to your model.
 
-Set the number of rounds as you wish and assign to n_proc the number of avaliable cores. Then, turn off the animation_mode. Your input should look something like
+### CIF structures and GB labels
+
 ```python
-animation_mode = False
-rounds = 10000  # repeating the dynamics 10000 times 
-n_proc = 30     # using 30 cores to execute the job
+from pathlib import Path
+import kmc.morphology as morphology
+
+material_label = {"Cs": 0, "Br": 1, "Cs_GB": 2, "Br_GB": 3}
+structure_file = Path(__file__).resolve().with_name("grain_boundary.cif")
+lattice_func = morphology.ReadCIF(
+    str(structure_file), [1, 1, 1], material_label, ["Pb"]
+)
 ```
-Then, run the job
+
+CIF labels such as `Br123_GB` are normalized to `Br_GB` for material indexing.
+These labels select bulk or GB rates. Chemical species define the neighbor
+geometry: `Br` and `Br_GB` belong to the same physical sublattice.
+
+`Migration`, `Formation`, `I2Formation`, and `FP_generation` use precomputed
+first-neighbor shells. `first_neighbor_rtol` groups distorted shell distances
+with a relative tolerance (default `0.15`). Same-sublattice migration edges have
+matching reverse edges. The general `cutoff` applies to distance-dependent
+processes; it does not set the range of these first-neighbor defect processes.
+
+### Migration energy profiles
+
+To represent a GB well, supply a vectorized site-energy function in eV:
+
 ```python
-kmc your_input.py
+from kmc.potentials import MigrationBarrier
+
+
+def gb_energy(y, cell_period):
+    spacing = 164.597  # Å; set this for the actual structure
+    shape = 0.5 * (1.0 + np.cos(2.0 * np.pi * y / spacing))
+    return 0.152283 * (1.0 - shape**17.144)
+
+
+migration_barrier = MigrationBarrier(
+    function=gb_energy, temperature=T, axis="y", coupling="symmetric"
+)
 ```
 
-### Analysis Dashboard
+The coordinate origin must align with the GB planes, and the profile must match
+the structure's periodicity. Spatial profiles currently require an orthorhombic
+cell aligned with the chosen Cartesian axis.
 
-<p align="center">
-  <kbd>
-    <img width="640" style="border-radius: 25px" height="480" src="https://i.postimg.cc/fRvGx1sK/dash.gif" alt="demo">
-  </kbd>
-</p>
+With `coupling="symmetric"`, a hop from site *i* to *j* receives the barrier
+correction `(U[j] - U[i]) / 2`. For symmetric base rates this gives detailed
+balance. A profile depending only on `y` leaves hops with unchanged `y` unbiased.
+No angular weighting is applied to site-energy differences.
 
-At any terminal, enter
+The alternative `coupling="destination"` adds an absolute destination barrier
+correction; its optional angular weighting has a different interpretation from
+a conservative site-energy well. One registered profile applies to both vacancy
+and interstitial `Migration` processes. The base material-dependent rates remain
+in effect.
+
+## Parallel rounds and SLURM
+
+`n_proc` distributes independent rounds within one node. To use several nodes,
+submit independent jobs or a SLURM array with distinct output identifiers.
+For four jobs of 250 rounds each, include in the input:
+
+```python
+import os
+
+chunk_id = int(os.environ.get("SLURM_ARRAY_TASK_ID", 0))
+identifier = f"my_simulation_chunk{chunk_id}"
+rounds = 250
+n_proc = 40
+random_seed = 12345 + chunk_id  # distinct reproducible seed for each job
+```
+
+A corresponding submission script is:
+
 ```bash
-dash
+#!/bin/bash
+#SBATCH --time=2-0
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=40
+#SBATCH --array=0-3
+#SBATCH --output=slurm-%A_%a.out
+
+set -euo pipefail
+source /path/to/venv/bin/activate
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+
+kmc base.py 100
 ```
-Click in <em> Upload </em>, choose you file and press <em>Read File </em>.
 
-## Documentation
-[Main page](https://github.com/LeonardoESousa/xcharge/wiki)
-<!--ts-->
-   * [Input's Basic Structure](https://github.com/LeonardoESousa/xcharge/wiki/Input's-Basic-Structure)
-   * [Morphology Design](#morph)
-   * [Energy Setting](#energy)
-   * [Particle Creation](#particles)
-   * [Rates](#rates)
-<!--te-->
+Set the partition and load the Python environment required by your cluster.
+Ensure each task can access its input and CIF files. Give different parameter
+sets distinct identifiers as well. Appending logs adds independent realizations;
+it does **not** resume an interrupted trajectory.
 
-## Authors
----
-<table>
-  <tr>	  
-    <td align="center"><a href="https://github.com/LeonardoESousa"><img style="border-radius: 50%;" src="https://avatars.githubusercontent.com/u/49243510?v=4" width="100px;" alt=""/><br /><sub><b>Dr. Leonardo Evaristo de Sousa</b></sub></a><br />Postdoctoral researcher at the Techinical University of Denmark (DTU)<br /><sub><b><a href="mailto:leonardo.sousa137@gmail.com">EMAIL</a><br /></td>
-    <td align="center"><a href="https://github.com/TSA-Cassiano"><img style="border-radius: 50%;" src="https://avatars.githubusercontent.com/u/26448170?s=400&u=b0820613fd46515f0cfe1806f7251a414d4c249b&v=4" width="100px;" alt=""/><br /><sub><b>MSc Tiago de Sousa Araújo Cassiano</b></sub></a><br />Phd student at the University of Brasília (UnB)<br /><sub><b><a href="mailto:tiagofis96@gmail.com">EMAIL</a><br /></td>
-  </tr>
-</table>
+## Output and analysis
 
+Each batch writes `Simulation_<identifier>.txt`. It has comment headers,
+CSV-formatted records, and an `END` separator after each round. Records include
+the simulation time, cumulative displacement, particle type, site information,
+process, and final status.
+
+`DeltaX`, `DeltaY`, and `DeltaZ` are signed cumulative hop displacements, including
+periodic crossings. `FinalX`, `FinalY`, and `FinalZ` are coordinates inside the
+simulation cell. `Time` is measured from the start of the round, not necessarily
+from the creation of an individual defect. The reported `Energy` is an assigned
+site energy, not a migration activation barrier.
+
+For diffusion analysis, use elapsed particle time and unwrapped displacements.
+In GB structures, examine directional mean-squared displacements and their
+linear-time regime before interpreting a single scalar diffusion coefficient.
+
+To display an animation, set `animation_mode = True`. To save it, also set
+`save_animation = True` and `animation_exten = "gif"` or `"mp4"`. MP4 output
+requires an available video writer such as FFmpeg.
+
+## Development and tests
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest -q
+```
+
+Custom rate models can provide `rate(...)` and `action(...)` methods, following
+the implementations in [kmc/rates.py](kmc/rates.py). Keep new mechanisms covered by
+tests of their physical behavior and particle/lattice bookkeeping.
+
+## Authors and license
+
+Developed by **Leonardo Evaristo de Sousa** and **Tiago de Sousa Araújo Cassiano**.
+See the [project wiki](https://github.com/LeonardoESousa/xcharge/wiki) for additional
+background and older workflows.
+
+Licensed under the [GNU General Public License, version 3 or later](LICENSE).
